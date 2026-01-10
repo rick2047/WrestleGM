@@ -4,7 +4,7 @@
 TBD - created by archiving change add-wrestlegm-mvp. Update Purpose after archive.
 ## Requirements
 ### Requirement: Show-driven progression loop
-The system SHALL support a show-driven loop that books a 3-match card, simulates the show, applies deltas, and advances to the next show.
+The system SHALL support a show-driven loop that books a 3-match card, simulates the show via a `SimulationEngine`, applies deltas via a `ShowApplier`, and advances to the next show.
 
 #### Scenario: Complete a show and advance
 - **WHEN** the player runs a fully booked show
@@ -23,4 +23,11 @@ The system SHALL restore stamina to wrestlers who did not participate in the pre
 #### Scenario: Resting wrestler recovers stamina
 - **WHEN** a wrestler does not appear on the show
 - **THEN** their stamina increases by the recovery amount and is clamped to 0–100
+
+### Requirement: Show applier responsibilities
+The system SHALL apply match deltas and between-show recovery through a dedicated `ShowApplier` owned by game state.
+
+#### Scenario: Apply show results through applier
+- **WHEN** a show finishes simulation
+- **THEN** the `ShowApplier` applies deltas, recovery, and clamping rules
 
