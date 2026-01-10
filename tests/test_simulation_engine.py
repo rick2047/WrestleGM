@@ -51,7 +51,7 @@ def build_roster_state() -> dict[str, WrestlerState]:
     }
 
 
-class TestSimulationEngineDeterminism:
+class TestDeterminism:
     def test_same_seed_same_show_results(self) -> None:
         roster_state = build_roster_state()
         match_types = build_match_types()
@@ -87,7 +87,7 @@ class TestSimulationEngineDeterminism:
         )
 
 
-class TestOutcomeSimulation:
+class TestMatchSimulation:
     def test_outcome_probability_clamps(self) -> None:
         wrestler_a = WrestlerState("a", "Alpha", "Face", popularity=100, stamina=100)
         wrestler_b = WrestlerState("b", "Bravo", "Heel", popularity=0, stamina=0)
@@ -105,7 +105,6 @@ class TestOutcomeSimulation:
         assert constants.P_MIN <= debug.p_base <= constants.P_MAX
 
 
-class TestRatingSimulation:
     def test_rating_bounds(self) -> None:
         wrestler_a = WrestlerState("a", "Alpha", "Face", popularity=100, stamina=100)
         wrestler_b = WrestlerState("b", "Bravo", "Heel", popularity=0, stamina=0)
@@ -142,7 +141,7 @@ class TestRatingSimulation:
         assert debug.alignment_mod == constants.ALIGN_BONUS
 
 
-class TestStatDeltas:
+class TestMatchSimulationStatDeltas:
     def test_delta_correctness(self) -> None:
         modifiers = MatchTypeModifiers(
             outcome_chaos=0.0,
@@ -187,7 +186,7 @@ class TestShowSimulation:
         assert engine.aggregate_show_rating([]) == 0.0
 
 
-class TestShowApplier:
+class TestMutation:
     def test_clamp_and_recovery(self) -> None:
         roster = [
             WrestlerDefinition(id="a", name="Alpha", alignment="Face", popularity=99, stamina=5),
