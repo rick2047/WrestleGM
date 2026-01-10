@@ -38,7 +38,12 @@ def roster_line(name: str, alignment: str, popularity: int, stamina: int) -> str
 
 @dataclass
 class BookingDraft:
-    """Temporary match booking state for a slot."""
+    """Track in-progress booking choices before committing to GameState.
+
+    Responsibilities:
+    - Store selected wrestler and match type ids for a single slot.
+    - Provide a completeness check used by UI validation.
+    """
 
     wrestler_a_id: Optional[str] = None
     wrestler_b_id: Optional[str] = None
@@ -51,7 +56,13 @@ class BookingDraft:
 
 
 class WrestleGMApp(App):
-    """WrestleGM Textual application."""
+    """Top-level Textual application entry point.
+
+    Responsibilities:
+    - Load data definitions and create the shared GameState instance.
+    - Own the application-wide CSS and lifecycle hooks.
+    - Push the initial screen into the navigation stack.
+    """
 
     CSS = """
     Screen {
@@ -98,7 +109,13 @@ class WrestleGMApp(App):
 
 
 class MainMenuScreen(Screen):
-    """Main menu screen."""
+    """Main menu screen for global navigation.
+
+    Responsibilities:
+    - Present top-level routes (new game, roster, quit).
+    - Dispatch user selection into screen transitions.
+    - Keep focus on the menu list for keyboard navigation.
+    """
 
     BINDINGS = [
         ("enter", "select", "Select"),
@@ -134,7 +151,13 @@ class MainMenuScreen(Screen):
 
 
 class BookingHubScreen(Screen):
-    """Show overview and booking hub."""
+    """Show overview and booking hub for the current card.
+
+    Responsibilities:
+    - Display the current show number and slot summaries.
+    - Allow the user to open a slot editor.
+    - Gate Run Show based on validation.
+    """
 
     BINDINGS = [
         ("enter", "edit_slot", "Edit"),
@@ -240,7 +263,13 @@ class BookingHubScreen(Screen):
 
 
 class MatchBookingScreen(Screen):
-    """Single-slot match booking screen."""
+    """Editor for a single match slot.
+
+    Responsibilities:
+    - Maintain a local BookingDraft until confirmation.
+    - Launch selection screens for wrestlers and match types.
+    - Validate the draft and commit it to GameState on confirmation.
+    """
 
     BINDINGS = [
         ("enter", "select_field", "Select"),
@@ -454,7 +483,13 @@ class MatchBookingScreen(Screen):
 
 
 class WrestlerSelectionScreen(Screen):
-    """Select a wrestler for a match slot."""
+    """Roster picker for assigning a wrestler to a slot side.
+
+    Responsibilities:
+    - Render the roster list with stamina/availability hints.
+    - Enforce validation rules (duplicates, stamina, already booked).
+    - Return the selection to the parent booking screen via callback.
+    """
 
     BINDINGS = [
         ("enter", "select", "Select"),
@@ -560,7 +595,13 @@ class WrestlerSelectionScreen(Screen):
 
 
 class MatchTypeSelectionScreen(Screen):
-    """Select a match type."""
+    """Match type picker for a slot.
+
+    Responsibilities:
+    - Present match types and descriptions from GameState.
+    - Update the description panel on highlight.
+    - Return the selection to the parent booking screen via callback.
+    """
 
     BINDINGS = [
         ("enter", "select", "Select"),
@@ -655,7 +696,12 @@ class MatchTypeSelectionScreen(Screen):
 
 
 class ConfirmBookingModal(ModalScreen):
-    """Confirmation modal for booking a match."""
+    """Confirmation modal to guard match commits.
+
+    Responsibilities:
+    - Require explicit confirmation before writing to GameState.
+    - Return a boolean result to the parent booking screen.
+    """
 
     BINDINGS = [
         ("escape", "cancel", "Cancel"),
@@ -684,7 +730,12 @@ class ConfirmBookingModal(ModalScreen):
 
 
 class SimulatingScreen(Screen):
-    """Simulating screen with auto-advance."""
+    """Simulating screen that runs the show and auto-advances.
+
+    Responsibilities:
+    - Call GameState.run_show() to perform simulation and state updates.
+    - Advance to ResultsScreen after a short delay.
+    """
 
     def compose(self) -> ComposeResult:
         """Build the simulating screen layout."""
@@ -705,7 +756,13 @@ class SimulatingScreen(Screen):
 
 
 class ResultsScreen(Screen):
-    """Show results screen."""
+    """Show results screen for completed matches.
+
+    Responsibilities:
+    - Render per-match winners and star ratings.
+    - Display the overall show rating.
+    - Route to the next show, roster view, or main menu.
+    """
 
     BINDINGS = [
         ("enter", "continue", "Continue"),
@@ -779,7 +836,12 @@ class ResultsScreen(Screen):
 
 
 class RosterScreen(Screen):
-    """Roster overview screen."""
+    """Read-only roster listing.
+
+    Responsibilities:
+    - Render current popularity and stamina values.
+    - Refresh data on resume to reflect latest show results.
+    """
 
     BINDINGS = [
         ("escape", "back", "Back"),

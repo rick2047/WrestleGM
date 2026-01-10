@@ -24,6 +24,39 @@ UI-agnostic so the front-end can evolve without rewriting match rules.
 This separation keeps simulation rules portable and makes the UI a thin layer
 over state transitions.
 
+## Class Collaboration
+
+Key classes coordinate the show loop as follows:
+
+- `WrestleGMApp` creates `GameState` from data loaders and owns the screen stack.
+- UI screens (such as `BookingHubScreen` and `ResultsScreen`) read from
+  `GameState` and request transitions.
+- `GameState` validates bookings and calls the simulation functions in
+  `wrestlegm.sim`.
+- Simulation functions return `MatchResult` data without mutating state.
+- `GameState` applies deltas and updates the roster after the show completes.
+
+## Class Diagram (Conceptual)
+
+```text
+WrestleGMApp
+  |
+  v
+GameState <-----------------------------+
+  |                                     |
+  | uses                                | reads/writes
+  v                                     |
+Simulation (simulate_* functions)       |
+  |                                     |
+  v                                     |
+MatchResult ----------------------------+
+
+UI Screens (MainMenu, BookingHub, MatchBooking, Results)
+  |
+  v
+GameState (validate, run_show, apply_show_results)
+```
+
 ## Data Flow
 
 1. Data definitions load from `data/wrestlers.json` and `data/match_types.json`.
