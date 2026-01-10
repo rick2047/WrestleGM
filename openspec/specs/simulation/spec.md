@@ -4,7 +4,7 @@
 TBD - created by archiving change add-wrestlegm-mvp. Update Purpose after archive.
 ## Requirements
 ### Requirement: Deterministic match simulation pipeline
-The system SHALL simulate each match using an outcome step, rating step, and stat delta step using a single seeded RNG instance.
+The system SHALL simulate each match using an outcome step, rating step, and stat delta step using a single seeded RNG instance owned by a `SimulationEngine`.
 
 #### Scenario: Deterministic outcomes with same inputs
 - **WHEN** the same roster stats, match type config, show card, and seed are used
@@ -60,4 +60,11 @@ The system SHALL restore stamina only for wrestlers who did not appear on the pr
 #### Scenario: Resting wrestler recovery
 - **WHEN** a wrestler did not participate in the last show
 - **THEN** their stamina increases by `STAMINA_RECOVERY_PER_SHOW` and is clamped to 0–100
+
+### Requirement: Simulation engine ownership
+The system SHALL centralize RNG ownership and simulation methods in a `SimulationEngine` class and remove the standalone functional simulation API.
+
+#### Scenario: Simulation runs through engine
+- **WHEN** a show is simulated
+- **THEN** the `SimulationEngine` is used to compute outcomes, ratings, and deltas
 
