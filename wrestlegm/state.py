@@ -2,12 +2,18 @@
 
 from __future__ import annotations
 
-import random
 from typing import Dict, Iterable, List, Optional
 
 from wrestlegm import constants
-from wrestlegm.models import Match, MatchResult, MatchTypeDefinition, Show, StatDelta, WrestlerDefinition, WrestlerState
-from wrestlegm.sim import aggregate_show_rating, simulate_show
+from wrestlegm.models import (
+    Match,
+    MatchTypeDefinition,
+    Show,
+    StatDelta,
+    WrestlerDefinition,
+    WrestlerState,
+)
+from wrestlegm.sim import SimulationEngine
 
 
 class GameState:
@@ -19,8 +25,8 @@ class GameState:
         match_types: Iterable[MatchTypeDefinition],
         seed: int = 1337,
     ) -> None:
-        self.seed = seed
-        self.rng = random.Random(seed)
+        self.engine = SimulationEngine(seed=seed)
+        self.applier = ShowApplier()
         self.roster: Dict[str, WrestlerState] = {
             wrestler.id: WrestlerState(
                 id=wrestler.id,
@@ -114,10 +120,10 @@ class GameState:
 
         matches = [match for match in self.show_card if match is not None]
         show = Show(show_index=self.show_index, scheduled_matches=matches, results=[])
-        results = simulate_show(matches, self.roster, self.match_types, self.rng)
+        results = self.engine.simulate_show(matches, self.roster, self.match_types)
         show.results = results
-        show.show_rating = aggregate_show_rating(results)
-        self.apply_show_results(show)
+        show.show_rating = self.engine.aggregate_show_rating(results)
+        self.applier.apply(show, self.roster)
         self.last_show = show
         self.show_index += 1
         self.show_card = [None] * constants.SHOW_MATCH_COUNT
@@ -125,6 +131,15 @@ class GameState:
 
     def apply_show_results(self, show: Show) -> None:
         """Apply all stat deltas and recovery for a completed show."""
+
+        self.applier.apply(show, self.roster)
+
+
+class ShowApplier:
+    """Apply match deltas, recovery, and clamping to roster state."""
+
+    def apply(self, show: Show, roster: Dict[str, WrestlerState]) -> None:
+        """Apply deltas and recovery to the roster in-place."""
 
         aggregated: Dict[str, StatDelta] = {}
         participants: set[str] = set()
@@ -140,7 +155,7 @@ class GameState:
                 )
 
         new_values: Dict[str, WrestlerState] = {}
-        for wrestler_id, wrestler in self.roster.items():
+        for wrestler_id, wrestler in roster.items():
             delta = aggregated.get(wrestler_id, StatDelta(popularity=0, stamina=0))
             pop = max(0, min(100, wrestler.popularity + delta.popularity))
             sta = max(0, min(100, wrestler.stamina + delta.stamina))
@@ -153,10 +168,10 @@ class GameState:
             )
 
         for wrestler_id, wrestler in new_values.items():
-            self.roster[wrestler_id] = wrestler
+            roster[wrestler_id] = wrestler
 
-        for wrestler_id, wrestler in self.roster.items():
+        for wrestler_id, wrestler in roster.items():
             if wrestler_id in participants:
                 continue
             recovered = min(100, wrestler.stamina + constants.STAMINA_RECOVERY_PER_SHOW)
-            self.roster[wrestler_id].stamina = recovered
+            roster[wrestler_id].stamina = recovered

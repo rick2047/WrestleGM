@@ -9,6 +9,12 @@ import xml.etree.ElementTree as ET
 
 
 STATUS_ORDER = ("failed", "error", "skipped", "passed")
+STATUS_EMOJI = {
+    "failed": "❌",
+    "error": "🛑",
+    "skipped": "⚠️",
+    "passed": "✅",
+}
 
 
 def short_reason(text: str | None, limit: int = 120) -> str:
@@ -80,10 +86,13 @@ def render_comment(
     elif not cases:
         status = "NO TESTS"
 
+    status_emoji = "✅" if status == "PASSED" else "❌" if status == "FAILED" else "⚠️"
     lines: list[str] = ["<!-- pr-tests -->", "## PR Test Results"]
-    lines.append(f"Status: {status}")
+    lines.append(f"Status: {status_emoji} {status}")
     lines.append(f"Run: {run_url}")
-    totals = ", ".join(f"{counts.get(key, 0)} {key}" for key in STATUS_ORDER)
+    totals = ", ".join(
+        f"{STATUS_EMOJI.get(key, '')} {counts.get(key, 0)} {key}" for key in STATUS_ORDER
+    )
     lines.append(f"Totals: {totals}")
     if error_note:
         lines.append("")
@@ -105,7 +114,8 @@ def render_comment(
         for case in sorted(grouped[group], key=lambda item: item["name"]):
             reason = case["reason"]
             suffix = f" - {reason}" if reason else ""
-            lines.append(f"- `{case['name']}` - {case['status'].upper()}{suffix}")
+            emoji = STATUS_EMOJI.get(case["status"], "")
+            lines.append(f"- `{case['name']}` - {emoji} {case['status'].upper()}{suffix}")
         lines.append("")
         lines.append("</details>")
 
