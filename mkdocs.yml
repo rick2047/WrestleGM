@@ -1,9 +1,22 @@
-site_name: at3
-site_description: Project documentation for at3
+site_name: WrestleGM
+site_description: Project documentation for WrestleGM
 site_url: http://localhost/
 
 theme:
   name: mkdocs
 
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths:
+            - .
+
 nav:
   - Home: index.md
+  - Architecture: architecture.md
+  - Simulation: simulation.md
+  - UI: ui.md
+  - Implementation Reference: implementation.md
+  - API Reference: api.md

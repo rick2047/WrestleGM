@@ -38,18 +38,31 @@ def roster_line(name: str, alignment: str, popularity: int, stamina: int) -> str
 
 @dataclass
 class BookingDraft:
-    """Temporary match booking state for a slot."""
+    """Track in-progress booking choices before committing to GameState.
+
+    Responsibilities:
+    - Store selected wrestler and match type ids for a single slot.
+    - Provide a completeness check used by UI validation.
+    """
 
     wrestler_a_id: Optional[str] = None
     wrestler_b_id: Optional[str] = None
     match_type_id: Optional[str] = None
 
     def is_complete(self) -> bool:
+        """Return True when all booking fields are set."""
+
         return bool(self.wrestler_a_id and self.wrestler_b_id and self.match_type_id)
 
 
 class WrestleGMApp(App):
-    """WrestleGM Textual application."""
+    """Top-level Textual application entry point.
+
+    Responsibilities:
+    - Load data definitions and create the shared GameState instance.
+    - Own the application-wide CSS and lifecycle hooks.
+    - Push the initial screen into the navigation stack.
+    """
 
     CSS = """
     Screen {
@@ -82,17 +95,27 @@ class WrestleGMApp(App):
     """
 
     def __init__(self) -> None:
+        """Initialize the app with loaded data and a fresh GameState."""
+
         super().__init__()
         wrestlers = load_wrestlers()
         match_types = load_match_types()
         self.state = GameState(wrestlers, match_types)
 
     def on_mount(self) -> None:
+        """Show the main menu at startup."""
+
         self.push_screen(MainMenuScreen())
 
 
 class MainMenuScreen(Screen):
-    """Main menu screen."""
+    """Main menu screen for global navigation.
+
+    Responsibilities:
+    - Present top-level routes (new game, roster, quit).
+    - Dispatch user selection into screen transitions.
+    - Keep focus on the menu list for keyboard navigation.
+    """
 
     BINDINGS = [
         ("enter", "select", "Select"),
@@ -100,6 +123,8 @@ class MainMenuScreen(Screen):
     ]
 
     def compose(self) -> ComposeResult:
+        """Build the main menu layout."""
+
         yield Static("WrestleGM", classes="section-title")
         self.menu = ListView(
             ListItem(Static("New Game"), id="new-game"),
@@ -110,9 +135,13 @@ class MainMenuScreen(Screen):
         yield Footer()
 
     def on_mount(self) -> None:
+        """Focus the menu list on entry."""
+
         self.menu.focus()
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
+        """Handle selection of menu options."""
+
         if event.item.id == "new-game":
             self.app.switch_screen(BookingHubScreen())
         elif event.item.id == "roster":
@@ -122,7 +151,13 @@ class MainMenuScreen(Screen):
 
 
 class BookingHubScreen(Screen):
-    """Show overview and booking hub."""
+    """Show overview and booking hub for the current card.
+
+    Responsibilities:
+    - Display the current show number and slot summaries.
+    - Allow the user to open a slot editor.
+    - Gate Run Show based on validation.
+    """
 
     BINDINGS = [
         ("enter", "edit_slot", "Edit"),
@@ -131,6 +166,8 @@ class BookingHubScreen(Screen):
     ]
 
     def compose(self) -> ComposeResult:
+        """Build the booking hub layout."""
+
         yield Static("WrestleGM", classes="section-title")
         self.show_header = Static("", classes="section-title")
         yield self.show_header
@@ -153,16 +190,22 @@ class BookingHubScreen(Screen):
         yield Footer()
 
     def on_mount(self) -> None:
+        """Focus the slot list and refresh the view."""
+
         self.slot_list.focus()
         self.refresh_view()
 
     def refresh_view(self) -> None:
+        """Update slot text and Run Show enablement."""
+
         self.show_header.update(f"Show #{self.app.state.show_index}")
         for index, slot_static in enumerate(self.slot_items):
             slot_static.update(self.slot_text(index))
         self.run_button.disabled = bool(self.app.state.validate_show())
 
     def slot_text(self, index: int) -> str:
+        """Render the slot summary text for a match slot."""
+
         match = self.app.state.show_card[index]
         if match is None:
             return f"Match {index + 1}\n[ Empty ]"
@@ -176,12 +219,16 @@ class BookingHubScreen(Screen):
         )
 
     def action_edit_slot(self) -> None:
+        """Open the booking screen for the selected slot."""
+
         index = self.slot_list.index
         if index is None:
             return
         self.app.push_screen(MatchBookingScreen(index))
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
+        """Handle slot selection from the list view."""
+
         if event.list_view is not self.slot_list:
             return
         index = event.index
@@ -190,25 +237,39 @@ class BookingHubScreen(Screen):
         self.app.push_screen(MatchBookingScreen(index))
 
     def action_run_show(self) -> None:
+        """Run the show if the current card is valid."""
+
         if self.app.state.validate_show():
             return
         self.app.switch_screen(SimulatingScreen())
 
     def action_back(self) -> None:
+        """Return to the main menu."""
+
         self.app.switch_screen(MainMenuScreen())
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
+        """Handle Run Show and Back button presses."""
+
         if event.button.id == "run-show":
             self.action_run_show()
         elif event.button.id == "back":
             self.action_back()
 
     def on_screen_resume(self) -> None:
+        """Refresh slot details after returning to the hub."""
+
         self.refresh_view()
 
 
 class MatchBookingScreen(Screen):
-    """Single-slot match booking screen."""
+    """Editor for a single match slot.
+
+    Responsibilities:
+    - Maintain a local BookingDraft until confirmation.
+    - Launch selection screens for wrestlers and match types.
+    - Validate the draft and commit it to GameState on confirmation.
+    """
 
     BINDINGS = [
         ("enter", "select_field", "Select"),
@@ -216,11 +277,15 @@ class MatchBookingScreen(Screen):
     ]
 
     def __init__(self, slot_index: int) -> None:
+        """Create a booking screen for a specific slot."""
+
         super().__init__()
         self.slot_index = slot_index
         self.draft = BookingDraft()
 
     def compose(self) -> ComposeResult:
+        """Build the match booking layout."""
+
         self.header = Static("", classes="section-title")
         yield self.header
         self.detail = Static("", classes="section-title")
@@ -249,6 +314,8 @@ class MatchBookingScreen(Screen):
         yield Footer()
 
     def on_mount(self) -> None:
+        """Load existing slot data and focus the field list."""
+
         self.fields.focus()
         existing = self.app.state.show_card[self.slot_index]
         if existing is not None:
@@ -258,6 +325,8 @@ class MatchBookingScreen(Screen):
         self.refresh_view()
 
     def refresh_view(self) -> None:
+        """Update field labels, buttons, and match summary."""
+
         self.header.update(f"Book Match {self.slot_index + 1}")
         if self.draft.wrestler_a_id and self.draft.wrestler_b_id:
             wrestler_a = self.app.state.roster[self.draft.wrestler_a_id]
@@ -278,6 +347,8 @@ class MatchBookingScreen(Screen):
         self.clear_button.disabled = self.app.state.show_card[self.slot_index] is None
 
     def field_text(self, label: str, value_id: Optional[str], match_type: bool = False) -> str:
+        """Render the display text for a booking field."""
+
         if value_id is None:
             return f"{label}\n[ Empty ]" if not match_type else f"{label}\n[ Unset ]"
         if match_type:
@@ -288,6 +359,8 @@ class MatchBookingScreen(Screen):
         return f"{label}\n{wrestler.name}{fatigue}"
 
     def validate_draft(self) -> list[str]:
+        """Return validation errors for the current draft selection."""
+
         if not self.draft.is_complete():
             return ["incomplete"]
         match = Match(
@@ -298,6 +371,8 @@ class MatchBookingScreen(Screen):
         return self.app.state.validate_match(match, slot_index=self.slot_index)
 
     def action_select_field(self) -> None:
+        """Open the selection screen for the highlighted field."""
+
         selected = self.fields.index
         if selected is None:
             return
@@ -325,21 +400,31 @@ class MatchBookingScreen(Screen):
             )
 
     def set_wrestler_a(self, wrestler_id: str) -> None:
+        """Update the draft with the selected wrestler A."""
+
         self.draft.wrestler_a_id = wrestler_id
         self.refresh_view()
 
     def set_wrestler_b(self, wrestler_id: str) -> None:
+        """Update the draft with the selected wrestler B."""
+
         self.draft.wrestler_b_id = wrestler_id
         self.refresh_view()
 
     def set_match_type(self, match_type_id: str) -> None:
+        """Update the draft with the selected match type."""
+
         self.draft.match_type_id = match_type_id
         self.refresh_view()
 
     def action_cancel(self) -> None:
+        """Discard changes and return to the booking hub."""
+
         self.app.pop_screen()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
+        """Handle Confirm, Clear Slot, and Cancel buttons."""
+
         if event.button.id == "confirm":
             if self.confirm_button.disabled:
                 return
@@ -351,6 +436,8 @@ class MatchBookingScreen(Screen):
             self.app.pop_screen()
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
+        """Handle selection from the field list."""
+
         if event.list_view is not self.fields:
             return
         index = event.index
@@ -378,6 +465,8 @@ class MatchBookingScreen(Screen):
             self.app.push_screen(MatchTypeSelectionScreen(on_select=self.set_match_type))
 
     def commit_booking(self) -> None:
+        """Commit the draft match to the show card."""
+
         match = Match(
             wrestler_a_id=self.draft.wrestler_a_id or "",
             wrestler_b_id=self.draft.wrestler_b_id or "",
@@ -387,12 +476,20 @@ class MatchBookingScreen(Screen):
         self.app.pop_screen()
 
     def handle_confirmation(self, result: bool | None) -> None:
+        """Handle confirmation modal result."""
+
         if result:
             self.commit_booking()
 
 
 class WrestlerSelectionScreen(Screen):
-    """Select a wrestler for a match slot."""
+    """Roster picker for assigning a wrestler to a slot side.
+
+    Responsibilities:
+    - Render the roster list with stamina/availability hints.
+    - Enforce validation rules (duplicates, stamina, already booked).
+    - Return the selection to the parent booking screen via callback.
+    """
 
     BINDINGS = [
         ("enter", "select", "Select"),
@@ -406,6 +503,8 @@ class WrestlerSelectionScreen(Screen):
         current_other_id: Optional[str],
         on_select: Callable[[str], None],
     ) -> None:
+        """Create a wrestler selection screen for a slot and side."""
+
         super().__init__()
         self.slot_index = slot_index
         self.label = label
@@ -414,6 +513,8 @@ class WrestlerSelectionScreen(Screen):
         self.message = Static("")
 
     def compose(self) -> ComposeResult:
+        """Build the wrestler selection layout."""
+
         yield Static(f"Select Wrestler (Match {self.slot_index + 1} · {self.label})")
         list_items: list[ListItem] = []
         for wrestler in self.app.state.roster.values():
@@ -429,14 +530,20 @@ class WrestlerSelectionScreen(Screen):
         yield Footer()
 
     def on_mount(self) -> None:
+        """Focus the wrestler list and select the first entry."""
+
         self.list_view.focus()
         if self.list_view.children:
             self.list_view.index = 0
 
     def action_cancel(self) -> None:
+        """Close the selection screen without changes."""
+
         self.app.pop_screen()
 
     def action_select(self) -> None:
+        """Select the highlighted wrestler if valid."""
+
         index = self.list_view.index
         if index is None:
             return
@@ -452,6 +559,8 @@ class WrestlerSelectionScreen(Screen):
         self.app.pop_screen()
 
     def validate_selection(self, wrestler_id: str) -> str | None:
+        """Return an error message if the wrestler cannot be selected."""
+
         if wrestler_id == self.current_other_id:
             return "Already selected in this match"
         if self.app.state.is_wrestler_booked(wrestler_id, exclude_slot=self.slot_index):
@@ -462,12 +571,16 @@ class WrestlerSelectionScreen(Screen):
         return None
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
+        """Handle Select and Cancel buttons."""
+
         if event.button.id == "select":
             self.action_select()
         elif event.button.id == "cancel":
             self.action_cancel()
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
+        """Select the wrestler from list view input."""
+
         if event.list_view is not self.list_view:
             return
         wrestler_id = event.item.id
@@ -482,7 +595,13 @@ class WrestlerSelectionScreen(Screen):
 
 
 class MatchTypeSelectionScreen(Screen):
-    """Select a match type."""
+    """Match type picker for a slot.
+
+    Responsibilities:
+    - Present match types and descriptions from GameState.
+    - Update the description panel on highlight.
+    - Return the selection to the parent booking screen via callback.
+    """
 
     BINDINGS = [
         ("enter", "select", "Select"),
@@ -490,11 +609,15 @@ class MatchTypeSelectionScreen(Screen):
     ]
 
     def __init__(self, on_select: Callable[[str], None]) -> None:
+        """Create a match type selection screen."""
+
         super().__init__()
         self.on_select = on_select
         self.description = Static("")
 
     def compose(self) -> ComposeResult:
+        """Build the match type selection layout."""
+
         yield Static("Select Match Type")
         list_items: list[ListItem] = []
         for match_type in self.app.state.match_types.values():
@@ -508,6 +631,8 @@ class MatchTypeSelectionScreen(Screen):
         yield Footer()
 
     def on_mount(self) -> None:
+        """Focus the match type list and refresh description."""
+
         self.list_view.focus()
         self.update_description()
         if self.list_view.children:
@@ -515,6 +640,8 @@ class MatchTypeSelectionScreen(Screen):
             self.update_description()
 
     def update_description(self) -> None:
+        """Refresh the description panel based on highlight."""
+
         index = self.list_view.index
         if index is None:
             self.description.update("")
@@ -527,9 +654,13 @@ class MatchTypeSelectionScreen(Screen):
         self.description.update(match_type.description)
 
     def on_list_view_highlighted(self, event: ListView.Highlighted) -> None:
+        """Update the description when highlight changes."""
+
         self.update_description()
 
     def action_select(self) -> None:
+        """Select the highlighted match type."""
+
         index = self.list_view.index
         if index is None:
             return
@@ -540,15 +671,21 @@ class MatchTypeSelectionScreen(Screen):
         self.app.pop_screen()
 
     def action_cancel(self) -> None:
+        """Close the selection screen without changes."""
+
         self.app.pop_screen()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
+        """Handle Select and Cancel buttons."""
+
         if event.button.id == "select":
             self.action_select()
         elif event.button.id == "cancel":
             self.action_cancel()
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
+        """Select the match type from list view input."""
+
         if event.list_view is not self.list_view:
             return
         match_type_id = event.item.id
@@ -559,45 +696,73 @@ class MatchTypeSelectionScreen(Screen):
 
 
 class ConfirmBookingModal(ModalScreen):
-    """Confirmation modal for booking a match."""
+    """Confirmation modal to guard match commits.
+
+    Responsibilities:
+    - Require explicit confirmation before writing to GameState.
+    - Return a boolean result to the parent booking screen.
+    """
 
     BINDINGS = [
         ("escape", "cancel", "Cancel"),
     ]
 
     def compose(self) -> ComposeResult:
+        """Build the confirmation modal layout."""
+
         with Vertical(classes="panel"):
             yield Static("Confirm booking?")
             yield Button("Book Match", id="confirm")
             yield Button("Cancel", id="cancel")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
+        """Handle confirmation and cancellation actions."""
+
         if event.button.id == "confirm":
             self.dismiss(result=True)
         elif event.button.id == "cancel":
             self.dismiss(result=False)
 
     def action_cancel(self) -> None:
+        """Cancel the modal with a false result."""
+
         self.dismiss(result=False)
 
 
 class SimulatingScreen(Screen):
-    """Simulating screen with auto-advance."""
+    """Simulating screen that runs the show and auto-advances.
+
+    Responsibilities:
+    - Call GameState.run_show() to perform simulation and state updates.
+    - Advance to ResultsScreen after a short delay.
+    """
 
     def compose(self) -> ComposeResult:
+        """Build the simulating screen layout."""
+
         yield Static("Simulating show...")
         yield Footer()
 
     def on_mount(self) -> None:
+        """Run the show and schedule auto-advance."""
+
         self.app.state.run_show()
         self.set_timer(0.4, self.advance)
 
     def advance(self) -> None:
+        """Advance to the results screen."""
+
         self.app.switch_screen(ResultsScreen())
 
 
 class ResultsScreen(Screen):
-    """Show results screen."""
+    """Show results screen for completed matches.
+
+    Responsibilities:
+    - Render per-match winners and star ratings.
+    - Display the overall show rating.
+    - Route to the next show, roster view, or main menu.
+    """
 
     BINDINGS = [
         ("enter", "continue", "Continue"),
@@ -606,6 +771,8 @@ class ResultsScreen(Screen):
     ]
 
     def compose(self) -> ComposeResult:
+        """Build the results screen layout."""
+
         yield Static("Show Results", classes="section-title")
         self.results = Static("")
         yield self.results
@@ -618,9 +785,13 @@ class ResultsScreen(Screen):
         yield Footer()
 
     def on_mount(self) -> None:
+        """Populate results when the screen is shown."""
+
         self.refresh_view()
 
     def refresh_view(self) -> None:
+        """Update match results and show rating text."""
+
         show = self.app.state.last_show
         if show is None:
             self.results.update("No results.")
@@ -639,15 +810,23 @@ class ResultsScreen(Screen):
         self.show_rating.update(f"Show Rating: {format_stars(rating)}")
 
     def action_continue(self) -> None:
+        """Return to the booking hub for the next show."""
+
         self.app.switch_screen(BookingHubScreen())
 
     def action_roster(self) -> None:
+        """Open the roster screen."""
+
         self.app.push_screen(RosterScreen())
 
     def action_menu(self) -> None:
+        """Return to the main menu."""
+
         self.app.switch_screen(MainMenuScreen())
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
+        """Handle Continue, Roster, and Main Menu buttons."""
+
         if event.button.id == "continue":
             self.action_continue()
         elif event.button.id == "roster":
@@ -657,13 +836,20 @@ class ResultsScreen(Screen):
 
 
 class RosterScreen(Screen):
-    """Roster overview screen."""
+    """Read-only roster listing.
+
+    Responsibilities:
+    - Render current popularity and stamina values.
+    - Refresh data on resume to reflect latest show results.
+    """
 
     BINDINGS = [
         ("escape", "back", "Back"),
     ]
 
     def compose(self) -> ComposeResult:
+        """Build the roster screen layout."""
+
         yield Static("Roster Overview", classes="section-title")
         self.list_view = ListView()
         yield self.list_view
@@ -671,10 +857,14 @@ class RosterScreen(Screen):
         yield Footer()
 
     def on_mount(self) -> None:
+        """Populate the roster list and focus it."""
+
         self.refresh_view()
         self.list_view.focus()
 
     def refresh_view(self) -> None:
+        """Rebuild roster rows from current state."""
+
         for child in list(self.list_view.children):
             child.remove()
         for wrestler in self.app.state.roster.values():
@@ -687,11 +877,17 @@ class RosterScreen(Screen):
             self.list_view.append(ListItem(Static(line), id=wrestler.id))
 
     def action_back(self) -> None:
+        """Close the roster screen."""
+
         self.app.pop_screen()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
+        """Handle Back button presses."""
+
         if event.button.id == "back":
             self.action_back()
 
     def on_screen_resume(self) -> None:
+        """Refresh roster data when returning to the screen."""
+
         self.refresh_view()
