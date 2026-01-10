@@ -6,16 +6,22 @@ This page is generated from Python docstrings in the `wrestlegm` package.
 
 ::: wrestlegm
 
-## Modules
-
-::: wrestlegm.constants
-
-::: wrestlegm.models
-
-::: wrestlegm.data
+## Simulation
 
 ::: wrestlegm.sim
 
-::: wrestlegm.state
+## UI
 
 ::: wrestlegm.ui
+
+## Data and State
+
+::: wrestlegm.state
+
+::: wrestlegm.data
+
+## Models and Constants
+
+::: wrestlegm.models
+
+::: wrestlegm.constants
