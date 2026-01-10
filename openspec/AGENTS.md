@@ -12,6 +12,10 @@ Instructions for AI coding assistants using OpenSpec for spec-driven development
 - Validate: `openspec validate [change-id] --strict` and fix issues
 - Request approval: Do not start implementation until proposal is approved
 
+## Workflow Rules
+- Each new spec MUST start from a new git branch and include opening a PR.
+- Update the PR description whenever new commits are added to that branch.
+
 ## Three-Stage Workflow
 
 ### Stage 1: Creating Changes

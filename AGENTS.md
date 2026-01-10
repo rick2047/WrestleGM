@@ -16,3 +16,7 @@ Use `@/openspec/AGENTS.md` to learn:
 Keep this managed block so 'openspec update' can refresh the instructions.
 
 <!-- OPENSPEC:END -->
+
+## Workflow Rules
+- Each new spec MUST start from a new git branch and include opening a PR.
+- Update the PR description whenever new commits are added to that branch.
