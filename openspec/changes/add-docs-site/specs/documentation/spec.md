@@ -18,4 +18,18 @@ The documentation site SHALL describe the Textual UI screens, navigation flow, a
 
 #### Scenario: Review UI flow details
 - **WHEN** the user reads the UI documentation
-- **THEN** they see each screen's purpose, key bindings, and main Textual components
+- **THEN** they see each screen's purpose, key bindings, navigation behavior, and main Textual components
+
+### Requirement: API reference grouped by domain
+The documentation site SHALL group API reference content into domain sections for simulation, UI, data/state, and constants/models.
+
+#### Scenario: Browse grouped API reference
+- **WHEN** the user opens the API reference
+- **THEN** module documentation appears under domain section headers
+
+### Requirement: Comprehensive public function docstrings
+The codebase SHALL provide docstrings for all public functions to support API reference generation.
+
+#### Scenario: Render function documentation
+- **WHEN** the API reference is generated
+- **THEN** each public function is documented by its docstring

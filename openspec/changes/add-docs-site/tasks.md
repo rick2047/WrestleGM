@@ -11,3 +11,15 @@
 
 ## 3. Validation
 - [x] 3.1 Build documentation via `uv run mkdocs build`.
+
+## 4. Documentation Enhancements
+- [ ] 4.1 Expand architecture documentation with deeper module responsibilities and data flow notes.
+- [ ] 4.2 Expand simulation documentation with rule breakdowns and constraints.
+- [ ] 4.3 Expand UI documentation with per-screen responsibilities, navigation behavior, and component composition detail.
+
+## 5. API Reference Organization and Coverage
+- [ ] 5.1 Group API reference content by domain sections for readability.
+- [ ] 5.2 Add docstrings to all public functions and ensure coverage in API output.
+
+## 6. Validation
+- [ ] 6.1 Build documentation via `uv run mkdocs build`.
