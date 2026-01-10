@@ -1,0 +1,1155 @@
+# WrestleGM – Textual MVP Product Requirements Document
+
+> **Living document**: This PRD defines the full MVP for WrestleGM as a **Textual-based wrestling management game**. It is intended to be iteratively expanded and refined together. This document establishes the foundation for a complete MVP focused on *show-by-show progression*.
+
+---
+
+## 1. Vision & Goals
+
+### 1.1 Product Vision
+
+WrestleGM is a **terminal-first wrestling management game** where the player runs a wrestling promotion **one show at a time**. Each show consists of a booked card of matches, and the core pleasure of the game comes from watching how wrestler stats evolve **across shows**, not from winning a single match.
+
+The experience should feel:
+
+- Systemic, not scripted
+- Deterministic but expressive
+- Focused on *long-term progression*
+- Playable entirely via keyboard
+- Comfortable on narrow terminals
+
+---
+
+### 1.2 MVP Goals (Show-Centric)
+
+The MVP must allow a player to:
+
+- Run an **ongoing series of shows** (weekly, episodic, or abstract)
+- Book a card of matches for each show
+- Select match types that meaningfully affect outcomes
+- Simulate matches and complete an entire show
+- Receive an **overall show rating** derived from match quality
+- Advance from show to show and **observe stat evolution over time**
+- Make booking decisions based on fatigue, popularity, and long-term impact
+
+The primary success criterion of the MVP is:
+
+> *After multiple shows, the roster and show quality clearly change based on player booking decisions.*
+
+Outcomes:
+
+- A repeatable **show → results → progression** loop
+- Clear cause-and-effect between booking, match quality, and long-term stats
+- Extensible systems with no hardcoded content
+
+---
+
+## 2. Design Principles
+
+- **Show-first design**: All progression is evaluated at show boundaries
+- **Textual-first UI**: Widgets and CSS are the source of consistency
+- **Data-driven domain**: Wrestlers, match types, and rules come from data files
+- **Deterministic simulation**: Same inputs + seed = same results
+- **Keyboard-only navigation**: No mouse assumptions
+- **Explicit systems**: Outcomes are explainable via numbers, not hidden scripts
+
+---
+
+## 3. Core Game Loop (MVP)
+
+1. View current show overview
+2. Build or review the show card
+3. Book matches (wrestlers + match types)
+4. Run the show (simulate matches sequentially)
+5. Review match results and **overall show rating**
+6. Apply stat changes at show end
+7. Advance to the next show
+
+The game loop is **show-driven**, not match-driven.
+
+---
+
+## 4. Domain Model (Data-Driven)
+
+### 4.1 WrestlerDefinition
+
+Loaded from `data/wrestlers.json`.
+
+Fields:
+
+- `id: string` (stable, unique)
+- `name: string`
+- `alignment: Face | Heel`
+- `popularity: int (0–100)`
+- `stamina: int (0–100)`
+
+Future-safe (not required for MVP):
+
+- style
+- tags
+- injury\_status
+
+---
+
+### 4.2 MatchTypeDefinition
+
+Loaded from `data/match_types.json`.
+
+Fields:
+
+- `id: string`
+- `name: string`
+- `description: string`
+- `modifiers`:
+  - `rating_bonus`
+  - `rating_variance`
+  - `stamina_cost_winner`
+  - `stamina_cost_loser`
+  - `popularity_delta_winner`
+  - `popularity_delta_loser`
+
+Match types **must affect simulation**.
+
+---
+
+### 4.3 Match
+
+Represents a booked match within a show.
+
+Fields:
+
+- `wrestler_a_id`
+- `wrestler_b_id`
+- `match_type_id`
+
+---
+
+### 4.4 Show
+
+Represents a single event in the game timeline.
+
+Fields:
+
+- `show_index`
+- `scheduled_matches: [Match]`
+- `results: [MatchResult]`
+- `show_rating`
+
+A show is the **atomic unit of progression**.
+
+---
+
+### 4.5 MatchResult
+
+Immutable result of simulation.
+
+Fields:
+
+- `winner_id`
+- `loser_id`
+- `rating`
+- `match_type_id`
+- `applied_modifiers`
+- `stat_deltas`
+
+---
+
+## 5. Simulation System
+
+The simulation layer is deterministic, side-effect free, and composed of **three core simulations** plus one aggregation step. The following rules apply to *every match* in a show.
+
+---
+
+### 5.1 Simulation Pipeline (Authoritative)
+
+For each match, the engine executes the following pipeline:
+
+1. **Outcome Simulation** → determines winner / loser
+2. **Rating Simulation** → determines match quality (stars)
+3. **Stat Delta Simulation** → determines progression deltas (no mutation)
+
+After *all* matches in a show complete:
+
+4. **Show Rating Aggregation** → derives overall show rating
+5. **State Application** → applies all stat deltas at show end
+
+No other simulation steps exist in the MVP.
+
+---
+
+### 5.2 Determinism & RNG Governance
+
+**Single RNG rule**
+
+- All randomness must flow through a single RNG instance seeded from game state.
+- The seed is stored in global state and must be persisted.
+
+**Reproducibility rule**
+
+- Given identical inputs (roster stats, match type config, show card, and seed), the simulation must always return identical outputs (winners, match ratings, deltas, show rating).
+
+**No hidden inputs**
+
+- Simulation must not depend on wall-clock time, UI focus, ordering artifacts, or any non-explicit state.
+
+**RNG usage discipline**
+
+- Outcome simulation uses exactly one RNG draw per match (the final probability sample).
+- Rating simulation uses one RNG draw per match (variance swing).
+- Show rating uses no RNG.
+
+---
+
+### 5.3 Outcome Simulation (Who Wins)
+
+**Purpose** Determine the winner and loser for a match based on deterministic “power” and match-type “chaos”.
+
+**Inputs**
+
+- Wrestler A: `popularity`, `stamina`
+- Wrestler B: `popularity`, `stamina`
+- Match type: `outcome_chaos` (float 0.0–1.0)
+- Tunable constants: `P_WEIGHT`, `S_WEIGHT`, `D_SCALE`, `P_MIN`, `P_MAX`
+- Seeded RNG
+
+**Step A — Deterministic power** Power is calculated without randomness:
+
+- `power = popularity * P_WEIGHT + stamina * S_WEIGHT`
+
+Constraints:
+
+- Popularity and stamina are expected to be in `0–100`.
+- `P_WEIGHT + S_WEIGHT = 1.0` is recommended.
+
+**Step B — Power difference to base win probability**
+
+- `diff = power_A - power_B`
+- `p_base = 0.5 + (diff / D_SCALE)`
+- `p_base = clamp(p_base, P_MIN, P_MAX)`
+
+Interpretation:
+
+- `D_SCALE` controls how quickly power advantage becomes a strong favorite.
+- `P_MIN/P_MAX` prevent absolute certainty.
+
+**Step C — Apply match-type chaos (variance-only design)** Match types affect outcome only by pulling probability toward 50/50:
+
+- `p_final = lerp(p_base, 0.5, outcome_chaos)`
+
+Where:
+
+- `outcome_chaos = 0.0` → purely power-based
+- `outcome_chaos = 1.0` → always 50/50
+
+**Step D — Sample winner**
+
+- draw `r = rng.random()` in `[0,1)`
+- if `r < p_final` → A wins else B wins
+
+**Outputs**
+
+- `winner_id`, `loser_id`
+
+**Recommended debug payload (for testing & balancing)**
+
+- `power_A`, `power_B`, `diff`
+- `p_base`, `outcome_chaos`, `p_final`
+- `r` (sample)
+
+---
+
+### 5.4 Rating Simulation (How Good It Was)
+
+**Purpose** Assign a match quality rating in **0.0–5.0 stars**, independent of who won.
+
+**Inputs**
+
+- Wrestler A & B: `popularity`, `stamina`, `alignment`
+- Match type: `rating_bonus`, `rating_variance`
+- Tunable constants: `POP_W`, `STA_W`, `ALIGN_BONUS`
+- Seeded RNG
+
+**Internal representation** Rating is first computed in `0–100` space for ease of tuning, then converted to stars.
+
+**Step A — Compute deterministic base in 0–100**
+
+- `pop_avg = (popA + popB) / 2`
+- `sta_avg = (staA + staB) / 2`
+- `base_100 = pop_avg * POP_W + sta_avg * STA_W`
+
+Priority guarantee:
+
+- Popularity is priority 1 (so `POP_W > STA_W`).
+- Stamina is priority 2.
+
+**Step B — Alignment modifier (wrestling psychology)** Alignment affects rating only:
+
+- Face vs Heel → `alignment_mod = +ALIGN_BONUS`
+- Heel vs Heel → `alignment_mod = -2 * ALIGN_BONUS`
+- Face vs Face → `alignment_mod = 0`
+
+Then:
+
+- `base_100 += alignment_mod`
+
+**Step C — Match type rating bonus**
+
+- `base_100 += rating_bonus`
+
+**Step D — Apply rating variance (after deterministic logic)**
+
+- `swing = rng.randint(-rating_variance, +rating_variance)`
+- `rating_100 = base_100 + swing`
+
+**Step E — Clamp 0–100**
+
+- `rating_100 = clamp(rating_100, 0, 100)`
+
+**Step F — Convert to 0–5 stars**
+
+- `rating_stars = round((rating_100 / 100) * 5, 1)`
+
+**Outputs**
+
+- `match_rating_stars` (0.0–5.0)
+
+**Recommended debug payload**
+
+- `pop_avg`, `sta_avg`
+- `base_100`, `alignment_mod`
+- `rating_bonus`, `rating_variance`, `swing`
+- `rating_100`, `rating_stars`
+
+---
+
+### 5.5 Stat Delta Simulation (Progression Impact)
+
+**Purpose** Produce progression deltas for winner and loser. This system produces deltas only and never mutates roster state.
+
+**Inputs**
+
+- Match outcome: `winner_id`, `loser_id`
+- Match type modifiers:
+  - `popularity_delta_winner`
+  - `popularity_delta_loser`
+  - `stamina_cost_winner`
+  - `stamina_cost_loser`
+
+**Popularity deltas (data-driven)**
+
+- `Δpop_winner = popularity_delta_winner`
+- `Δpop_loser = popularity_delta_loser`
+
+Notes:
+
+- Loser popularity delta may be **positive, zero, or negative**.
+- Match rating does **not** affect popularity in MVP.
+
+**Stamina deltas (fixed for MVP)**
+
+- `Δsta_winner = -stamina_cost_winner`
+- `Δsta_loser = -stamina_cost_loser`
+
+Notes:
+
+- Stamina cost is fixed per match type.
+- Match rating does **not** scale stamina costs in MVP.
+
+**Outputs**
+
+- `stat_deltas[winner_id] = {popularity: Δpop_winner, stamina: Δsta_winner}`
+- `stat_deltas[loser_id]  = {popularity: Δpop_loser,  stamina: Δsta_loser}`
+
+---
+
+### 5.6 Show Rating Aggregation
+
+**Purpose** Compute an overall show quality rating derived from match ratings.
+
+**Rules (MVP)**
+
+- Each match produces `match_rating_stars`.
+- Show rating is the arithmetic mean of all match ratings:
+  - `show_rating = average(match_rating_stars[])`
+
+Constraints:
+
+- Must be computed after all matches are simulated.
+- Deterministic aggregation (no RNG).
+
+---
+
+### 5.7 State Application at Show End
+
+**Purpose** Apply all deltas once a show completes. This is the only moment the roster changes.
+
+Rules:
+
+- Apply deltas for each wrestler exactly once.
+- Clamp after application:
+  - Popularity is clamped to `0–100`.
+  - Stamina is clamped to `0–100`.
+
+Ordering:
+
+- The order of applying deltas must not change results.
+- Recommended approach: compute all new values first, then commit.
+
+---
+
+### 5.8 Required Tests for Simulation
+
+Minimum required tests:
+
+- Determinism: same inputs + seed → identical outputs
+- Outcome sanity: probabilities clamp to bounds
+- Rating bounds: always 0.0–5.0 stars
+- Delta correctness: winner/loser deltas match match-type config
+- Show rating: equals mean of match ratings
+- Clamp tests: stats never exceed 0–100 after application
+
+---
+
+## 6. Show Structure Rules
+
+This section defines how a **show** is structured, what constraints apply when booking it, and how it interacts with the simulation system. These rules are part of the MVP and intentionally simple but explicit.
+
+---
+
+### 6.1 What a Show Is
+
+A **Show** is the atomic unit of progression in WrestleGM.
+
+A show:
+
+- Consists of a finite list of matches (the card)
+- Is fully booked before simulation starts
+- Is simulated match-by-match in a fixed order
+- Produces:
+  - Match results
+  - Match ratings
+  - A single overall show rating
+- Applies all stat changes only at show end
+
+Once a show begins simulation, its card is **locked**.
+
+---
+
+### 6.2 Card Size (MVP)
+
+For MVP, show size is intentionally fixed.
+
+**Rules**
+
+- Each show consists of **exactly 3 matches**
+- The order of matches matters only for presentation, not simulation
+- No weighting (e.g. main event bonus) is applied in MVP
+
+Rationale:
+
+- Forces meaningful booking decisions
+- Keeps pacing tight
+- Simplifies UI and testing
+
+---
+
+### 6.3 Match Slots & Booking Flow
+
+A show card contains ordered slots:
+
+- Slot 1: Match
+- Slot 2: Match
+- Slot 3: Match
+
+Each slot must be fully specified before the show can run:
+
+- Wrestler A
+- Wrestler B
+- Match Type
+
+A show cannot be simulated unless **all slots are valid**.
+
+---
+
+### 6.4 Wrestler Usage Constraints (MVP)
+
+**Per-show constraints**
+
+- A wrestler may appear in **only one match per show**
+
+**Validation rules**
+
+- Once a wrestler is selected in a match, they are unavailable for other slots
+- Attempting to select an unavailable wrestler must be blocked in UI
+
+Rationale:
+
+- Prevents overbooking exploits
+- Keeps stamina meaningful
+
+---
+
+### 6.5 Availability & Fatigue (MVP)
+
+For MVP, availability is binary and derived directly from stamina.
+
+**Rules**
+
+- Wrestlers with stamina ≤ `STAMINA_MIN_BOOKABLE` cannot be booked
+- Default recommendation: `STAMINA_MIN_BOOKABLE = 10`
+
+Notes:
+
+- No injuries in MVP
+- No partial availability
+- Recovery is handled between shows (future section)
+
+---
+
+### 6.6 Show Lifecycle
+
+A show progresses through the following states:
+
+1. **Planning**
+
+   - Player books the card
+   - Matches can be edited
+
+2. **Locked**
+
+   - Card is complete
+   - No edits allowed
+
+3. **Simulating**
+
+   - Matches are simulated sequentially
+   - UI shows progress
+
+4. **Completed**
+
+   - Results available
+   - Show rating visible
+   - Stat deltas ready to apply
+
+5. **Applied**
+
+   - Stat deltas applied
+   - Game advances to next show
+
+These states must be explicit in code.
+
+---
+
+### 6.7 Ordering Guarantees
+
+- Matches are simulated in card order
+- Simulation order does **not** affect outcomes or ratings in MVP
+- All stat deltas are applied together at show end
+
+---
+
+### 6.8 Required Validation Checks
+
+Before a show can be run:
+
+- Card has exactly 3 matches
+- No duplicate wrestlers across matches
+- All wrestlers meet stamina requirements
+- All match slots have a valid match type
+
+The UI must prevent invalid shows from being run.
+
+---
+
+## 7. Between-Show Recovery Rules
+
+This section defines how wrestlers recover between shows. Recovery is applied **once per show transition** and depends on whether a wrestler worked on the previous show.
+
+---
+
+### 7.1 Recovery Timing
+
+Recovery occurs:
+
+- After a show is completed
+- After all stat deltas from the show are applied
+- Before the next show enters the Planning state
+
+Recovery is never applied mid-show.
+
+---
+
+### 7.2 Recovery Eligibility (MVP)
+
+Recovery is **participation-based**.
+
+**Rules**
+
+- Wrestlers who **worked a match on the previous show recover no stamina**
+- Wrestlers who **did not appear on the show recover stamina**
+
+This makes rest a meaningful booking decision.
+
+---
+
+### 7.3 Stamina Recovery Amount (MVP)
+
+**Rule**
+
+- Eligible (resting) wrestlers recover a fixed amount of stamina.
+
+**Default value**
+
+- `STAMINA_RECOVERY_PER_SHOW = +15`
+
+**Application**
+
+- Recovery applies only to wrestlers who did not wrestle on the show
+- Stamina is clamped to `0–100` after recovery
+
+---
+
+### 7.4 Rationale
+
+- Creates a clear trade-off between using top stars and letting them rest
+- Prevents infinite stamina loops
+- Encourages roster rotation
+- Keeps the system simple but strategically meaningful
+
+---
+
+### 7.5 Explicit Non-Rules (MVP)
+
+The following do **not** exist in MVP:
+
+- Partial recovery for working wrestlers
+- Variable recovery based on match rating
+- Bonus recovery for main events
+- Injuries or lingering fatigue states
+- Time-based simulation between shows
+
+These are intentionally deferred.
+
+---
+
+### 7.6 Determinism Guarantee
+
+- Recovery uses no RNG
+- Given identical state, recovery always produces identical results
+
+---
+
+## 8. User Experience & Interaction Model
+
+This section defines the **full MVP UX** for WrestleGM, including screens, navigation, validation philosophy, visual indicators, and widget mapping. The UX is designed to be **terminal-first**, keyboard-only, and intentionally opaque where appropriate.
+
+---
+
+### 8.1 UX Design Principles
+
+- Keyboard-only interaction
+- Narrow-terminal friendly (≤40 columns)
+- No projections, odds, or system hints
+- The UI blocks only **logical contradictions**, never **strategic mistakes**
+- The player learns systems through repetition and consequence
+- **A global footer is always present to show key bindings only**
+
+---
+
+### 8.2 Global Navigation Rules
+
+**Universal keys**
+
+- `↑ / ↓` – move within vertical lists
+- `← / →` – move between horizontal fields or buttons (where applicable)
+- `Enter` – activate focused element
+- `Esc` – back / cancel (context-dependent)
+
+**Navigation stack**
+
+- Screens are pushed and popped on a stack
+- Selecting an item pops automatically
+- Esc pops the current context unless focus is trapped (e.g. modal)
+
+**Session persistence rule**
+
+- Temporary state inside a screen (e.g. Match Booking) **persists across subscreens**
+- Entering Wrestler Selection or Match Type Selection does not reset in-progress selections
+- Temporary state is discarded only when the user explicitly cancels the parent screen
+
+---
+
+### 8.3 Visual Indicator Language
+
+The game uses a **minimal, consistent emoji language**:
+
+| Indicator | Meaning                                         | Blocks Action            |
+| --------- | ----------------------------------------------- | ------------------------ |
+| ⚠️        | Empty / incomplete field                        | Yes (booking / run show) |
+| ⛔         | Logical impossibility (e.g. duplicate wrestler) | Yes                      |
+| 😮‍💨     | Low stamina / fatigued                          | No                       |
+
+Indicators rely on iconography first; color is supplemental.
+
+\--------- | ----------------------------------------------- | -------------- | | ⚠️        | Empty / incomplete field                        | Yes (Run Show) | | ⛔         | Logical impossibility (e.g. duplicate wrestler) | Yes            | | 😮‍💨     | Low stamina / fatigued                          | No             |
+
+Indicators rely on iconography first; color is supplemental.
+
+---
+
+### 8.4 Validation Philosophy
+
+- Validation is **binary** at the moment of committing an action
+- The system blocks only impossible states
+- Low stamina, poor matchups, and bad strategy are allowed
+- No warnings or advice are shown beyond visual indicators
+- Temporary booking state persists until explicitly cancelled
+
+---
+
+### 8.5 Screen List (MVP)
+
+### 8.5.1 Global Footer & Keybinding Display
+
+All screens in WrestleGM include Textual’s built-in **Footer** widget.
+
+**Rules**
+
+- The footer is always visible
+- It displays **key bindings only**
+- No game state, stats, or hints are shown in the footer
+- The footer is the authoritative source for "what actions are available right now"
+
+**Behavior**
+
+- Footer content updates automatically based on focus
+- When a modal is open, only modal bindings are shown
+- Hidden or internal bindings must not appear in the footer
+
+This ensures discoverability without clutter and keeps the UI self-teaching.
+
+---
+
+
+
+The MVP consists of the following screens:
+
+1. Main Menu
+2. Show Overview / Booking Hub
+3. Match Booking (single-slot editor)
+4. Wrestler Selection
+5. Match Type Selection
+6. Match Confirmation
+7. Simulating Show
+8. Show Results
+9. Roster Overview
+
+---
+
+### 8.6 Main Menu
+
+**Purpose**
+
+- Entry point and global navigation
+
+**Components**
+
+- Vertical menu list:
+  - New Game
+  - Roster Overview
+  - Quit
+- Static footer metadata (non-persistent context only)
+
+**Focus**
+
+- Menu list only
+
+**Behavior**
+
+- Enter selects
+- Esc has no effect
+
+---
+
+### 8.7 Show Overview / Booking Hub
+
+The Booking Hub is a **slot-level overview screen**. It shows the current show card and allows the player to choose *which match* to edit.
+
+**Purpose**
+
+- View the full show card at a glance
+- Select a match slot to edit
+- Run the show once all slots are booked
+
+**Components**
+
+- Show header (show number)
+- List of 3 match slots
+- Footer actions:
+  - Run Show
+  - Back
+
+**Slot states**
+
+- Empty: slot has no match assigned
+- Booked: slot contains a fully valid match (A, B, Type)
+
+Slots are binary; partial matches do not exist on the show.
+
+**Focus model**
+
+- `↑ / ↓` moves between match slots
+- `Enter` opens Match Booking for the focused slot
+
+**Validation rules**
+
+- Run Show is enabled if and only if all 3 slots are booked
+- Booking Hub never accepts invalid or partial matches
+
+---
+
+### 8.8 Match Booking Screen
+
+This screen is the **only place where a match can be edited or created**. It owns all booking validation.
+
+**Purpose**
+
+- Define a complete match for a single slot
+
+**Editable fields**
+
+- Wrestler A
+- Wrestler B
+- Match Type
+
+**Behavior**
+
+- Fields open their respective selection screens on Enter
+- Confirm is enabled only when all three fields are valid
+- Esc or Cancel discards all changes and returns to Booking Hub
+- Clear Slot removes the match and returns to Booking Hub
+
+**Validation rules (authoritative)**
+
+- Wrestler A and Wrestler B must both be set
+- Wrestler A ≠ Wrestler B
+- Wrestlers already booked in other slots cannot be selected
+- Match Type must be set
+- Low stamina is allowed and indicated (😮‍💨)
+
+No invalid match can ever be written to the show.
+
+---
+
+### 8.10 Match Type Selection Screen
+
+**Components**
+
+- Match type list
+- Description panel
+- Footer actions:
+  - Select
+  - Cancel
+
+**Behavior**
+
+- All match types are selectable
+- No modifiers or numbers are shown
+
+---
+
+### 8.11 Match Booking Confirmation (Modal)
+
+Match booking uses a **modal confirmation dialog**, not a separate screen.
+
+**Purpose**
+
+- Prevent accidental booking commits
+- Require explicit confirmation without disrupting context
+
+**Presentation**
+
+- Appears as a small modal overlay on top of the Match Booking screen
+- Background screen remains visible but non-interactive
+- Focus is trapped inside the modal
+
+**Modal content**
+
+- Single-line prompt: `Confirm booking?`
+
+**Actions**
+
+- `Book Match` – commits the match to the slot and returns to Booking Hub
+- `Cancel` / `Esc` – closes the modal and returns to Match Booking
+
+No match details, stats, or repetition are shown in the modal; full context is already visible underneath.
+
+---
+
+### 8.12 Simulating Show Screen
+
+**Components**
+
+- Static status text
+- Optional progress indicator
+
+**Behavior**
+
+- No input accepted
+- Automatically advances to Show Results
+
+---
+
+### 8.13 Show Results Screen
+
+**Components**
+
+- Match results list:
+  - Winner vs Loser
+  - Match rating (stars only, half-star precision)
+- Overall show rating (stars only)
+- Footer actions:
+  - Continue (advance to next show)
+  - Roster
+  - Main Menu
+
+**Behavior**
+
+- Esc does nothing
+- Only explicit actions are allowed
+
+---
+
+### 8.14 Roster Overview
+
+**Components**
+
+- Wrestler list:
+  - Name
+  - Alignment
+  - Popularity
+  - Stamina
+- Footer action:
+  - Back
+
+**Behavior**
+
+- Read-only
+
+---
+
+### 8.15 Widget Mapping (Textual)
+
+| Screen               | Primary Widgets     |
+| -------------------- | ------------------- |
+| Main Menu            | ListView, Static    |
+| Booking Hub          | ListView, Buttons   |
+| Match Booking        | Buttons, Static     |
+| Wrestler Selection   | ListView, Static    |
+| Match Type Selection | ListView, Static    |
+| Confirmation         | Static, Buttons     |
+| Simulating           | Static, ProgressBar |
+| Results              | Static, Buttons     |
+| Roster               | ListView, Button    |
+
+\-------------------- | ------------------------- | | Main Menu            | ListView, Static          | | Booking Hub          | Custom MatchSlot, Buttons | | Wrestler Selection   | ListView, Static          | | Match Type Selection | ListView, Static          | | Confirmation         | Static, Buttons           | | Simulating           | Static, ProgressBar       | | Results              | Static, Buttons           | | Roster               | ListView, Button          |
+
+---
+
+### 8.15 Microcopy & Tone Rules
+
+- Neutral, observational language
+- No judgment or advice
+- No system explanations
+- Use "def." instead of "defeated"
+- Stars only for ratings
+
+---
+
+### 8.16 UX Guarantees
+
+- Keyboard-only interaction
+- Deterministic behavior
+- No accidental exits
+- Explicit player intent required for progression
+
+---
+
+### 8.17 ASCII Screen Mockups (Authoritative)
+
+The following ASCII mockups define the **intended visual layout** for all MVP screens after the slot-based booking redesign.
+
+---
+
+#### 8.17.1 Booking Hub (Slot-Level)
+
+```text
+┌──────────────────────────────────────┐
+│ WrestleGM                            │
+│ Show #12                             │
+├──────────────────────────────────────┤
+│ ▸ Match 1                            │
+│   Kenny Omega vs Eddie Kingston      │
+│   Type: Singles                      │
+│                                      │
+│   Match 2                            │
+│   Jon Moxley vs Claudio Castagnoli   │
+│   Type: Hardcore                     │
+│                                      │
+│   Match 3                            │
+│   [ Empty ]                          │
+│                                      │
+├──────────────────────────────────────┤
+│ [ Run Show ] (disabled)              │
+│ [ Back ]                             │
+└──────────────────────────────────────┘
+```
+
+---
+
+#### 8.17.2 Match Booking (Empty Slot)
+
+```text
+┌──────────────────────────────────────┐
+│ Book Match 3                         │
+├──────────────────────────────────────┤
+│ ▸ Wrestler A                         │
+│   [ Empty ]                          │
+│                                      │
+│   Wrestler B                         │
+│   [ Empty ]                          │
+│                                      │
+│   Match Type                         │
+│   [ Unset ]                          │
+│                                      │
+├──────────────────────────────────────┤
+│ [ Confirm ] (disabled)               │
+│ [ Clear Slot ] (disabled)            │
+│ [ Cancel ]                           │
+└──────────────────────────────────────┘
+```
+
+---
+
+#### 8.17.3 Match Booking (Filled Slot)
+
+```text
+┌──────────────────────────────────────┐
+│ Book Match 3                         │
+│ Kenny Omega vs Eddie Kingston        │
+├──────────────────────────────────────┤
+│ ▸ Wrestler A                         │
+│   Kenny Omega           😮‍💨          │
+│                                      │
+│   Wrestler B                         │
+│   Eddie Kingston                     │
+│                                      │
+│   Match Type                         │
+│   Singles                            │
+│                                      │
+├──────────────────────────────────────┤
+│ [ Confirm ]                          │
+│ [ Clear Slot ]                       │
+│ [ Cancel ]                           │
+└──────────────────────────────────────┘
+```
+
+---
+
+#### 8.17.4 Wrestler Selection
+
+```text
+┌──────────────────────────────────────┐
+│ Select Wrestler (Match 3 · A)        │
+├──────────────────────────────────────┤
+│ ▸ Kenny Omega        F  Sta: 28 😮‍💨 │
+│   Jon Moxley         H  Sta: 12 😮‍💨 │
+│   Eddie Kingston     F  Sta: 64       │
+│                                      │
+├──────────────────────────────────────┤
+│ ⛔ Already booked in Match 2         │
+├──────────────────────────────────────┤
+│ [ Select ]   [ Cancel ]              │
+└──────────────────────────────────────┘
+```
+
+---
+
+#### 8.17.5 Match Type Selection
+
+```text
+┌──────────────────────────────────────┐
+│ Select Match Type                    │
+├──────────────────────────────────────┤
+│ ▸ Singles                            │
+│   Standard one-on-one contest        │
+│                                      │
+│   Hardcore                           │
+│   No rules. High risk. Brutal.       │
+│                                      │
+│   Submission                         │
+│   Victory by tap-out only            │
+├──────────────────────────────────────┤
+│ [ Select ]   [ Cancel ]              │
+└──────────────────────────────────────┘
+```
+
+---
+
+#### 8.17.6 Match Booking Confirmation (Modal)
+
+```text
+              ┌──────────────────────┐
+              │ Confirm booking?     │
+              ├──────────────────────┤
+              │ [ Book Match ]       │
+              │ [ Cancel ]           │
+              └──────────────────────┘
+```
+
+---
+
+#### 8.17.7 Show Results
+
+```text
+┌──────────────────────────────────────┐
+│ Show Results                         │
+├──────────────────────────────────────┤
+│ Match 1                              │
+│  Kenny Omega def. Eddie Kingston     │
+│  ★★★★☆                               │
+│                                      │
+│ Match 2                              │
+│  Claudio Castagnoli def. Jon Moxley  │
+│  ★★★½☆                               │
+│                                      │
+│ Match 3                              │
+│  Darby Allin def. Sammy Guevara      │
+│  ★★☆☆☆                               │
+├──────────────────────────────────────┤
+│ Show Rating: ★★★½☆                   │
+├──────────────────────────────────────┤
+│ [ Continue ] [ Roster ] [ Main Menu ]│
+└──────────────────────────────────────┘
+```
+
+---
+
+#### 8.17.8 Roster Overview
+
+```text
+┌──────────────────────────────────────┐
+│ Roster Overview                      │
+├──────────────────────────────────────┤
+│ ▸ Kenny Omega        F  Pop: 89 Sta:28│
+│   Jon Moxley         H  Pop: 82 Sta:12│
+│   Eddie Kingston     F  Pop: 74 Sta:64│
+│   Claudio Castagnoli F  Pop: 77 Sta:71│
+│                                      │
+├──────────────────────────────────────┤
+│ [ Back ]                             │
+└──────────────────────────────────────┘
+```
+
+---
+
