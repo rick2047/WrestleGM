@@ -1,31 +1,36 @@
 # Project Context
 
 ## Purpose
-[Describe your project's purpose and goals]
+Create a fun wrestling manager sim where the core enjoyment comes from managing a roster, booking matches, and producing great shows over time.
 
 ## Tech Stack
-- [List your primary technologies]
-- [e.g., TypeScript, React, Node.js]
+- Python (Textual for UI)
+- pytest, ruff, mkdocs
+- Minimal third-party dependencies
 
 ## Project Conventions
 
 ### Code Style
-[Describe your code style preferences, formatting rules, and naming conventions]
+- Prefer clear, Zen-of-Python style implementations
+- Use docstrings on modules, classes, and public functions
 
 ### Architecture Patterns
-[Document your architectural decisions and patterns]
+- Modular structure with a clear separation between simulation and UI
+- Simulation core should be UI-agnostic to allow future UI swaps
 
 ### Testing Strategy
-[Explain your testing approach and requirements]
+- Emphasize determinism and consistency in simulation tests
+- Cover bounds and regression cases for core simulation rules
 
 ### Git Workflow
-[Describe your branching strategy and commit conventions]
+- Use detailed, descriptive commit messages
 
 ## Domain Context
-[Add domain-specific knowledge that AI assistants need to understand]
+- The game is show-driven: book 3-match cards, simulate, apply deltas, advance
 
 ## Important Constraints
-[List any technical, business, or regulatory constraints]
+- Keep dependencies minimal
+- Keep simulation and UI layers separated for future UI migration
 
 ## External Dependencies
-[Document key external services, APIs, or systems]
+- None for MVP

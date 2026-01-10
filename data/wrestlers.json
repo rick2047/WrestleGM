@@ -1,0 +1,86 @@
+[
+  {
+    "id": "kenny-o-mega",
+    "name": "Kenny O-Mega",
+    "alignment": "Face",
+    "popularity": 88,
+    "stamina": 32
+  },
+  {
+    "id": "hammock-page",
+    "name": "Hammock Page",
+    "alignment": "Face",
+    "popularity": 80,
+    "stamina": 55
+  },
+  {
+    "id": "orange-sassidy",
+    "name": "Orange Sassidy",
+    "alignment": "Face",
+    "popularity": 78,
+    "stamina": 48
+  },
+  {
+    "id": "maxwell-j-flexwell",
+    "name": "Maxwell J. Flexwell",
+    "alignment": "Heel",
+    "popularity": 84,
+    "stamina": 40
+  },
+  {
+    "id": "chris-jer-echo",
+    "name": "Chris Jer-Echo",
+    "alignment": "Heel",
+    "popularity": 76,
+    "stamina": 24
+  },
+  {
+    "id": "brian-danielton",
+    "name": "Brian Danielton",
+    "alignment": "Face",
+    "popularity": 86,
+    "stamina": 60
+  },
+  {
+    "id": "eddie-king-scone",
+    "name": "Eddie King-Scone",
+    "alignment": "Face",
+    "popularity": 72,
+    "stamina": 66
+  },
+  {
+    "id": "claudio-castagnocchi",
+    "name": "Claudio Cast-a-Gnocchi",
+    "alignment": "Face",
+    "popularity": 74,
+    "stamina": 58
+  },
+  {
+    "id": "jawn-moxley",
+    "name": "Jawn Moxley",
+    "alignment": "Heel",
+    "popularity": 82,
+    "stamina": 14
+  },
+  {
+    "id": "sammy-guava",
+    "name": "Sammy Guava",
+    "alignment": "Heel",
+    "popularity": 70,
+    "stamina": 52
+  },
+  {
+    "id": "carby-tallin",
+    "name": "Carby Tallin",
+    "alignment": "Face",
+    "popularity": 68,
+    "stamina": 46
+  },
+  {
+    "id": "hikaru-shidazzle",
+    "name": "Hikaru Shidazzle",
+    "alignment": "Face",
+    "popularity": 75,
+    "stamina": 8
+  }
+]
