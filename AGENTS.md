@@ -22,6 +22,10 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 - Update the PR description whenever new commits are added to that branch.
 - Ask for explicit user approval before running git workflow actions (commit, push, PR create/edit).
 
+## GitHub Access
+- Prefer the `gh` CLI for GitHub issues/PRs/comments instead of raw API calls.
+- Assume authentication is already configured; do not prompt for login/setup.
+
 ## OpenSpec CLI Location
 - Prefer running `openspec` from `PATH`.
 - If `openspec` is not found on `PATH`, use the absolute path: `/home/droid/.nvm/versions/node/v24.12.0/bin/openspec`.
