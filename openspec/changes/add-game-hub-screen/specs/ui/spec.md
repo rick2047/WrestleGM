@@ -39,7 +39,7 @@ The system SHALL provide a Game Hub screen that displays the current show number
 │ Game Hub                             │
 ├──────────────────────────────────────┤
 │ ▸ Book Current Show                  │
-│   Episode 12: Rising Tensions        │
+│   Show #12                           │
 │                                      │
 │   Roster Overview                    │
 │                                      │

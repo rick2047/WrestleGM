@@ -292,7 +292,7 @@ class GameHubScreen(Screen):
 
         self.current_show.update(
             "Book Current Show\n"
-            f"[dim]Episode {self.app.state.show_index}: Rising Tensions[/dim]"
+            f"[dim]Show #{self.app.state.show_index}[/dim]"
         )
 
     def on_screen_resume(self) -> None:
