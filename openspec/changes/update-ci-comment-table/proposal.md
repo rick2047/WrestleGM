@@ -23,9 +23,9 @@ Totals: ❌ 0 failed, 🛑 0 error, ⚠️ 1 skipped, ✅ 8 passed
 
 | Test | Status | Reason |
 | --- | --- | --- |
-| `test_outcome_probability_clamps` | ✅ PASSED | |
-| `test_rating_bounds` | ✅ PASSED | |
-| `test_alignment_modifiers` | ✅ PASSED | |
+| `test_outcome_probability_clamps` | ✅ | |
+| `test_rating_bounds` | ✅ | |
+| `test_alignment_modifiers` | ✅ | |
 
 </details>
 
@@ -34,8 +34,8 @@ Totals: ❌ 0 failed, 🛑 0 error, ⚠️ 1 skipped, ✅ 8 passed
 
 | Test | Status | Reason |
 | --- | --- | --- |
-| `test_clamp_and_recovery` | ✅ PASSED | |
-| `test_future_case` | ⚠️ SKIPPED | feature not enabled yet |
+| `test_clamp_and_recovery` | ✅ | |
+| `test_future_case` | ⚠️ | feature not enabled yet |
 
 </details>
 ```

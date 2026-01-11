@@ -122,7 +122,7 @@ def render_comment(
         lines.append("| Test | Status | Reason |")
         lines.append("| --- | --- | --- |")
         for case in sorted(grouped[group], key=lambda item: item["name"]):
-            status_label = f"{STATUS_EMOJI.get(case['status'], '')} {case['status'].upper()}"
+            status_label = STATUS_EMOJI.get(case["status"], "")
             reason = sanitize_cell(case["reason"]) if case["reason"] else ""
             lines.append(f"| `{case['name']}` | {status_label} | {reason} |")
         lines.append("")
