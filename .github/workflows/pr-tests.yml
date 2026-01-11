@@ -2,6 +2,14 @@ name: PR Tests
 
 on:
   pull_request:
+    paths:
+      - "tests/**"
+      - "wrestlegm/**"
+      - "data/**"
+      - "main.py"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/workflows/pr-tests.yml"
 
 permissions:
   contents: read
