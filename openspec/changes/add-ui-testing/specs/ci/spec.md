@@ -11,8 +11,8 @@ The system SHALL run UI flow tests before UI snapshot tests and SHALL only run U
 - **THEN** UI snapshot tests are executed in a separate job that depends on successful completion of simulation and UI flow test jobs
 
 ### Requirement: Snapshot artifact upload
-The system SHALL upload newly generated SVG snapshots as CI artifacts when snapshot tests fail.
+The system SHALL upload snapshot diff artifacts produced by `pytest-textual-snapshot` when snapshot tests fail.
 
 #### Scenario: Artifact on snapshot failure
 - **WHEN** a UI snapshot test fails
-- **THEN** the workflow uploads the generated snapshots for review
+- **THEN** the workflow uploads the snapshot report directory configured via `TEXTUAL_SNAPSHOT_TEMPDIR`

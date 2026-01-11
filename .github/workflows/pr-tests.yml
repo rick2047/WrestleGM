@@ -103,6 +103,8 @@ jobs:
 
       - name: Run UI snapshot tests
         id: pytest
+        env:
+          TEXTUAL_SNAPSHOT_TEMPDIR: tests/snapshots/__failed__
         run: uv run pytest tests/test_ui_snapshots.py tests/test_ui_snapshot_registry.py --junitxml=pytest-ui.xml
         continue-on-error: true
 

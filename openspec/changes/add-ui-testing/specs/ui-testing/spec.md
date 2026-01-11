@@ -27,7 +27,7 @@ The system SHALL include UI flow tests that validate keyboard-only navigation an
   - Game Hub -> Roster Overview -> Back
 
 ### Requirement: UI snapshot tests
-The system SHALL generate deterministic SVG snapshots for canonical UI screens and stable end states only.
+The system SHALL generate deterministic SVG snapshots for canonical UI screens and stable end states only using `pytest-textual-snapshot`.
 
 #### Scenario: Canonical snapshot registry
 - **WHEN** snapshot tests run
@@ -45,13 +45,12 @@ The system SHALL generate deterministic SVG snapshots for canonical UI screens a
   - S11 Roster Overview (default)
 
 ### Requirement: Snapshot baseline management
-The system SHALL store SVG snapshot baselines in-repo and enforce stable naming.
+The system SHALL store SVG snapshot baselines in-repo using the `pytest-textual-snapshot` naming conventions.
 
 #### Scenario: Baseline location and naming
 - **WHEN** baselines are committed
 - **THEN** they live under `tests/snapshots/`
-- **AND THEN** filenames follow the format `<ID>_<screen>_<state>.svg`
-- **AND THEN** `<screen>` and `<state>` are lowercase snake_case slugs
+- **AND THEN** filenames are derived from snapshot test function names and stored with the `.raw` extension
 
 ### Requirement: Snapshot enforcement
 The system SHALL fail tests when snapshot output does not match baselines and SHALL reject missing or extra snapshots.
@@ -59,8 +58,7 @@ The system SHALL fail tests when snapshot output does not match baselines and SH
 #### Scenario: Snapshot mismatch handling
 - **WHEN** a generated snapshot differs from its baseline
 - **THEN** the test run fails
-- **AND THEN** the new snapshot output is written under `tests/snapshots/__failed__/` for review
 
 #### Scenario: Snapshot registry enforcement
 - **WHEN** snapshot tests run
-- **THEN** the set of snapshots in `tests/snapshots/` MUST exactly match the canonical registry list
+- **THEN** the set of snapshots in `tests/snapshots/` MUST exactly match the canonical registry list derived from `tests/test_ui_snapshots.py`
