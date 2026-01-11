@@ -21,3 +21,7 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 - Each new spec MUST start from a new git branch and include opening a PR.
 - Update the PR description whenever new commits are added to that branch.
 - Ask for explicit user approval before running git workflow actions (commit, push, PR create/edit).
+
+## OpenSpec CLI Location
+- Prefer running `openspec` from `PATH`.
+- If `openspec` is not found on `PATH`, use the absolute path: `/home/droid/.nvm/versions/node/v24.12.0/bin/openspec`.
