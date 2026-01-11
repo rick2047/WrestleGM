@@ -4,6 +4,6 @@
 - [x] 1.3 Update the fatigue icon to use 🥱 consistently for low-stamina wrestlers.
 
 ## 2. Validation
-- [ ] 2.1 Confirm match booking defaults to the first match type.
-- [ ] 2.2 Confirm booked wrestlers show the 📅 indicator in the selection list.
-- [ ] 2.3 Confirm low-stamina wrestlers show 🥱 wherever fatigue is indicated.
+- [x] 2.1 Confirm match booking defaults to the first match type.
+- [x] 2.2 Confirm booked wrestlers show the 📅 indicator in the selection list.
+- [x] 2.3 Confirm low-stamina wrestlers show 🥱 wherever fatigue is indicated.
