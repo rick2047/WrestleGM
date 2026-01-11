@@ -57,6 +57,8 @@ from wrestlegm.state import GameState
 FATIGUE_ICON = "🥱"
 EMPTY_ICON = "⚠️"
 BLOCK_ICON = "⛔"
+ALIGNMENT_EMOJI = {"Face": "😃", "Heel": "😈"}
+ROSTER_HEADER = f"  {'Name':<18} {'Sta':>3} {'Pop':>3}"
 
 
 def format_stars(rating: float) -> str:
@@ -71,7 +73,18 @@ def format_stars(rating: float) -> str:
 def roster_line(name: str, alignment: str, popularity: int, stamina: int) -> str:
     """Format a roster line for list display."""
 
-    return f"{name:<20} {alignment[0]}  Pop:{popularity:>3} Sta:{stamina:>3}"
+    emoji = ALIGNMENT_EMOJI[alignment]
+    trimmed = truncate_name(name)
+    fatigue = f" {FATIGUE_ICON}" if stamina <= constants.STAMINA_MIN_BOOKABLE else ""
+    return f"{emoji} {trimmed:<18} {stamina:>3} {popularity:>3}{fatigue}"
+
+
+def truncate_name(name: str, max_len: int = 18) -> str:
+    """Return the name trimmed to max_len characters with an ellipsis when needed."""
+
+    if len(name) <= max_len:
+        return name
+    return f"{name[: max_len - 3]}..."
 
 
 @dataclass
@@ -650,8 +663,11 @@ class WrestlerSelectionScreen(Screen):
         """Build the wrestler selection layout."""
 
         yield Static(f"Select Wrestler (Match {self.slot_index + 1} · {self.label})")
+        yield Static(ROSTER_HEADER)
         list_items: list[ListItem] = []
         for wrestler in self.app.state.roster.values():
+            name = truncate_name(wrestler.name)
+            emoji = ALIGNMENT_EMOJI[wrestler.alignment]
             fatigue = f" {FATIGUE_ICON}" if wrestler.stamina <= constants.STAMINA_MIN_BOOKABLE else ""
             booked = self.app.state.is_wrestler_booked(
                 wrestler.id,
@@ -661,8 +677,8 @@ class WrestlerSelectionScreen(Screen):
                 booked = True
             booked_marker = " 📅" if booked else ""
             line = (
-                f"{wrestler.name:<18} {wrestler.alignment[0]}  "
-                f"Sta:{wrestler.stamina:>3}{fatigue}{booked_marker}"
+                f"{emoji} {name:<18} {wrestler.stamina:>3} "
+                f"{wrestler.popularity:>3}{fatigue}{booked_marker}"
             )
             list_items.append(ListItem(Static(line), id=wrestler.id))
         self.list_view = EdgeAwareListView(
@@ -1132,6 +1148,7 @@ class RosterScreen(Screen):
         """Build the roster screen layout."""
 
         yield Static("Roster Overview", classes="section-title")
+        yield Static(ROSTER_HEADER)
         self.list_view = EdgeAwareListView(
             on_edge_prev=self.action_focus_prev,
             on_edge_next=self.action_focus_next,
