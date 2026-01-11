@@ -194,21 +194,27 @@ class WrestleGMApp(App):
         """Initialize the app with loaded data and a fresh GameState."""
 
         super().__init__()
-        wrestlers = load_wrestlers()
-        match_types = load_match_types()
-        self.state = GameState(wrestlers, match_types)
+        self._wrestlers = load_wrestlers()
+        self._match_types = load_match_types()
+        self.state = GameState(self._wrestlers, self._match_types)
 
     def on_mount(self) -> None:
         """Show the main menu at startup."""
 
         self.push_screen(MainMenuScreen())
 
+    def new_game(self) -> None:
+        """Start a fresh session and show the game hub."""
+
+        self.state = GameState(self._wrestlers, self._match_types)
+        self.switch_screen(GameHubScreen())
+
 
 class MainMenuScreen(Screen):
     """Main menu screen for global navigation.
 
     Responsibilities:
-    - Present top-level routes (new game, roster, quit).
+    - Present top-level routes (new game, quit).
     - Dispatch user selection into screen transitions.
     - Keep focus on the menu list for keyboard navigation.
     """
@@ -224,7 +230,6 @@ class MainMenuScreen(Screen):
         yield Static("WrestleGM", classes="section-title")
         self.menu = EdgeAwareListView(
             ListItem(Static("New Game"), id="new-game"),
-            ListItem(Static("Roster Overview"), id="roster"),
             ListItem(Static("Quit"), id="quit"),
         )
         yield self.menu
@@ -239,11 +244,69 @@ class MainMenuScreen(Screen):
         """Handle selection of menu options."""
 
         if event.item.id == "new-game":
+            self.app.new_game()
+        elif event.item.id == "quit":
+            self.app.exit()
+
+
+class GameHubScreen(Screen):
+    """Session-level hub screen.
+
+    Responsibilities:
+    - Present session-aware navigation into gameplay screens.
+    - Display the current show number.
+    - Allow exit back to the main menu.
+    """
+
+    BINDINGS = [
+        ("enter", "select", "Select"),
+    ]
+
+    def compose(self) -> ComposeResult:
+        """Build the game hub layout."""
+
+        yield Static("WrestleGM", classes="section-title")
+        yield Static("Game Hub", classes="section-title")
+
+        self.current_show = Static("", id="current-show")
+        self.roster = Static("Roster Overview", id="roster")
+        self.exit = Static("Exit to Main Menu", id="exit")
+
+        self.menu = EdgeAwareListView(
+            ListItem(self.current_show, id="current-show"),
+            ListItem(self.roster, id="roster"),
+            ListItem(self.exit, id="exit"),
+        )
+        yield self.menu
+        yield Footer()
+
+    def on_mount(self) -> None:
+        """Focus the menu list and refresh labels."""
+
+        self.menu.focus()
+        self.refresh_view()
+
+    def refresh_view(self) -> None:
+        """Update the current show text."""
+
+        self.current_show.update(
+            f"Current Show #{self.app.state.show_index}\nBook / Review Matches"
+        )
+
+    def on_screen_resume(self) -> None:
+        """Refresh the hub labels after returning."""
+
+        self.refresh_view()
+
+    def on_list_view_selected(self, event: ListView.Selected) -> None:
+        """Handle hub option selection."""
+
+        if event.item.id == "current-show":
             self.app.switch_screen(BookingHubScreen())
         elif event.item.id == "roster":
             self.app.push_screen(RosterScreen())
-        elif event.item.id == "quit":
-            self.app.exit()
+        elif event.item.id == "exit":
+            self.app.switch_screen(MainMenuScreen())
 
 
 class BookingHubScreen(Screen):
@@ -346,9 +409,9 @@ class BookingHubScreen(Screen):
         self.app.switch_screen(SimulatingScreen())
 
     def action_back(self) -> None:
-        """Return to the main menu."""
+        """Return to the game hub."""
 
-        self.app.switch_screen(MainMenuScreen())
+        self.app.switch_screen(GameHubScreen())
 
     def action_focus_next(self) -> None:
         """Move focus to the next booking hub control."""
@@ -1066,17 +1129,11 @@ class ResultsScreen(Screen):
     Responsibilities:
     - Render per-match winners and star ratings.
     - Display the overall show rating.
-    - Route to the next show, roster view, or main menu.
+    - Route to the game hub.
     """
 
     BINDINGS = [
         ("enter", "continue", "Continue"),
-        ("left", "focus_prev", "Prev"),
-        ("right", "focus_next", "Next"),
-        ("up", "focus_prev", "Prev"),
-        ("down", "focus_next", "Next"),
-        ("r", "roster", "Roster"),
-        ("m", "menu", "Main Menu"),
     ]
 
     def compose(self) -> ComposeResult:
@@ -1087,13 +1144,8 @@ class ResultsScreen(Screen):
         yield self.results
         self.show_rating = Static("")
         yield self.show_rating
-        with Horizontal():
-            self.continue_button = Button("Continue", id="continue")
-            self.roster_button = Button("Roster", id="roster")
-            self.menu_button = Button("Main Menu", id="menu")
-            yield self.continue_button
-            yield self.roster_button
-            yield self.menu_button
+        self.continue_button = Button("Continue", id="continue")
+        yield self.continue_button
         yield Footer()
 
     def on_mount(self) -> None:
@@ -1123,50 +1175,15 @@ class ResultsScreen(Screen):
         self.show_rating.update(f"Show Rating: {format_stars(rating)}")
 
     def action_continue(self) -> None:
-        """Return to the booking hub for the next show."""
+        """Return to the game hub."""
 
-        self.app.switch_screen(BookingHubScreen())
-
-    def action_roster(self) -> None:
-        """Open the roster screen."""
-
-        self.app.push_screen(RosterScreen())
-
-    def action_menu(self) -> None:
-        """Return to the main menu."""
-
-        self.app.switch_screen(MainMenuScreen())
-
-    def action_focus_next(self) -> None:
-        """Move focus to the next results action."""
-
-        self._move_focus(1)
-
-    def action_focus_prev(self) -> None:
-        """Move focus to the previous results action."""
-
-        self._move_focus(-1)
-
-    def _move_focus(self, delta: int) -> None:
-        """Cycle focus across results action buttons."""
-
-        focus_order = [self.continue_button, self.roster_button, self.menu_button]
-        focused = self.app.focused
-        if focused not in focus_order:
-            focus_order[0].focus()
-            return
-        index = focus_order.index(focused)
-        focus_order[(index + delta) % len(focus_order)].focus()
+        self.app.switch_screen(GameHubScreen())
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
-        """Handle Continue, Roster, and Main Menu buttons."""
+        """Handle Continue button presses."""
 
         if event.button.id == "continue":
             self.action_continue()
-        elif event.button.id == "roster":
-            self.action_roster()
-        elif event.button.id == "menu":
-            self.action_menu()
 
 
 class RosterScreen(Screen):
