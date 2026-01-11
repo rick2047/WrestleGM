@@ -17,6 +17,12 @@ STATUS_EMOJI = {
 }
 
 
+def sanitize_cell(text: str) -> str:
+    """Escape table-breaking characters for markdown cells."""
+
+    return text.replace("|", "\\|")
+
+
 def short_reason(text: str | None, limit: int = 120) -> str:
     """Trim multiline failure text to a short, single-line summary."""
 
@@ -36,6 +42,14 @@ def group_name(classname: str) -> str:
         module = ".".join(parts[:-1])
         return f"{parts[-1]} ({module})"
     return f"Module-level tests ({classname})"
+
+
+def format_counts(counts: Counter) -> str:
+    """Format status counts with emoji indicators."""
+
+    return ", ".join(
+        f"{STATUS_EMOJI.get(key, '')} {counts.get(key, 0)} {key}" for key in STATUS_ORDER
+    )
 
 
 def parse_junit(path: str) -> list[dict[str, str]]:
@@ -90,10 +104,7 @@ def render_comment(
     lines: list[str] = ["<!-- pr-tests -->", "## PR Test Results"]
     lines.append(f"Status: {status_emoji} {status}")
     lines.append(f"Run: {run_url}")
-    totals = ", ".join(
-        f"{STATUS_EMOJI.get(key, '')} {counts.get(key, 0)} {key}" for key in STATUS_ORDER
-    )
-    lines.append(f"Totals: {totals}")
+    lines.append(f"Totals: {format_counts(counts)}")
     if error_note:
         lines.append("")
         lines.append(f"Note: {error_note}")
@@ -105,17 +116,15 @@ def render_comment(
 
     for group in sorted(grouped):
         group_counts = Counter(item["status"] for item in grouped[group])
-        summary_counts = ", ".join(
-            f"{group_counts.get(key, 0)} {key}" for key in STATUS_ORDER
-        )
         lines.append("<details>")
-        lines.append(f"<summary>{group} ({summary_counts})</summary>")
+        lines.append(f"<summary>{group} ({format_counts(group_counts)})</summary>")
         lines.append("")
+        lines.append("| Test | Status | Reason |")
+        lines.append("| --- | --- | --- |")
         for case in sorted(grouped[group], key=lambda item: item["name"]):
-            reason = case["reason"]
-            suffix = f" - {reason}" if reason else ""
-            emoji = STATUS_EMOJI.get(case["status"], "")
-            lines.append(f"- `{case['name']}` - {emoji} {case['status'].upper()}{suffix}")
+            status_label = f"{STATUS_EMOJI.get(case['status'], '')} {case['status'].upper()}"
+            reason = sanitize_cell(case["reason"]) if case["reason"] else ""
+            lines.append(f"| `{case['name']}` | {status_label} | {reason} |")
         lines.append("")
         lines.append("</details>")
 
