@@ -5,6 +5,6 @@
 - [x] 1.4 Preserve Enter to activate focused widgets and Escape to back/cancel.
 
 ## 2. Validation
-- [ ] 2.1 Confirm key-only navigation reaches action buttons on booking hub.
-- [ ] 2.2 Confirm key-only navigation reaches action buttons on match booking.
-- [ ] 2.3 Confirm key-only navigation reaches action buttons on results.
+- [x] 2.1 Confirm key-only navigation reaches action buttons on booking hub.
+- [x] 2.2 Confirm key-only navigation reaches action buttons on match booking.
+- [x] 2.3 Confirm key-only navigation reaches action buttons on results.
