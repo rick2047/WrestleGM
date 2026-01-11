@@ -10,6 +10,38 @@ from textual.containers import Horizontal, Vertical
 from textual.screen import ModalScreen, Screen
 from textual.widgets import Button, Footer, ListItem, ListView, Static
 
+
+class EdgeAwareListView(ListView):
+    """ListView that can hand off focus when the cursor hits an edge."""
+
+    def __init__(
+        self,
+        *items: ListItem,
+        on_edge_prev: Callable[[], None] | None = None,
+        on_edge_next: Callable[[], None] | None = None,
+    ) -> None:
+        super().__init__(*items)
+        self._on_edge_prev = on_edge_prev
+        self._on_edge_next = on_edge_next
+
+    def action_cursor_down(self) -> None:
+        """Move focus to the next widget when already at the last row."""
+
+        if self.index is not None and self.index >= len(self.children) - 1:
+            if self._on_edge_next is not None:
+                self._on_edge_next()
+                return
+        super().action_cursor_down()
+
+    def action_cursor_up(self) -> None:
+        """Move focus to the previous widget when already at the first row."""
+
+        if self.index is not None and self.index <= 0:
+            if self._on_edge_prev is not None:
+                self._on_edge_prev()
+                return
+        super().action_cursor_up()
+
 from wrestlegm import constants
 from wrestlegm.data import load_match_types, load_wrestlers
 from wrestlegm.models import Match
@@ -162,6 +194,8 @@ class BookingHubScreen(Screen):
     BINDINGS = [
         ("enter", "edit_slot", "Edit"),
         ("r", "run_show", "Run Show"),
+        ("up", "focus_prev", "Prev"),
+        ("down", "focus_next", "Next"),
         ("escape", "back", "Back"),
     ]
 
@@ -178,7 +212,11 @@ class BookingHubScreen(Screen):
             slot_static = Static("", id=f"slot-{index}")
             self.slot_items.append(slot_static)
             slot_list_items.append(ListItem(slot_static, id=f"slot-item-{index}"))
-        self.slot_list = ListView(*slot_list_items)
+        self.slot_list = EdgeAwareListView(
+            *slot_list_items,
+            on_edge_prev=self.action_focus_prev,
+            on_edge_next=self.action_focus_next,
+        )
         yield self.slot_list
 
         with Vertical():
@@ -248,6 +286,35 @@ class BookingHubScreen(Screen):
 
         self.app.switch_screen(MainMenuScreen())
 
+    def action_focus_next(self) -> None:
+        """Move focus to the next booking hub control."""
+
+        self._move_focus(1)
+
+    def action_focus_prev(self) -> None:
+        """Move focus to the previous booking hub control."""
+
+        self._move_focus(-1)
+
+    def _move_focus(self, delta: int) -> None:
+        """Cycle focus between the slot list and action buttons."""
+
+        focus_order = [self.slot_list, self.run_button, self.back_button]
+        focused = self.app.focused
+        if focused not in focus_order:
+            focus_order[0].focus()
+            return
+        index = focus_order.index(focused)
+        next_index = index
+        for _ in range(len(focus_order)):
+            next_index = (next_index + delta) % len(focus_order)
+            candidate = focus_order[next_index]
+            if candidate is self.slot_list or not candidate.disabled:
+                if candidate is self.slot_list and focused is not self.slot_list:
+                    self.slot_list.index = 0
+                candidate.focus()
+                return
+
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle Run Show and Back button presses."""
 
@@ -273,6 +340,8 @@ class MatchBookingScreen(Screen):
 
     BINDINGS = [
         ("enter", "select_field", "Select"),
+        ("up", "focus_prev", "Prev"),
+        ("down", "focus_next", "Next"),
         ("escape", "cancel", "Cancel"),
     ]
 
@@ -296,10 +365,12 @@ class MatchBookingScreen(Screen):
             "b": Static(""),
             "type": Static(""),
         }
-        self.fields = ListView(
+        self.fields = EdgeAwareListView(
             ListItem(self.field_items["a"], id="field-a"),
             ListItem(self.field_items["b"], id="field-b"),
             ListItem(self.field_items["type"], id="field-type"),
+            on_edge_prev=self.action_focus_prev,
+            on_edge_next=self.action_focus_next,
         )
         yield self.fields
 
@@ -421,6 +492,38 @@ class MatchBookingScreen(Screen):
         """Discard changes and return to the booking hub."""
 
         self.app.pop_screen()
+
+    def action_focus_next(self) -> None:
+        """Move focus to the next booking control."""
+
+        self._move_focus(1)
+
+    def action_focus_prev(self) -> None:
+        """Move focus to the previous booking control."""
+
+        self._move_focus(-1)
+
+    def _move_focus(self, delta: int) -> None:
+        """Cycle focus between fields and action buttons."""
+
+        focus_order = [
+            self.fields,
+            self.confirm_button,
+            self.clear_button,
+            self.cancel_button,
+        ]
+        focused = self.app.focused
+        if focused not in focus_order:
+            focus_order[0].focus()
+            return
+        index = focus_order.index(focused)
+        next_index = index
+        for _ in range(len(focus_order)):
+            next_index = (next_index + delta) % len(focus_order)
+            candidate = focus_order[next_index]
+            if candidate is self.fields or not candidate.disabled:
+                candidate.focus()
+                return
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle Confirm, Clear Slot, and Cancel buttons."""
@@ -704,6 +807,9 @@ class ConfirmBookingModal(ModalScreen):
     """
 
     BINDINGS = [
+        ("up", "focus_prev", "Prev"),
+        ("down", "focus_next", "Next"),
+        ("enter", "activate", "Select"),
         ("escape", "cancel", "Cancel"),
     ]
 
@@ -712,8 +818,15 @@ class ConfirmBookingModal(ModalScreen):
 
         with Vertical(classes="panel"):
             yield Static("Confirm booking?")
-            yield Button("Book Match", id="confirm")
-            yield Button("Cancel", id="cancel")
+            self.confirm_button = Button("Book Match", id="confirm")
+            self.cancel_button = Button("Cancel", id="cancel")
+            yield self.confirm_button
+            yield self.cancel_button
+
+    def on_mount(self) -> None:
+        """Focus the first action button."""
+
+        self.confirm_button.focus()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle confirmation and cancellation actions."""
@@ -727,6 +840,34 @@ class ConfirmBookingModal(ModalScreen):
         """Cancel the modal with a false result."""
 
         self.dismiss(result=False)
+
+    def action_activate(self) -> None:
+        """Activate the focused button."""
+
+        focused = self.app.focused
+        if isinstance(focused, Button) and not focused.disabled:
+            focused.press()
+
+    def action_focus_next(self) -> None:
+        """Move focus to the next modal action."""
+
+        self._move_focus(1)
+
+    def action_focus_prev(self) -> None:
+        """Move focus to the previous modal action."""
+
+        self._move_focus(-1)
+
+    def _move_focus(self, delta: int) -> None:
+        """Cycle focus across modal action buttons."""
+
+        focus_order = [self.confirm_button, self.cancel_button]
+        focused = self.app.focused
+        if focused not in focus_order:
+            focus_order[0].focus()
+            return
+        index = focus_order.index(focused)
+        focus_order[(index + delta) % len(focus_order)].focus()
 
 
 class SimulatingScreen(Screen):
@@ -766,6 +907,10 @@ class ResultsScreen(Screen):
 
     BINDINGS = [
         ("enter", "continue", "Continue"),
+        ("left", "focus_prev", "Prev"),
+        ("right", "focus_next", "Next"),
+        ("up", "focus_prev", "Prev"),
+        ("down", "focus_next", "Next"),
         ("r", "roster", "Roster"),
         ("m", "menu", "Main Menu"),
     ]
@@ -779,15 +924,19 @@ class ResultsScreen(Screen):
         self.show_rating = Static("")
         yield self.show_rating
         with Horizontal():
-            yield Button("Continue", id="continue")
-            yield Button("Roster", id="roster")
-            yield Button("Main Menu", id="menu")
+            self.continue_button = Button("Continue", id="continue")
+            self.roster_button = Button("Roster", id="roster")
+            self.menu_button = Button("Main Menu", id="menu")
+            yield self.continue_button
+            yield self.roster_button
+            yield self.menu_button
         yield Footer()
 
     def on_mount(self) -> None:
         """Populate results when the screen is shown."""
 
         self.refresh_view()
+        self.continue_button.focus()
 
     def refresh_view(self) -> None:
         """Update match results and show rating text."""
@@ -823,6 +972,27 @@ class ResultsScreen(Screen):
         """Return to the main menu."""
 
         self.app.switch_screen(MainMenuScreen())
+
+    def action_focus_next(self) -> None:
+        """Move focus to the next results action."""
+
+        self._move_focus(1)
+
+    def action_focus_prev(self) -> None:
+        """Move focus to the previous results action."""
+
+        self._move_focus(-1)
+
+    def _move_focus(self, delta: int) -> None:
+        """Cycle focus across results action buttons."""
+
+        focus_order = [self.continue_button, self.roster_button, self.menu_button]
+        focused = self.app.focused
+        if focused not in focus_order:
+            focus_order[0].focus()
+            return
+        index = focus_order.index(focused)
+        focus_order[(index + delta) % len(focus_order)].focus()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle Continue, Roster, and Main Menu buttons."""
