@@ -856,17 +856,17 @@ class RosterScreen(Screen):
         yield Button("Back", id="back")
         yield Footer()
 
-    def on_mount(self) -> None:
+    async def on_mount(self) -> None:
         """Populate the roster list and focus it."""
 
-        self.refresh_view()
+        await self.refresh_view()
         self.list_view.focus()
 
-    def refresh_view(self) -> None:
+    async def refresh_view(self) -> None:
         """Rebuild roster rows from current state."""
 
-        for child in list(self.list_view.children):
-            child.remove()
+        await self.list_view.clear()
+        items: list[ListItem] = []
         for wrestler in self.app.state.roster.values():
             line = roster_line(
                 wrestler.name,
@@ -874,7 +874,9 @@ class RosterScreen(Screen):
                 wrestler.popularity,
                 wrestler.stamina,
             )
-            self.list_view.append(ListItem(Static(line), id=wrestler.id))
+            items.append(ListItem(Static(line), id=wrestler.id))
+        if items:
+            await self.list_view.extend(items)
 
     def action_back(self) -> None:
         """Close the roster screen."""
@@ -887,7 +889,7 @@ class RosterScreen(Screen):
         if event.button.id == "back":
             self.action_back()
 
-    def on_screen_resume(self) -> None:
+    async def on_screen_resume(self) -> None:
         """Refresh roster data when returning to the screen."""
 
-        self.refresh_view()
+        await self.refresh_view()
