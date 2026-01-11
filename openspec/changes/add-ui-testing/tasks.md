@@ -4,6 +4,7 @@
 - [x] 1.3 Enforce snapshot registry checks (no missing or extra snapshots).
 - [x] 1.4 Update CI workflow to run flow tests before snapshot tests and upload failing snapshots.
 - [x] 1.5 Document snapshot update workflow for contributors.
+- [x] 1.6 Update docs site content to describe UI testing strategy.
 
 ## 2. Validation
 - [x] 2.1 Run UI flow tests locally.
