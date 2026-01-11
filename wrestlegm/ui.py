@@ -31,6 +31,9 @@ class EdgeAwareListView(ListView):
             if self._on_edge_next is not None:
                 self._on_edge_next()
                 return
+            if self.children:
+                self.index = 0
+                return
         super().action_cursor_down()
 
     def action_cursor_up(self) -> None:
@@ -39,6 +42,9 @@ class EdgeAwareListView(ListView):
         if self.index is not None and self.index <= 0:
             if self._on_edge_prev is not None:
                 self._on_edge_prev()
+                return
+            if self.children:
+                self.index = len(self.children) - 1
                 return
         super().action_cursor_up()
 
@@ -158,7 +164,7 @@ class MainMenuScreen(Screen):
         """Build the main menu layout."""
 
         yield Static("WrestleGM", classes="section-title")
-        self.menu = ListView(
+        self.menu = EdgeAwareListView(
             ListItem(Static("New Game"), id="new-game"),
             ListItem(Static("Roster Overview"), id="roster"),
             ListItem(Static("Quit"), id="quit"),
@@ -617,6 +623,8 @@ class WrestlerSelectionScreen(Screen):
 
     BINDINGS = [
         ("enter", "select", "Select"),
+        ("up", "focus_prev", "Prev"),
+        ("down", "focus_next", "Next"),
         ("escape", "cancel", "Cancel"),
     ]
 
@@ -657,12 +665,18 @@ class WrestlerSelectionScreen(Screen):
                 f"Sta:{wrestler.stamina:>3}{fatigue}{booked_marker}"
             )
             list_items.append(ListItem(Static(line), id=wrestler.id))
-        self.list_view = ListView(*list_items)
+        self.list_view = EdgeAwareListView(
+            *list_items,
+            on_edge_prev=self.action_focus_prev,
+            on_edge_next=self.action_focus_next,
+        )
         yield self.list_view
         yield self.message
         with Horizontal():
-            yield Button("Select", id="select")
-            yield Button("Cancel", id="cancel")
+            self.select_button = Button("Select", id="select")
+            self.cancel_button = Button("Cancel", id="cancel")
+            yield self.select_button
+            yield self.cancel_button
         yield Footer()
 
     def on_mount(self) -> None:
@@ -676,6 +690,33 @@ class WrestlerSelectionScreen(Screen):
         """Close the selection screen without changes."""
 
         self.app.pop_screen()
+
+    def action_focus_next(self) -> None:
+        """Move focus to the next selection control."""
+
+        self._move_focus(1)
+
+    def action_focus_prev(self) -> None:
+        """Move focus to the previous selection control."""
+
+        self._move_focus(-1)
+
+    def _move_focus(self, delta: int) -> None:
+        """Cycle focus between the list and action buttons."""
+
+        focus_order = [self.list_view, self.select_button, self.cancel_button]
+        focused = self.app.focused
+        if focused not in focus_order:
+            self.list_view.focus()
+            if self.list_view.index is None and self.list_view.children:
+                self.list_view.index = 0
+            return
+        index = focus_order.index(focused)
+        next_index = (index + delta) % len(focus_order)
+        next_focus = focus_order[next_index]
+        if next_focus is self.list_view and self.list_view.index is None and self.list_view.children:
+            self.list_view.index = 0
+        next_focus.focus()
 
     def action_select(self) -> None:
         """Select the highlighted wrestler if valid."""
@@ -741,6 +782,8 @@ class MatchTypeSelectionScreen(Screen):
 
     BINDINGS = [
         ("enter", "select", "Select"),
+        ("up", "focus_prev", "Prev"),
+        ("down", "focus_next", "Next"),
         ("escape", "cancel", "Cancel"),
     ]
 
@@ -758,12 +801,18 @@ class MatchTypeSelectionScreen(Screen):
         list_items: list[ListItem] = []
         for match_type in self.app.state.match_types.values():
             list_items.append(ListItem(Static(match_type.name), id=match_type.id))
-        self.list_view = ListView(*list_items)
+        self.list_view = EdgeAwareListView(
+            *list_items,
+            on_edge_prev=self.action_focus_prev,
+            on_edge_next=self.action_focus_next,
+        )
         yield self.list_view
         yield self.description
         with Horizontal():
-            yield Button("Select", id="select")
-            yield Button("Cancel", id="cancel")
+            self.select_button = Button("Select", id="select")
+            self.cancel_button = Button("Cancel", id="cancel")
+            yield self.select_button
+            yield self.cancel_button
         yield Footer()
 
     def on_mount(self) -> None:
@@ -810,6 +859,33 @@ class MatchTypeSelectionScreen(Screen):
         """Close the selection screen without changes."""
 
         self.app.pop_screen()
+
+    def action_focus_next(self) -> None:
+        """Move focus to the next selection control."""
+
+        self._move_focus(1)
+
+    def action_focus_prev(self) -> None:
+        """Move focus to the previous selection control."""
+
+        self._move_focus(-1)
+
+    def _move_focus(self, delta: int) -> None:
+        """Cycle focus between the list and action buttons."""
+
+        focus_order = [self.list_view, self.select_button, self.cancel_button]
+        focused = self.app.focused
+        if focused not in focus_order:
+            self.list_view.focus()
+            if self.list_view.index is None and self.list_view.children:
+                self.list_view.index = 0
+            return
+        index = focus_order.index(focused)
+        next_index = (index + delta) % len(focus_order)
+        next_focus = focus_order[next_index]
+        if next_focus is self.list_view and self.list_view.index is None and self.list_view.children:
+            self.list_view.index = 0
+        next_focus.focus()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle Select and Cancel buttons."""
@@ -1047,6 +1123,8 @@ class RosterScreen(Screen):
     """
 
     BINDINGS = [
+        ("up", "focus_prev", "Prev"),
+        ("down", "focus_next", "Next"),
         ("escape", "back", "Back"),
     ]
 
@@ -1054,9 +1132,13 @@ class RosterScreen(Screen):
         """Build the roster screen layout."""
 
         yield Static("Roster Overview", classes="section-title")
-        self.list_view = ListView()
+        self.list_view = EdgeAwareListView(
+            on_edge_prev=self.action_focus_prev,
+            on_edge_next=self.action_focus_next,
+        )
         yield self.list_view
-        yield Button("Back", id="back")
+        self.back_button = Button("Back", id="back")
+        yield self.back_button
         yield Footer()
 
     async def on_mount(self) -> None:
@@ -1085,6 +1167,33 @@ class RosterScreen(Screen):
         """Close the roster screen."""
 
         self.app.pop_screen()
+
+    def action_focus_next(self) -> None:
+        """Move focus to the next roster control."""
+
+        self._move_focus(1)
+
+    def action_focus_prev(self) -> None:
+        """Move focus to the previous roster control."""
+
+        self._move_focus(-1)
+
+    def _move_focus(self, delta: int) -> None:
+        """Cycle focus between the roster list and Back button."""
+
+        focus_order = [self.list_view, self.back_button]
+        focused = self.app.focused
+        if focused not in focus_order:
+            self.list_view.focus()
+            if self.list_view.index is None and self.list_view.children:
+                self.list_view.index = 0
+            return
+        index = focus_order.index(focused)
+        next_index = (index + delta) % len(focus_order)
+        next_focus = focus_order[next_index]
+        if next_focus is self.list_view and self.list_view.index is None and self.list_view.children:
+            self.list_view.index = 0
+        next_focus.focus()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle Back button presses."""
