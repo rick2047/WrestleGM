@@ -8,7 +8,7 @@ from typing import Callable, Optional
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.screen import ModalScreen, Screen
-from textual.widgets import Button, Footer, ListItem, ListView, Static
+from textual.widgets import Button, DataTable, Footer, ListItem, ListView, Static
 
 
 class EdgeAwareListView(ListView):
@@ -48,6 +48,39 @@ class EdgeAwareListView(ListView):
                 return
         super().action_cursor_up()
 
+
+class EdgeAwareDataTable(DataTable):
+    """DataTable that can hand off focus when the cursor hits an edge."""
+
+    def __init__(
+        self,
+        *,
+        on_edge_prev: Callable[[], None] | None = None,
+        on_edge_next: Callable[[], None] | None = None,
+    ) -> None:
+        super().__init__()
+        self._on_edge_prev = on_edge_prev
+        self._on_edge_next = on_edge_next
+        self.cursor_type = "row"
+
+    def action_cursor_down(self) -> None:
+        """Move focus to the next widget when already at the last row."""
+
+        if self.cursor_row is not None and self.cursor_row >= self.row_count - 1:
+            if self._on_edge_next is not None:
+                self._on_edge_next()
+                return
+        super().action_cursor_down()
+
+    def action_cursor_up(self) -> None:
+        """Move focus to the previous widget when already at the first row."""
+
+        if self.cursor_row is not None and self.cursor_row <= 0:
+            if self._on_edge_prev is not None:
+                self._on_edge_prev()
+                return
+        super().action_cursor_up()
+
 from wrestlegm import constants
 from wrestlegm.data import load_match_types, load_wrestlers
 from wrestlegm.models import Match
@@ -58,7 +91,6 @@ FATIGUE_ICON = "🥱"
 EMPTY_ICON = "⚠️"
 BLOCK_ICON = "⛔"
 ALIGNMENT_EMOJI = {"Face": "😃", "Heel": "😈"}
-ROSTER_HEADER = f"  {'Name':<18} {'Sta':>3} {'Pop':>3}"
 
 
 def format_stars(rating: float) -> str:
@@ -70,13 +102,19 @@ def format_stars(rating: float) -> str:
     return "".join(["★"] * full + ["½"] * half + ["☆"] * empty)
 
 
-def roster_line(name: str, alignment: str, popularity: int, stamina: int) -> str:
-    """Format a roster line for list display."""
+def build_name_cell(name: str, alignment: str) -> str:
+    """Format the emoji + name cell for roster tables."""
 
     emoji = ALIGNMENT_EMOJI[alignment]
     trimmed = truncate_name(name)
+    return f"{emoji} {trimmed}"
+
+
+def build_pop_cell(popularity: int, stamina: int, booked_marker: str = "") -> str:
+    """Format the popularity cell with status markers."""
+
     fatigue = f" {FATIGUE_ICON}" if stamina <= constants.STAMINA_MIN_BOOKABLE else ""
-    return f"{emoji} {trimmed:<18} {stamina:>3} {popularity:>3}{fatigue}"
+    return f"{popularity}{fatigue}{booked_marker}"
 
 
 def truncate_name(name: str, max_len: int = 18) -> str:
@@ -629,7 +667,7 @@ class WrestlerSelectionScreen(Screen):
     """Roster picker for assigning a wrestler to a slot side.
 
     Responsibilities:
-    - Render the roster list with stamina/availability hints.
+    - Render the roster table with stamina/availability hints.
     - Enforce validation rules (duplicates, stamina, already booked).
     - Return the selection to the parent booking screen via callback.
     """
@@ -663,12 +701,14 @@ class WrestlerSelectionScreen(Screen):
         """Build the wrestler selection layout."""
 
         yield Static(f"Select Wrestler (Match {self.slot_index + 1} · {self.label})")
-        yield Static(ROSTER_HEADER)
-        list_items: list[ListItem] = []
+        self.table = EdgeAwareDataTable(
+            on_edge_prev=self.action_focus_prev,
+            on_edge_next=self.action_focus_next,
+        )
+        self.table.add_column("Name", key="name")
+        self.table.add_column("Sta", key="sta", justify="right")
+        self.table.add_column("Pop", key="pop", justify="right")
         for wrestler in self.app.state.roster.values():
-            name = truncate_name(wrestler.name)
-            emoji = ALIGNMENT_EMOJI[wrestler.alignment]
-            fatigue = f" {FATIGUE_ICON}" if wrestler.stamina <= constants.STAMINA_MIN_BOOKABLE else ""
             booked = self.app.state.is_wrestler_booked(
                 wrestler.id,
                 exclude_slot=self.slot_index,
@@ -676,17 +716,13 @@ class WrestlerSelectionScreen(Screen):
             if wrestler.id in self.booked_ids:
                 booked = True
             booked_marker = " 📅" if booked else ""
-            line = (
-                f"{emoji} {name:<18} {wrestler.stamina:>3} "
-                f"{wrestler.popularity:>3}{fatigue}{booked_marker}"
+            self.table.add_row(
+                build_name_cell(wrestler.name, wrestler.alignment),
+                str(wrestler.stamina),
+                build_pop_cell(wrestler.popularity, wrestler.stamina, booked_marker),
+                key=wrestler.id,
             )
-            list_items.append(ListItem(Static(line), id=wrestler.id))
-        self.list_view = EdgeAwareListView(
-            *list_items,
-            on_edge_prev=self.action_focus_prev,
-            on_edge_next=self.action_focus_next,
-        )
-        yield self.list_view
+        yield self.table
         yield self.message
         with Horizontal():
             self.select_button = Button("Select", id="select")
@@ -698,9 +734,9 @@ class WrestlerSelectionScreen(Screen):
     def on_mount(self) -> None:
         """Focus the wrestler list and select the first entry."""
 
-        self.list_view.focus()
-        if self.list_view.children:
-            self.list_view.index = 0
+        self.table.focus()
+        if self.table.row_count:
+            self.table.cursor_coordinate = (0, 0)
 
     def action_cancel(self) -> None:
         """Close the selection screen without changes."""
@@ -720,30 +756,29 @@ class WrestlerSelectionScreen(Screen):
     def _move_focus(self, delta: int) -> None:
         """Cycle focus between the list and action buttons."""
 
-        focus_order = [self.list_view, self.select_button, self.cancel_button]
+        focus_order = [self.table, self.select_button, self.cancel_button]
         focused = self.app.focused
         if focused not in focus_order:
-            self.list_view.focus()
-            if self.list_view.index is None and self.list_view.children:
-                self.list_view.index = 0
+            self.table.focus()
+            if self.table.cursor_row is None and self.table.row_count:
+                self.table.cursor_coordinate = (0, 0)
             return
         index = focus_order.index(focused)
         next_index = (index + delta) % len(focus_order)
         next_focus = focus_order[next_index]
-        if next_focus is self.list_view and self.list_view.index is None and self.list_view.children:
-            self.list_view.index = 0
+        if next_focus is self.table and self.table.cursor_row is None and self.table.row_count:
+            self.table.cursor_coordinate = (0, 0)
         next_focus.focus()
 
     def action_select(self) -> None:
         """Select the highlighted wrestler if valid."""
 
-        index = self.list_view.index
-        if index is None:
+        if self.table.cursor_row is None:
             return
-        selected = self.list_view.children[index]
-        wrestler_id = selected.id
-        if wrestler_id is None:
+        row_key = self.table.get_row_key(self.table.cursor_row)
+        if row_key is None:
             return
+        wrestler_id = str(row_key)
         error = self.validate_selection(wrestler_id)
         if error:
             self.message.update(f"{BLOCK_ICON} {error}")
@@ -770,22 +805,6 @@ class WrestlerSelectionScreen(Screen):
             self.action_select()
         elif event.button.id == "cancel":
             self.action_cancel()
-
-    def on_list_view_selected(self, event: ListView.Selected) -> None:
-        """Select the wrestler from list view input."""
-
-        if event.list_view is not self.list_view:
-            return
-        wrestler_id = event.item.id
-        if wrestler_id is None:
-            return
-        error = self.validate_selection(wrestler_id)
-        if error:
-            self.message.update(f"{BLOCK_ICON} {error}")
-            return
-        self.on_select(wrestler_id)
-        self.app.pop_screen()
-
 
 class MatchTypeSelectionScreen(Screen):
     """Match type picker for a slot.
@@ -1148,12 +1167,14 @@ class RosterScreen(Screen):
         """Build the roster screen layout."""
 
         yield Static("Roster Overview", classes="section-title")
-        yield Static(ROSTER_HEADER)
-        self.list_view = EdgeAwareListView(
+        self.table = EdgeAwareDataTable(
             on_edge_prev=self.action_focus_prev,
             on_edge_next=self.action_focus_next,
         )
-        yield self.list_view
+        self.table.add_column("Name", key="name")
+        self.table.add_column("Sta", key="sta", justify="right")
+        self.table.add_column("Pop", key="pop", justify="right")
+        yield self.table
         self.back_button = Button("Back", id="back")
         yield self.back_button
         yield Footer()
@@ -1162,23 +1183,24 @@ class RosterScreen(Screen):
         """Populate the roster list and focus it."""
 
         await self.refresh_view()
-        self.list_view.focus()
+        self.table.focus()
+        if self.table.row_count:
+            self.table.cursor_coordinate = (0, 0)
 
     async def refresh_view(self) -> None:
         """Rebuild roster rows from current state."""
 
-        await self.list_view.clear()
-        items: list[ListItem] = []
+        self.table.clear()
+        self.table.add_column("Name", key="name")
+        self.table.add_column("Sta", key="sta", justify="right")
+        self.table.add_column("Pop", key="pop", justify="right")
         for wrestler in self.app.state.roster.values():
-            line = roster_line(
-                wrestler.name,
-                wrestler.alignment,
-                wrestler.popularity,
-                wrestler.stamina,
+            self.table.add_row(
+                build_name_cell(wrestler.name, wrestler.alignment),
+                str(wrestler.stamina),
+                build_pop_cell(wrestler.popularity, wrestler.stamina),
+                key=wrestler.id,
             )
-            items.append(ListItem(Static(line), id=wrestler.id))
-        if items:
-            await self.list_view.extend(items)
 
     def action_back(self) -> None:
         """Close the roster screen."""
@@ -1198,18 +1220,18 @@ class RosterScreen(Screen):
     def _move_focus(self, delta: int) -> None:
         """Cycle focus between the roster list and Back button."""
 
-        focus_order = [self.list_view, self.back_button]
+        focus_order = [self.table, self.back_button]
         focused = self.app.focused
         if focused not in focus_order:
-            self.list_view.focus()
-            if self.list_view.index is None and self.list_view.children:
-                self.list_view.index = 0
+            self.table.focus()
+            if self.table.cursor_row is None and self.table.row_count:
+                self.table.cursor_coordinate = (0, 0)
             return
         index = focus_order.index(focused)
         next_index = (index + delta) % len(focus_order)
         next_focus = focus_order[next_index]
-        if next_focus is self.list_view and self.list_view.index is None and self.list_view.children:
-            self.list_view.index = 0
+        if next_focus is self.table and self.table.cursor_row is None and self.table.row_count:
+            self.table.cursor_coordinate = (0, 0)
         next_focus.focus()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:

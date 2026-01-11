@@ -8,7 +8,8 @@ The wrestler selection screen currently shows only alignment initial and stamina
 - Add a table header row naming the columns (name, stamina, popularity).
 - Format each selection row as: `{emoji} {name:<18} {sta:>3} {pop:>3}{fatigue}{booked_marker}`.
 - Truncate names longer than 18 characters to 15 + `...` so columns stay aligned.
-- Apply the same header and row formatting to the roster overview screen.
+- Render the wrestler selection list as a Textual table so columns align even with emoji width.
+- Apply the same table layout, header, and row formatting to the roster overview screen.
 - Missing values are not expected; the UI continues to assume alignment, popularity, and stamina are present per the data spec.
 
 Mockup:

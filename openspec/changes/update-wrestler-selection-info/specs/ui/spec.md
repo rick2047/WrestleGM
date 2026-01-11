@@ -1,6 +1,6 @@
 ## MODIFIED Requirements
 ### Requirement: Textual MVP screens
-The system SHALL provide the MVP screens defined in the PRD using Textual widgets and keyboard-only navigation. The roster screen SHALL read from the session roster stored in `GameState`, include a header row naming the name/stamina/popularity columns, format rows as `{emoji} {name:<18} {sta:>3} {pop:>3}{fatigue}`, display alignment via emoji (Face 😃, Heel 😈), truncate names longer than 18 characters to 15 + `...`, and rebuild its list rows on resume without reusing mounted widget IDs.
+The system SHALL provide the MVP screens defined in the PRD using Textual widgets and keyboard-only navigation. The roster screen SHALL read from the session roster stored in `GameState`, render the roster in a table with Name/Stamina/Popularity columns, include a header row naming the name/stamina/popularity columns, format rows as `{emoji} {name:<18} {sta:>3} {pop:>3}{fatigue}`, display alignment via emoji (Face 😃, Heel 😈), truncate names longer than 18 characters to 15 + `...`, and rebuild its list rows on resume without reusing mounted widget IDs.
 
 #### Scenario: Navigate from main menu to booking hub
 - **WHEN** the player selects New Game on the main menu
@@ -21,7 +21,7 @@ The system SHALL provide the MVP screens defined in the PRD using Textual widget
 - **THEN** Face alignment uses 😃 and Heel alignment uses 😈
 
 ### Requirement: Match booking flow
-The system SHALL edit matches in a dedicated booking screen and require confirmation before committing. The booking screen SHALL default the match type to the first match type entry, mark already-booked wrestlers with a 📅 indicator in the selection list, show popularity and stamina, display alignment via emoji (Face 😃, Heel 😈), include a header row naming the name/stamina/popularity columns, format rows as `{emoji} {name:<18} {sta:>3} {pop:>3}{fatigue}{booked_marker}`, and use 🥱 consistently for low-stamina indicators.
+The system SHALL edit matches in a dedicated booking screen and require confirmation before committing. The booking screen SHALL default the match type to the first match type entry, mark already-booked wrestlers with a 📅 indicator in the selection list, show popularity and stamina, display alignment via emoji (Face 😃, Heel 😈), render the selection list as a table with Name/Stamina/Popularity columns, include a header row naming the name/stamina/popularity columns, format rows as `{emoji} {name:<18} {sta:>3} {pop:>3}{fatigue}{booked_marker}`, and use 🥱 consistently for low-stamina indicators.
 
 #### Scenario: Confirmation modal on booking
 - **WHEN** a booking is complete and the user selects Confirm
