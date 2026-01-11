@@ -4,4 +4,4 @@
 - [x] 1.3 Rebuild roster rows from `GameState` without reusing mounted children.
 
 ## 2. Validation
-- [ ] 2.1 Confirm returning to the roster screen no longer raises `DuplicateIds`.
+- [x] 2.1 Confirm returning to the roster screen no longer raises `DuplicateIds`.
