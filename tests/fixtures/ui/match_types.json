@@ -1,0 +1,30 @@
+[
+  {
+    "id": "singles",
+    "name": "Singles",
+    "description": "One-on-one showdown.",
+    "modifiers": {
+      "outcome_chaos": 0.2,
+      "rating_bonus": 5,
+      "rating_variance": 3,
+      "stamina_cost_winner": 10,
+      "stamina_cost_loser": 12,
+      "popularity_delta_winner": 2,
+      "popularity_delta_loser": -1
+    }
+  },
+  {
+    "id": "hardcore",
+    "name": "Hardcore",
+    "description": "Weapons, brawls, and mayhem.",
+    "modifiers": {
+      "outcome_chaos": 0.35,
+      "rating_bonus": 8,
+      "rating_variance": 4,
+      "stamina_cost_winner": 14,
+      "stamina_cost_loser": 16,
+      "popularity_delta_winner": 3,
+      "popularity_delta_loser": -2
+    }
+  }
+]

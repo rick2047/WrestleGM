@@ -285,6 +285,8 @@ class GameHubScreen(Screen):
         """Focus the menu list and refresh labels."""
 
         self.menu.focus()
+        if self.menu.index is None:
+            self.menu.index = 0
         self.refresh_view()
 
     def refresh_view(self) -> None:
@@ -298,6 +300,8 @@ class GameHubScreen(Screen):
     def on_screen_resume(self) -> None:
         """Refresh the hub labels after returning."""
 
+        self.menu.focus()
+        self.menu.index = 0
         self.refresh_view()
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
@@ -308,6 +312,20 @@ class GameHubScreen(Screen):
         elif event.item.id == "roster":
             self.app.push_screen(RosterScreen())
         elif event.item.id == "exit":
+            self.app.switch_screen(MainMenuScreen())
+
+    def action_select(self) -> None:
+        """Activate the focused menu item."""
+
+        if self.menu.index is None:
+            return
+        item = self.menu.children[self.menu.index]
+        item_id = item.id
+        if item_id == "current-show":
+            self.app.switch_screen(BookingHubScreen())
+        elif item_id == "roster":
+            self.app.push_screen(RosterScreen())
+        elif item_id == "exit":
             self.app.switch_screen(MainMenuScreen())
 
 
