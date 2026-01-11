@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import Callable, Optional
 
 from textual.app import App, ComposeResult
-from textual.containers import Horizontal, Vertical
+from textual.containers import Vertical
 from textual.screen import ModalScreen, Screen
 from textual.widgets import Button, DataTable, Footer, ListItem, ListView, Static
 
@@ -268,9 +268,9 @@ class GameHubScreen(Screen):
         yield Static("WrestleGM", classes="section-title")
         yield Static("Game Hub", classes="section-title")
 
-        self.current_show = Static("", id="current-show")
-        self.roster = Static("Roster Overview", id="roster")
-        self.exit = Static("Exit to Main Menu", id="exit")
+        self.current_show = Static("")
+        self.roster = Static("Roster Overview")
+        self.exit = Static("Exit to Main Menu")
 
         self.menu = EdgeAwareListView(
             ListItem(self.current_show, id="current-show"),

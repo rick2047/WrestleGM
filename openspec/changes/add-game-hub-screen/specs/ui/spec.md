@@ -28,7 +28,7 @@ The system SHALL render a Main Menu that only offers New Game and Quit, and SHAL
 - **THEN** a new session is initialized and the Game Hub is shown
 
 ### Requirement: Game hub screen
-The system SHALL provide a Game Hub screen that displays the current show number and offers Current Show, Roster Overview, and Exit to Main Menu actions. The hub SHALL be the only gateway to gameplay screens and SHALL not run simulation or apply state changes.
+The system SHALL provide a Game Hub screen that displays the current show number and offers Current Show, Roster Overview, and Exit to Main Menu actions. The hub SHALL be the only gateway to gameplay screens and SHALL not run simulation or apply state changes. Any descriptive line under Current Show (e.g., "Book / Review Matches") SHALL be non-selectable text.
 
 #### Scenario: Game hub mockup layout
 - **WHEN** the Game Hub is displayed
@@ -48,6 +48,10 @@ The system SHALL provide a Game Hub screen that displays the current show number
 │ ↑↓ Navigate   Enter Select           │
 └──────────────────────────────────────┘
 ```
+
+#### Scenario: Book / Review Matches is descriptive
+- **WHEN** the Game Hub is displayed
+- **THEN** the "Book / Review Matches" line is descriptive text and not a separate action
 
 #### Scenario: Enter hub after new game
 - **WHEN** a new session is initialized
