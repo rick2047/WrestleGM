@@ -10,6 +10,7 @@ The system SHALL use keyboard-only navigation and display a persistent footer th
 - **WHEN** the user presses arrow keys on booking hub, match booking, results, or roster
 - **THEN** focus can move from list views to the action buttons and back in a cycle
 
+## ADDED Requirements
 ### Requirement: Arrow-key navigation consistency
 The system SHALL provide cyclical arrow-key navigation across all screens with focusable lists or action buttons.
 
