@@ -1,5 +1,5 @@
-## MODIFIED Requirements
-### Requirement: Documentation completeness
+## ADDED Requirements
+### Requirement: Documentation accuracy
 The documentation SHALL describe the current simulation architecture, including `SimulationEngine` ownership of RNG, `ShowApplier` state mutation, and how `GameState.run_show()` coordinates the pipeline. The documentation SHALL also reflect current UI navigation behavior, implementation ownership details, and command-line usage for running the app, tests, and docs.
 
 #### Scenario: Simulation doc accuracy
