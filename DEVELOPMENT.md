@@ -12,3 +12,13 @@ The `update-prd` skill keeps `prd.md` aligned with current specs and implementat
 ## GitHub Access
 
 Use the `gh` CLI for GitHub issues/PRs/comments rather than raw API calls. Assume authentication is already configured and do not prompt for login.
+
+## UI Snapshot Testing
+
+UI snapshot baselines live under `tests/snapshots/test_ui_snapshots/` (stored as `.raw` SVG snapshots) and are managed by `pytest-textual-snapshot`. To update snapshots after intentional UI changes, run:
+
+```bash
+uv run pytest tests/test_ui_snapshots.py --snapshot-update
+```
+
+The snapshot plugin writes diff artifacts to the directory configured by `TEXTUAL_SNAPSHOT_TEMPDIR`.

@@ -266,3 +266,20 @@ Focus behavior:
 - Wrestlers cannot be booked more than once per show.
 - Wrestlers below the stamina threshold cannot be booked.
 - Validation errors are shown inline on selection screens.
+
+## UI Testing Strategy
+
+### Flow Tests
+
+- Use Textual's `App.run_test` with a fixed viewport of 100x30.
+- Load deterministic fixtures from `tests/fixtures/ui/`.
+- Core journeys live in `tests/test_ui_flows.py` and exercise keyboard-only navigation.
+
+### Snapshot Tests
+
+- SVG baselines live under `tests/snapshots/test_ui_snapshots/` (stored as `.raw` files by `pytest-textual-snapshot`).
+- Snapshot tests live in `tests/test_ui_snapshots.py` and use `pytest-textual-snapshot`.
+- Update baselines intentionally with:
+  ```bash
+  uv run pytest tests/test_ui_snapshots.py --snapshot-update
+  ```

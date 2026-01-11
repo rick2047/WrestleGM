@@ -53,3 +53,10 @@ The documentation SHALL describe the current simulation architecture, including 
 - **WHEN** a reader views the documentation index
 - **THEN** it lists `uv` commands for running the app, tests, and docs
 
+### Requirement: UI testing documentation
+The system SHALL document the UI testing strategy in the `docs/` site, including flow tests, snapshot tests, and how to update baselines.
+
+#### Scenario: Document UI test strategy
+- **WHEN** a contributor reads the docs
+- **THEN** they can find the UI testing strategy and snapshot update steps in `docs/`
+

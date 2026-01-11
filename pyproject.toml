@@ -13,12 +13,13 @@ dev = [
     "mkdocs>=1.6.1",
     "mkdocstrings[python]>=0.25.1",
     "pytest>=9.0.2",
+    "pytest-textual-snapshot>=1.0.0",
     "ruff>=0.14.11",
 ]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-ra"
+addopts = "-ra --snapshot-dirname=snapshots"
 pythonpath = ["."]
 
 [tool.ruff]
