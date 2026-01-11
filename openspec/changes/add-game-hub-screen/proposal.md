@@ -32,14 +32,14 @@ Game Hub
 │ WrestleGM                            │
 │ Game Hub                             │
 ├──────────────────────────────────────┤
-│ ▸ Current Show #12                   │
-│   Book / Review Matches              │
+│ ▸ Book Current Show                  │
+│   Episode 12: Rising Tensions        │
 │                                      │
 │   Roster Overview                    │
 │                                      │
 │   Exit to Main Menu                  │
 ├──────────────────────────────────────┤
-│ ↑↓ Navigate   Enter Select           │
+│ ↑↓ Navigate   Enter Select   Q Quit  │
 └──────────────────────────────────────┘
 ```
 

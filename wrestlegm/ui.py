@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import Callable, Optional
 
 from textual.app import App, ComposeResult
-from textual.containers import Vertical
+from textual.containers import Horizontal, Vertical
 from textual.screen import ModalScreen, Screen
 from textual.widgets import Button, DataTable, Footer, ListItem, ListView, Static
 
@@ -260,6 +260,7 @@ class GameHubScreen(Screen):
 
     BINDINGS = [
         ("enter", "select", "Select"),
+        ("q", "app.quit", "Quit"),
     ]
 
     def compose(self) -> ComposeResult:
@@ -269,8 +270,8 @@ class GameHubScreen(Screen):
         yield Static("Game Hub", classes="section-title")
 
         self.current_show = Static("")
-        self.roster = Static("Roster Overview")
-        self.exit = Static("Exit to Main Menu")
+        self.roster = Static("Roster Overview\n")
+        self.exit = Static("Exit to Main Menu\n")
 
         self.menu = EdgeAwareListView(
             ListItem(self.current_show, id="current-show"),
@@ -290,7 +291,8 @@ class GameHubScreen(Screen):
         """Update the current show text."""
 
         self.current_show.update(
-            f"Current Show #{self.app.state.show_index}\nBook / Review Matches"
+            "Book Current Show\n"
+            f"[dim]Episode {self.app.state.show_index}: Rising Tensions[/dim]"
         )
 
     def on_screen_resume(self) -> None:
@@ -1134,6 +1136,10 @@ class ResultsScreen(Screen):
 
     BINDINGS = [
         ("enter", "continue", "Continue"),
+        ("left", "focus_prev", "Prev"),
+        ("right", "focus_next", "Next"),
+        ("up", "focus_prev", "Prev"),
+        ("down", "focus_next", "Next"),
     ]
 
     def compose(self) -> ComposeResult:
@@ -1178,6 +1184,27 @@ class ResultsScreen(Screen):
         """Return to the game hub."""
 
         self.app.switch_screen(GameHubScreen())
+
+    def action_focus_next(self) -> None:
+        """Move focus to the next results action."""
+
+        self._move_focus(1)
+
+    def action_focus_prev(self) -> None:
+        """Move focus to the previous results action."""
+
+        self._move_focus(-1)
+
+    def _move_focus(self, delta: int) -> None:
+        """Cycle focus across results action buttons."""
+
+        focus_order = [self.continue_button]
+        focused = self.app.focused
+        if focused not in focus_order:
+            focus_order[0].focus()
+            return
+        index = focus_order.index(focused)
+        focus_order[(index + delta) % len(focus_order)].focus()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle Continue button presses."""

@@ -28,7 +28,7 @@ The system SHALL render a Main Menu that only offers New Game and Quit, and SHAL
 - **THEN** a new session is initialized and the Game Hub is shown
 
 ### Requirement: Game hub screen
-The system SHALL provide a Game Hub screen that displays the current show number and offers Current Show, Roster Overview, and Exit to Main Menu actions. The hub SHALL be the only gateway to gameplay screens and SHALL not run simulation or apply state changes. Any descriptive line under Current Show (e.g., "Book / Review Matches") SHALL be non-selectable text.
+The system SHALL provide a Game Hub screen that displays the current show number and offers Book Current Show, Roster Overview, and Exit to Main Menu actions. The hub SHALL be the only gateway to gameplay screens and SHALL not run simulation or apply state changes. The show subtitle line under Book Current Show SHALL display the show name/number and be non-selectable text.
 
 #### Scenario: Game hub mockup layout
 - **WHEN** the Game Hub is displayed
@@ -38,27 +38,31 @@ The system SHALL provide a Game Hub screen that displays the current show number
 │ WrestleGM                            │
 │ Game Hub                             │
 ├──────────────────────────────────────┤
-│ ▸ Current Show #12                   │
-│   Book / Review Matches              │
+│ ▸ Book Current Show                  │
+│   Episode 12: Rising Tensions        │
 │                                      │
 │   Roster Overview                    │
 │                                      │
 │   Exit to Main Menu                  │
 ├──────────────────────────────────────┤
-│ ↑↓ Navigate   Enter Select           │
+│ ↑↓ Navigate   Enter Select   Q Quit  │
 └──────────────────────────────────────┘
 ```
 
-#### Scenario: Book / Review Matches is descriptive
+#### Scenario: Show subtitle is descriptive
 - **WHEN** the Game Hub is displayed
-- **THEN** the "Book / Review Matches" line is descriptive text and not a separate action
+- **THEN** the show subtitle line is descriptive text and not a separate action
+
+#### Scenario: Quit from Game Hub
+- **WHEN** the player presses Q on the Game Hub
+- **THEN** the application quits
 
 #### Scenario: Enter hub after new game
 - **WHEN** a new session is initialized
 - **THEN** the Game Hub is shown with the current show number
 
 #### Scenario: Navigate to booking from hub
-- **WHEN** the player selects Current Show in the Game Hub
+- **WHEN** the player selects Book Current Show in the Game Hub
 - **THEN** the booking hub screen is shown
 
 #### Scenario: Navigate to roster from hub
