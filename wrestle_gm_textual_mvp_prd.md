@@ -101,6 +101,7 @@ Fields:
 - `name: string`
 - `description: string`
 - `modifiers`:
+  - `outcome_chaos`
   - `rating_bonus`
   - `rating_variance`
   - `stamina_cost_winner`
@@ -174,6 +175,11 @@ After *all* matches in a show complete:
 5. **State Application** → applies all stat deltas at show end
 
 No other simulation steps exist in the MVP.
+
+Implementation ownership:
+
+- `SimulationEngine` owns RNG and match simulation steps.
+- `ShowApplier` applies deltas and recovery at show end.
 
 ---
 
@@ -376,6 +382,7 @@ Constraints:
 
 - Must be computed after all matches are simulated.
 - Deterministic aggregation (no RNG).
+- If there are no match ratings, the show rating is `0.0`.
 
 ---
 
@@ -389,6 +396,7 @@ Rules:
 - Clamp after application:
   - Popularity is clamped to `0–100`.
   - Stamina is clamped to `0–100`.
+- State mutation is owned by a dedicated `ShowApplier` and triggered via `GameState.run_show()`.
 
 Ordering:
 
@@ -664,6 +672,7 @@ This section defines the **full MVP UX** for WrestleGM, including screens, navig
 - `← / →` – move between horizontal fields or buttons (where applicable)
 - `Enter` – activate focused element
 - `Esc` – back / cancel (context-dependent)
+- Arrow-key focus loops between lists and action buttons; disabled actions are skipped
 
 **Navigation stack**
 
@@ -683,15 +692,12 @@ This section defines the **full MVP UX** for WrestleGM, including screens, navig
 
 The game uses a **minimal, consistent emoji language**:
 
-| Indicator | Meaning                                         | Blocks Action            |
-| --------- | ----------------------------------------------- | ------------------------ |
-| ⚠️        | Empty / incomplete field                        | Yes (booking / run show) |
-| ⛔         | Logical impossibility (e.g. duplicate wrestler) | Yes                      |
-| 😮‍💨     | Low stamina / fatigued                          | No                       |
-
-Indicators rely on iconography first; color is supplemental.
-
-\--------- | ----------------------------------------------- | -------------- | | ⚠️        | Empty / incomplete field                        | Yes (Run Show) | | ⛔         | Logical impossibility (e.g. duplicate wrestler) | Yes            | | 😮‍💨     | Low stamina / fatigued                          | No             |
+| Indicator | Meaning                                         | Blocks Action |
+| --------- | ----------------------------------------------- | ------------- |
+| ⚠️        | Empty / incomplete field                        | Yes           |
+| ⛔         | Logical impossibility (e.g. duplicate wrestler) | Yes           |
+| 🥱        | Low stamina / fatigued                          | Yes           |
+| 📅        | Already booked in another slot                  | Yes           |
 
 Indicators rely on iconography first; color is supplemental.
 
@@ -701,8 +707,8 @@ Indicators rely on iconography first; color is supplemental.
 
 - Validation is **binary** at the moment of committing an action
 - The system blocks only impossible states
-- Low stamina, poor matchups, and bad strategy are allowed
-- No warnings or advice are shown beyond visual indicators
+- Low stamina is treated as **unbookable** and is blocked
+- No warnings or advice are shown beyond visual indicators and short inline errors
 - Temporary booking state persists until explicitly cancelled
 
 ---
@@ -803,7 +809,7 @@ Slots are binary; partial matches do not exist on the show.
 
 **Validation rules**
 
-- Run Show is enabled if and only if all 3 slots are booked
+- Run Show is enabled only when the show card has no validation errors
 - Booking Hub never accepts invalid or partial matches
 
 ---
@@ -828,6 +834,8 @@ This screen is the **only place where a match can be edited or created**. It own
 - Confirm is enabled only when all three fields are valid
 - Esc or Cancel discards all changes and returns to Booking Hub
 - Clear Slot removes the match and returns to Booking Hub
+- Clear Slot is disabled if the slot is empty
+- If the slot is empty, the match type defaults to the first available match type
 
 **Validation rules (authoritative)**
 
@@ -835,9 +843,34 @@ This screen is the **only place where a match can be edited or created**. It own
 - Wrestler A ≠ Wrestler B
 - Wrestlers already booked in other slots cannot be selected
 - Match Type must be set
-- Low stamina is allowed and indicated (😮‍💨)
+- Wrestlers below `STAMINA_MIN_BOOKABLE` cannot be selected
+- Low stamina is indicated with 🥱 where displayed
 
 No invalid match can ever be written to the show.
+
+---
+
+### 8.9 Wrestler Selection Screen
+
+**Components**
+
+- Wrestler list with alignment and stamina
+- Inline message row for blocking errors
+- Footer actions:
+  - Select
+  - Cancel
+
+**Behavior**
+
+- Wrestlers already booked in other slots show a 📅 marker
+- Wrestlers selected in the current draft also show a 📅 marker
+- Selecting an unavailable wrestler shows a ⛔ message and blocks selection
+
+**Blocking rules**
+
+- Cannot select the other side of the current match
+- Cannot select already-booked wrestlers
+- Cannot select wrestlers below `STAMINA_MIN_BOOKABLE`
 
 ---
 
@@ -854,6 +887,7 @@ No invalid match can ever be written to the show.
 **Behavior**
 
 - All match types are selectable
+- Highlighting a match type updates the description panel
 - No modifiers or numbers are shown
 
 ---
@@ -896,7 +930,8 @@ No match details, stats, or repetition are shown in the modal; full context is a
 **Behavior**
 
 - No input accepted
-- Automatically advances to Show Results
+- Calls `GameState.run_show()` on entry
+- Automatically advances to Show Results after a short delay
 
 ---
 
@@ -935,24 +970,23 @@ No match details, stats, or repetition are shown in the modal; full context is a
 **Behavior**
 
 - Read-only
+- List rows are rebuilt on resume to reflect updated show results (no reuse of mounted list item IDs)
 
 ---
 
 ### 8.15 Widget Mapping (Textual)
 
-| Screen               | Primary Widgets     |
-| -------------------- | ------------------- |
-| Main Menu            | ListView, Static    |
-| Booking Hub          | ListView, Buttons   |
-| Match Booking        | Buttons, Static     |
-| Wrestler Selection   | ListView, Static    |
-| Match Type Selection | ListView, Static    |
-| Confirmation         | Static, Buttons     |
-| Simulating           | Static, ProgressBar |
-| Results              | Static, Buttons     |
-| Roster               | ListView, Button    |
-
-\-------------------- | ------------------------- | | Main Menu            | ListView, Static          | | Booking Hub          | Custom MatchSlot, Buttons | | Wrestler Selection   | ListView, Static          | | Match Type Selection | ListView, Static          | | Confirmation         | Static, Buttons           | | Simulating           | Static, ProgressBar       | | Results              | Static, Buttons           | | Roster               | ListView, Button          |
+| Screen               | Primary Widgets             |
+| -------------------- | --------------------------- |
+| Main Menu            | ListView, Static, Footer    |
+| Booking Hub          | ListView, Static, Button    |
+| Match Booking        | ListView, Static, Button    |
+| Wrestler Selection   | ListView, Static, Button    |
+| Match Type Selection | ListView, Static, Button    |
+| Confirmation         | ModalScreen, Static, Button |
+| Simulating           | Static, Footer              |
+| Results              | Static, Button, Footer      |
+| Roster               | ListView, Static, Button    |
 
 ---
 
@@ -1020,7 +1054,7 @@ The following ASCII mockups define the **intended visual layout** for all MVP sc
 │   [ Empty ]                          │
 │                                      │
 │   Match Type                         │
-│   [ Unset ]                          │
+│   Singles                            │
 │                                      │
 ├──────────────────────────────────────┤
 │ [ Confirm ] (disabled)               │
@@ -1039,7 +1073,7 @@ The following ASCII mockups define the **intended visual layout** for all MVP sc
 │ Kenny Omega vs Eddie Kingston        │
 ├──────────────────────────────────────┤
 │ ▸ Wrestler A                         │
-│   Kenny Omega           😮‍💨          │
+│   Kenny Omega            🥱          │
 │                                      │
 │   Wrestler B                         │
 │   Eddie Kingston                     │
@@ -1062,8 +1096,8 @@ The following ASCII mockups define the **intended visual layout** for all MVP sc
 ┌──────────────────────────────────────┐
 │ Select Wrestler (Match 3 · A)        │
 ├──────────────────────────────────────┤
-│ ▸ Kenny Omega        F  Sta: 28 😮‍💨 │
-│   Jon Moxley         H  Sta: 12 😮‍💨 │
+│ ▸ Kenny Omega        F  Sta: 28 🥱 📅│
+│   Jon Moxley         H  Sta: 12 🥱   │
 │   Eddie Kingston     F  Sta: 64       │
 │                                      │
 ├──────────────────────────────────────┤
@@ -1152,4 +1186,3 @@ The following ASCII mockups define the **intended visual layout** for all MVP sc
 ```
 
 ---
-
