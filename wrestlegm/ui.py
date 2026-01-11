@@ -220,7 +220,6 @@ class MainMenuScreen(Screen):
     """
 
     BINDINGS = [
-        ("enter", "select", "Select"),
         ("q", "app.quit", "Quit"),
     ]
 
@@ -308,14 +307,6 @@ class GameHubScreen(Screen):
         """Handle hub option selection."""
 
         self._route_selection(event.item.id)
-
-    def action_select(self) -> None:
-        """Activate the focused menu item."""
-
-        if self.menu.index is None:
-            return
-        item = self.menu.children[self.menu.index]
-        self._route_selection(item.id)
 
     def _route_selection(self, item_id: str | None) -> None:
         """Route the selected menu option to the target screen."""
