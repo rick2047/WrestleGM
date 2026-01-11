@@ -114,7 +114,14 @@ def build_pop_cell(popularity: int, stamina: int, booked_marker: str = "") -> st
     """Format the popularity cell with status markers."""
 
     fatigue = f" {FATIGUE_ICON}" if stamina <= constants.STAMINA_MIN_BOOKABLE else ""
-    return f"{popularity}{fatigue}{booked_marker}"
+    return f"{popularity:>3}{fatigue}{booked_marker}"
+
+
+def row_key_to_id(row_key: object) -> str:
+    """Normalize Textual row keys to their underlying string ID."""
+
+    value = getattr(row_key, "value", row_key)
+    return str(value)
 
 
 def truncate_name(name: str, max_len: int = 18) -> str:
@@ -706,8 +713,8 @@ class WrestlerSelectionScreen(Screen):
             on_edge_next=self.action_focus_next,
         )
         self.table.add_column("Name", key="name")
-        self.table.add_column("Sta", key="sta", justify="right")
-        self.table.add_column("Pop", key="pop", justify="right")
+        self.table.add_column("Sta", key="sta")
+        self.table.add_column("Pop", key="pop")
         for wrestler in self.app.state.roster.values():
             booked = self.app.state.is_wrestler_booked(
                 wrestler.id,
@@ -718,7 +725,7 @@ class WrestlerSelectionScreen(Screen):
             booked_marker = " 📅" if booked else ""
             self.table.add_row(
                 build_name_cell(wrestler.name, wrestler.alignment),
-                str(wrestler.stamina),
+                f"{wrestler.stamina:>3}",
                 build_pop_cell(wrestler.popularity, wrestler.stamina, booked_marker),
                 key=wrestler.id,
             )
@@ -778,7 +785,20 @@ class WrestlerSelectionScreen(Screen):
         row_key = self.table.get_row_key(self.table.cursor_row)
         if row_key is None:
             return
-        wrestler_id = str(row_key)
+        wrestler_id = row_key_to_id(row_key)
+        error = self.validate_selection(wrestler_id)
+        if error:
+            self.message.update(f"{BLOCK_ICON} {error}")
+            return
+        self.on_select(wrestler_id)
+        self.app.pop_screen()
+
+    def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
+        """Select the wrestler from table input."""
+
+        if event.data_table is not self.table:
+            return
+        wrestler_id = row_key_to_id(event.row_key)
         error = self.validate_selection(wrestler_id)
         if error:
             self.message.update(f"{BLOCK_ICON} {error}")
@@ -1172,8 +1192,8 @@ class RosterScreen(Screen):
             on_edge_next=self.action_focus_next,
         )
         self.table.add_column("Name", key="name")
-        self.table.add_column("Sta", key="sta", justify="right")
-        self.table.add_column("Pop", key="pop", justify="right")
+        self.table.add_column("Sta", key="sta")
+        self.table.add_column("Pop", key="pop")
         yield self.table
         self.back_button = Button("Back", id="back")
         yield self.back_button
@@ -1191,13 +1211,10 @@ class RosterScreen(Screen):
         """Rebuild roster rows from current state."""
 
         self.table.clear()
-        self.table.add_column("Name", key="name")
-        self.table.add_column("Sta", key="sta", justify="right")
-        self.table.add_column("Pop", key="pop", justify="right")
         for wrestler in self.app.state.roster.values():
             self.table.add_row(
                 build_name_cell(wrestler.name, wrestler.alignment),
-                str(wrestler.stamina),
+                f"{wrestler.stamina:>3}",
                 build_pop_cell(wrestler.popularity, wrestler.stamina),
                 key=wrestler.id,
             )

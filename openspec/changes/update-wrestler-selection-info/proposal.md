@@ -13,11 +13,12 @@ The wrestler selection screen currently shows only alignment initial and stamina
 - Missing values are not expected; the UI continues to assume alignment, popularity, and stamina are present per the data spec.
 
 Mockup:
-```text
-Name               Sta Pop
-😃 Nova Blaze       92  87
-😈 Razor King       45  63 📅
-😃 Longnamed Wrestler... 08  54 🥱
+```markdown
+| Name                   | Sta | Pop |
+|:-----------------------|----:|----:|
+| 😃 Nova Blaze          |  92 |  87 |
+| 😈 Razor King          |  45 |  63 📅 |
+| 😃 Longnamed Wrestler... |  08 |  54 🥱 |
 ```
 - Standardize alignment emoji mapping: Face uses 😃, Heel uses 😈.
 
