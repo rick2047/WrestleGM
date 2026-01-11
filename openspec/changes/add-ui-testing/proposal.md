@@ -7,6 +7,7 @@ UI regressions are easy to introduce during refactors, and the current test suit
 - Add Textual UI flow tests that drive keyboard-only navigation through core game flows.
 - Add deterministic SVG snapshot tests for canonical screens and stable states.
 - Store snapshot baselines in-repo and fail tests on mismatches.
+- Use a fixed RNG seed (2047), fixed viewport size, and dedicated UI test fixtures for roster and match types.
 - Update CI workflow expectations to run UI flow tests before UI snapshot tests and upload failing snapshots as artifacts.
 
 ## Impact

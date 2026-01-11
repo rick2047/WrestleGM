@@ -4,7 +4,15 @@ The system SHALL provide a Textual UI test harness that uses Textual test utilit
 
 #### Scenario: Deterministic UI test setup
 - **WHEN** UI tests run
-- **THEN** they use a fixed RNG seed and a fixed viewport size
+- **THEN** they use a fixed RNG seed of 2047
+- **AND THEN** they use a fixed viewport size of 100x30
+
+### Requirement: UI test fixtures
+The system SHALL provide dedicated UI test fixtures for roster and match type inputs to ensure deterministic flows and snapshots.
+
+#### Scenario: Fixture-based UI data
+- **WHEN** UI tests run
+- **THEN** they load roster and match type data from `tests/fixtures/ui/`
 
 ### Requirement: UI flow tests
 The system SHALL include UI flow tests that validate keyboard-only navigation and state progression across core gameplay screens.
@@ -43,6 +51,7 @@ The system SHALL store SVG snapshot baselines in-repo and enforce stable naming.
 - **WHEN** baselines are committed
 - **THEN** they live under `tests/snapshots/`
 - **AND THEN** filenames follow the format `<ID>_<screen>_<state>.svg`
+- **AND THEN** `<screen>` and `<state>` are lowercase snake_case slugs
 
 ### Requirement: Snapshot enforcement
 The system SHALL fail tests when snapshot output does not match baselines and SHALL reject missing or extra snapshots.
@@ -50,4 +59,8 @@ The system SHALL fail tests when snapshot output does not match baselines and SH
 #### Scenario: Snapshot mismatch handling
 - **WHEN** a generated snapshot differs from its baseline
 - **THEN** the test run fails
-- **AND THEN** the new snapshot output is preserved for review
+- **AND THEN** the new snapshot output is written under `tests/snapshots/__failed__/` for review
+
+#### Scenario: Snapshot registry enforcement
+- **WHEN** snapshot tests run
+- **THEN** the set of snapshots in `tests/snapshots/` MUST exactly match the canonical registry list
