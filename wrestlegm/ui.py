@@ -305,7 +305,15 @@ class BookingHubScreen(Screen):
             focus_order[0].focus()
             return
         index = focus_order.index(focused)
-        focus_order[(index + delta) % len(focus_order)].focus()
+        next_index = index
+        for _ in range(len(focus_order)):
+            next_index = (next_index + delta) % len(focus_order)
+            candidate = focus_order[next_index]
+            if candidate is self.slot_list or not candidate.disabled:
+                if candidate is self.slot_list and focused is not self.slot_list:
+                    self.slot_list.index = 0
+                candidate.focus()
+                return
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle Run Show and Back button presses."""
@@ -509,7 +517,13 @@ class MatchBookingScreen(Screen):
             focus_order[0].focus()
             return
         index = focus_order.index(focused)
-        focus_order[(index + delta) % len(focus_order)].focus()
+        next_index = index
+        for _ in range(len(focus_order)):
+            next_index = (next_index + delta) % len(focus_order)
+            candidate = focus_order[next_index]
+            if candidate is self.fields or not candidate.disabled:
+                candidate.focus()
+                return
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle Confirm, Clear Slot, and Cancel buttons."""
@@ -793,6 +807,9 @@ class ConfirmBookingModal(ModalScreen):
     """
 
     BINDINGS = [
+        ("up", "focus_prev", "Prev"),
+        ("down", "focus_next", "Next"),
+        ("enter", "activate", "Select"),
         ("escape", "cancel", "Cancel"),
     ]
 
@@ -801,8 +818,15 @@ class ConfirmBookingModal(ModalScreen):
 
         with Vertical(classes="panel"):
             yield Static("Confirm booking?")
-            yield Button("Book Match", id="confirm")
-            yield Button("Cancel", id="cancel")
+            self.confirm_button = Button("Book Match", id="confirm")
+            self.cancel_button = Button("Cancel", id="cancel")
+            yield self.confirm_button
+            yield self.cancel_button
+
+    def on_mount(self) -> None:
+        """Focus the first action button."""
+
+        self.confirm_button.focus()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle confirmation and cancellation actions."""
@@ -816,6 +840,34 @@ class ConfirmBookingModal(ModalScreen):
         """Cancel the modal with a false result."""
 
         self.dismiss(result=False)
+
+    def action_activate(self) -> None:
+        """Activate the focused button."""
+
+        focused = self.app.focused
+        if isinstance(focused, Button) and not focused.disabled:
+            focused.press()
+
+    def action_focus_next(self) -> None:
+        """Move focus to the next modal action."""
+
+        self._move_focus(1)
+
+    def action_focus_prev(self) -> None:
+        """Move focus to the previous modal action."""
+
+        self._move_focus(-1)
+
+    def _move_focus(self, delta: int) -> None:
+        """Cycle focus across modal action buttons."""
+
+        focus_order = [self.confirm_button, self.cancel_button]
+        focused = self.app.focused
+        if focused not in focus_order:
+            focus_order[0].focus()
+            return
+        index = focus_order.index(focused)
+        focus_order[(index + delta) % len(focus_order)].focus()
 
 
 class SimulatingScreen(Screen):
