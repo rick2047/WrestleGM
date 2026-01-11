@@ -55,6 +55,29 @@ Outcomes:
 
 ---
 
+## 2.1 CI & Automation (PR Validation)
+
+These rules define how pull requests are validated in CI.
+
+- Pull requests run automated tests via `uv run pytest`.
+- PR test results are posted as a single sticky comment that updates on each run.
+- The comment lists test cases grouped by class in collapsible sections with per-test emoji statuses:
+  - ✅ passed
+  - ❌ failed
+  - 🛑 error
+  - ⚠️ skipped
+- Workflow permissions are minimal: read repository contents, write PR comments.
+- PR test workflow runs only when changes touch:
+  - `tests/**`
+  - `wrestlegm/**`
+  - `data/**`
+  - `main.py`
+  - `pyproject.toml`
+  - `uv.lock`
+  - `.github/workflows/pr-tests.yml`
+
+---
+
 ## 3. Core Game Loop (MVP)
 
 1. Start from Main Menu and select New Game
