@@ -21,3 +21,13 @@ uv run mkdocs serve
 ```bash
 uv run mkdocs build
 ```
+
+## Run and Test
+
+```bash
+uv run main.py
+```
+
+```bash
+uv run pytest
+```

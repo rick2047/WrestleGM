@@ -1,17 +1,26 @@
 # Simulation
 
 ## Pipeline
-Each match follows a deterministic pipeline implemented in `wrestlegm.sim`:
+Each match follows a deterministic pipeline owned by `SimulationEngine` in
+`wrestlegm.sim`:
 
 1. Outcome simulation: compute win probability and sample winner.
 2. Rating simulation: calculate match rating in stars.
 3. Stat delta simulation: produce popularity and stamina deltas.
 4. Show rating aggregation: average match ratings.
-5. End-of-show application: apply deltas and clamp stats.
+5. End-of-show application: apply deltas, recovery, and clamp stats.
 
 The show pipeline is orchestrated by `GameState.run_show()` which delegates
-match simulation to `simulate_show()` and applies the results in
-`GameState.apply_show_results()`.
+match simulation to `SimulationEngine.simulate_show()` and applies results via
+`ShowApplier`.
+
+`SimulationEngine` owns the RNG and is the only place randomness is used.
+
+## Ownership Summary
+
+- `SimulationEngine`: owns RNG and produces match results.
+- `ShowApplier`: applies deltas, recovery, and clamping.
+- `GameState`: orchestrates the show lifecycle and stores results.
 
 ## Outcome Simulation
 
@@ -47,8 +56,8 @@ Formula highlights (from `simulate_rating()`):
 - Popularity and stamina deltas come directly from match type modifiers.
 - Deltas are applied only once after the show completes.
 
-`simulate_stat_deltas()` is responsible for packaging deltas; `GameState` is
-responsible for applying them to roster state.
+`SimulationEngine.simulate_stat_deltas()` packages deltas; `ShowApplier` applies
+them to roster state.
 
 ## Show Rating
 
@@ -65,6 +74,6 @@ aggregation.
 
 ## Deterministic Guarantees
 
-- One RNG instance seeded from game state.
+- `SimulationEngine` owns a single RNG seeded from game state.
 - One RNG draw for outcome and one for rating per match.
 - No wall-clock time or UI-driven inputs affect simulation results.

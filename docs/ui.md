@@ -53,6 +53,7 @@ Purpose: show overview and match slot selection.
 
 Key bindings:
 - `Enter`: edit slot
+- `Up/Down`: move focus between list and action buttons
 - `r`: run show
 - `Esc`: back
 
@@ -73,6 +74,7 @@ State interactions:
 
 Focus behavior:
 - The slot list receives focus on mount.
+- Arrow keys cycle focus through Run Show and Back; disabled actions are skipped.
 
 ### MatchBookingScreen
 
@@ -80,6 +82,7 @@ Purpose: edit a single match slot.
 
 Key bindings:
 - `Enter`: select field
+- `Up/Down`: move focus between fields and action buttons
 - `Esc`: cancel
 
 Components:
@@ -101,6 +104,7 @@ State interactions:
 
 Focus behavior:
 - The field list receives focus on mount.
+- Arrow keys cycle focus through Confirm, Clear Slot, and Cancel; disabled actions are skipped.
 
 ### WrestlerSelectionScreen
 
@@ -160,6 +164,8 @@ Focus behavior:
 Purpose: confirm a booking before committing.
 
 Key bindings:
+- `Up/Down`: move focus between actions
+- `Enter`: activate focused action
 - `Esc`: cancel
 
 Components:
@@ -167,6 +173,10 @@ Components:
 
 State interactions:
 - Returns a boolean to the parent screen to commit or discard the draft.
+
+Focus behavior:
+- The Confirm button receives focus on mount.
+- Arrow keys move focus between Confirm and Cancel.
 
 ### SimulatingScreen
 
@@ -189,6 +199,7 @@ Purpose: display match outcomes and show rating.
 
 Key bindings:
 - `Enter`: continue
+- `Up/Down/Left/Right`: move focus between actions
 - `r`: roster
 - `m`: main menu
 
@@ -204,7 +215,7 @@ State interactions:
 - Continue switches back to `BookingHubScreen` with updated state.
 
 Focus behavior:
-- No list focus is required; actions are bound to buttons and keys.
+- Continue receives focus on mount, and arrow keys move focus across action buttons.
 
 ### RosterScreen
 
