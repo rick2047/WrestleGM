@@ -48,7 +48,7 @@ from wrestlegm.models import Match
 from wrestlegm.state import GameState
 
 
-FATIGUE_ICON = "😮‍💨"
+FATIGUE_ICON = "🥱"
 EMPTY_ICON = "⚠️"
 BLOCK_ICON = "⛔"
 
@@ -393,6 +393,8 @@ class MatchBookingScreen(Screen):
             self.draft.wrestler_a_id = existing.wrestler_a_id
             self.draft.wrestler_b_id = existing.wrestler_b_id
             self.draft.match_type_id = existing.match_type_id
+        elif self.draft.match_type_id is None and self.app.state.match_types:
+            self.draft.match_type_id = next(iter(self.app.state.match_types))
         self.refresh_view()
 
     def refresh_view(self) -> None:
@@ -453,6 +455,7 @@ class MatchBookingScreen(Screen):
                     slot_index=self.slot_index,
                     label="A",
                     current_other_id=self.draft.wrestler_b_id,
+                    booked_ids=self._booked_ids(),
                     on_select=self.set_wrestler_a,
                 )
             )
@@ -462,6 +465,7 @@ class MatchBookingScreen(Screen):
                     slot_index=self.slot_index,
                     label="B",
                     current_other_id=self.draft.wrestler_a_id,
+                    booked_ids=self._booked_ids(),
                     on_select=self.set_wrestler_b,
                 )
             )
@@ -552,6 +556,7 @@ class MatchBookingScreen(Screen):
                     slot_index=self.slot_index,
                     label="A",
                     current_other_id=self.draft.wrestler_b_id,
+                    booked_ids=self._booked_ids(),
                     on_select=self.set_wrestler_a,
                 )
             )
@@ -561,6 +566,7 @@ class MatchBookingScreen(Screen):
                     slot_index=self.slot_index,
                     label="B",
                     current_other_id=self.draft.wrestler_a_id,
+                    booked_ids=self._booked_ids(),
                     on_select=self.set_wrestler_b,
                 )
             )
@@ -584,6 +590,21 @@ class MatchBookingScreen(Screen):
         if result:
             self.commit_booking()
 
+    def _booked_ids(self) -> set[str]:
+        """Return wrestler IDs booked in other slots or current draft."""
+
+        booked: set[str] = set()
+        for index, match in enumerate(self.app.state.show_card):
+            if match is None or index == self.slot_index:
+                continue
+            booked.add(match.wrestler_a_id)
+            booked.add(match.wrestler_b_id)
+        if self.draft.wrestler_a_id:
+            booked.add(self.draft.wrestler_a_id)
+        if self.draft.wrestler_b_id:
+            booked.add(self.draft.wrestler_b_id)
+        return booked
+
 
 class WrestlerSelectionScreen(Screen):
     """Roster picker for assigning a wrestler to a slot side.
@@ -604,6 +625,7 @@ class WrestlerSelectionScreen(Screen):
         slot_index: int,
         label: str,
         current_other_id: Optional[str],
+        booked_ids: set[str],
         on_select: Callable[[str], None],
     ) -> None:
         """Create a wrestler selection screen for a slot and side."""
@@ -612,6 +634,7 @@ class WrestlerSelectionScreen(Screen):
         self.slot_index = slot_index
         self.label = label
         self.current_other_id = current_other_id
+        self.booked_ids = booked_ids
         self.on_select = on_select
         self.message = Static("")
 
@@ -622,7 +645,17 @@ class WrestlerSelectionScreen(Screen):
         list_items: list[ListItem] = []
         for wrestler in self.app.state.roster.values():
             fatigue = f" {FATIGUE_ICON}" if wrestler.stamina <= constants.STAMINA_MIN_BOOKABLE else ""
-            line = f"{wrestler.name:<18} {wrestler.alignment[0]}  Sta:{wrestler.stamina:>3}{fatigue}"
+            booked = self.app.state.is_wrestler_booked(
+                wrestler.id,
+                exclude_slot=self.slot_index,
+            )
+            if wrestler.id in self.booked_ids:
+                booked = True
+            booked_marker = " 📅" if booked else ""
+            line = (
+                f"{wrestler.name:<18} {wrestler.alignment[0]}  "
+                f"Sta:{wrestler.stamina:>3}{fatigue}{booked_marker}"
+            )
             list_items.append(ListItem(Static(line), id=wrestler.id))
         self.list_view = ListView(*list_items)
         yield self.list_view

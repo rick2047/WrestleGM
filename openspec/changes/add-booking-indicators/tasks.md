@@ -1,7 +1,7 @@
 ## 1. Implementation
-- [ ] 1.1 Default the match type to the first entry in `GameState.match_types` when starting a new booking.
-- [ ] 1.2 Add a booked indicator (📅) in WrestlerSelectionScreen rows for already-booked wrestlers.
-- [ ] 1.3 Update the fatigue icon to use 🥱 consistently for low-stamina wrestlers.
+- [x] 1.1 Default the match type to the first entry in `GameState.match_types` when starting a new booking.
+- [x] 1.2 Add a booked indicator (📅) in WrestlerSelectionScreen rows for already-booked wrestlers.
+- [x] 1.3 Update the fatigue icon to use 🥱 consistently for low-stamina wrestlers.
 
 ## 2. Validation
 - [ ] 2.1 Confirm match booking defaults to the first match type.

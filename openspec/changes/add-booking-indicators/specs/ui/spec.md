@@ -13,6 +13,7 @@ The system SHALL edit matches in a dedicated booking screen and require confirma
 #### Scenario: Booked wrestler indicator
 - **WHEN** the user opens the wrestler selection list
 - **THEN** already-booked wrestlers include a 📅 indicator in their row
+- **AND THEN** wrestlers selected in the current booking draft also show the 📅 indicator
 
 #### Scenario: Low-stamina indicator consistency
 - **WHEN** the UI renders a low-stamina indicator
