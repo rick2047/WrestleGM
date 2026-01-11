@@ -673,6 +673,7 @@ This section defines the **full MVP UX** for WrestleGM, including screens, navig
 - `Enter` – activate focused element
 - `Esc` – back / cancel (context-dependent)
 - Arrow-key focus loops between lists and action buttons; disabled actions are skipped
+- Focus wraps from last to first and first to last within a screen’s focusable controls
 
 **Navigation stack**
 
@@ -700,6 +701,8 @@ The game uses a **minimal, consistent emoji language**:
 | 📅        | Already booked in another slot                  | Yes           |
 
 Indicators rely on iconography first; color is supplemental.
+
+Alignment is shown by prefixing the wrestler name with an emoji (Face 😃, Heel 😈).
 
 ---
 
@@ -854,7 +857,7 @@ No invalid match can ever be written to the show.
 
 **Components**
 
-- Wrestler list with alignment and stamina
+- Wrestler table with Name/Sta/Pop columns
 - Inline message row for blocking errors
 - Footer actions:
   - Select
@@ -862,6 +865,9 @@ No invalid match can ever be written to the show.
 
 **Behavior**
 
+- Name cells prefix alignment emoji (Face 😃, Heel 😈) and truncate names longer than 18 characters to 15 + `...`
+- Stamina and popularity cells show numbers only
+- Popularity cells append 🥱 for low stamina and 📅 for booked wrestlers
 - Wrestlers already booked in other slots show a 📅 marker
 - Wrestlers selected in the current draft also show a 📅 marker
 - Selecting an unavailable wrestler shows a ⛔ message and blocks selection
@@ -959,17 +965,16 @@ No match details, stats, or repetition are shown in the modal; full context is a
 
 **Components**
 
-- Wrestler list:
-  - Name
-  - Alignment
-  - Popularity
-  - Stamina
+- Wrestler table with Name/Sta/Pop columns
 - Footer action:
   - Back
 
 **Behavior**
 
 - Read-only
+- Name cells prefix alignment emoji (Face 😃, Heel 😈) and truncate names longer than 18 characters to 15 + `...`
+- Stamina and popularity cells show numbers only
+- Popularity cells append 🥱 for low stamina
 - List rows are rebuilt on resume to reflect updated show results (no reuse of mounted list item IDs)
 
 ---
@@ -981,12 +986,12 @@ No match details, stats, or repetition are shown in the modal; full context is a
 | Main Menu            | ListView, Static, Footer    |
 | Booking Hub          | ListView, Static, Button    |
 | Match Booking        | ListView, Static, Button    |
-| Wrestler Selection   | ListView, Static, Button    |
+| Wrestler Selection   | DataTable, Static, Button   |
 | Match Type Selection | ListView, Static, Button    |
 | Confirmation         | ModalScreen, Static, Button |
 | Simulating           | Static, Footer              |
 | Results              | Static, Button, Footer      |
-| Roster               | ListView, Static, Button    |
+| Roster               | DataTable, Static, Button   |
 
 ---
 
@@ -1092,20 +1097,17 @@ The following ASCII mockups define the **intended visual layout** for all MVP sc
 
 #### 8.17.4 Wrestler Selection
 
-```text
-┌──────────────────────────────────────┐
-│ Select Wrestler (Match 3 · A)        │
-├──────────────────────────────────────┤
-│ ▸ Kenny Omega        F  Sta: 28 🥱 📅│
-│   Jon Moxley         H  Sta: 12 🥱   │
-│   Eddie Kingston     F  Sta: 64       │
-│                                      │
-├──────────────────────────────────────┤
-│ ⛔ Already booked in Match 2         │
-├──────────────────────────────────────┤
-│ [ Select ]   [ Cancel ]              │
-└──────────────────────────────────────┘
-```
+Select Wrestler (Match 3 · A)
+
+| Name                 | Sta | Pop     |
+| -------------------- | --- | ------- |
+| 😃 Kenny Omega       |  28 |  92 🥱 📅 |
+| 😈 Jon Moxley        |  12 |  88 🥱   |
+| 😃 Eddie Kingston    |  64 |  74     |
+
+⛔ Already booked in Match 2
+
+[ Select ]   [ Cancel ]
 
 ---
 
@@ -1171,18 +1173,15 @@ The following ASCII mockups define the **intended visual layout** for all MVP sc
 
 #### 8.17.8 Roster Overview
 
-```text
-┌──────────────────────────────────────┐
-│ Roster Overview                      │
-├──────────────────────────────────────┤
-│ ▸ Kenny Omega        F  Pop: 89 Sta:28│
-│   Jon Moxley         H  Pop: 82 Sta:12│
-│   Eddie Kingston     F  Pop: 74 Sta:64│
-│   Claudio Castagnoli F  Pop: 77 Sta:71│
-│                                      │
-├──────────────────────────────────────┤
-│ [ Back ]                             │
-└──────────────────────────────────────┘
-```
+Roster Overview
+
+| Name                   | Sta | Pop  |
+| ---------------------- | --- | ---- |
+| 😃 Kenny Omega         |  28 |  89  |
+| 😈 Jon Moxley          |  12 |  82 🥱 |
+| 😃 Eddie Kingston      |  64 |  74  |
+| 😃 Claudio Castagnoli  |  71 |  77  |
+
+[ Back ]
 
 ---

@@ -11,7 +11,7 @@ and watching roster stats evolve across shows.
 - Keyboard-only Textual UI designed for narrow terminals.
 - Long-term booking decisions matter through stamina, popularity, and match types.
 
-For the full MVP vision and UX details, see `wrestle_gm_textual_mvp_prd.md`.
+For the full MVP vision and UX details, see `prd.md`.
 
 ## Current State
 
