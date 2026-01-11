@@ -1,52 +1,11 @@
-"""Textual UI for the WrestleGM MVP."""
+"""pygame UI for the WrestleGM MVP."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Callable, Optional
 
-from textual.app import App, ComposeResult
-from textual.containers import Horizontal, Vertical
-from textual.screen import ModalScreen, Screen
-from textual.widgets import Button, Footer, ListItem, ListView, Static
-
-
-class EdgeAwareListView(ListView):
-    """ListView that can hand off focus when the cursor hits an edge."""
-
-    def __init__(
-        self,
-        *items: ListItem,
-        on_edge_prev: Callable[[], None] | None = None,
-        on_edge_next: Callable[[], None] | None = None,
-    ) -> None:
-        super().__init__(*items)
-        self._on_edge_prev = on_edge_prev
-        self._on_edge_next = on_edge_next
-
-    def action_cursor_down(self) -> None:
-        """Move focus to the next widget when already at the last row."""
-
-        if self.index is not None and self.index >= len(self.children) - 1:
-            if self._on_edge_next is not None:
-                self._on_edge_next()
-                return
-            if self.children:
-                self.index = 0
-                return
-        super().action_cursor_down()
-
-    def action_cursor_up(self) -> None:
-        """Move focus to the previous widget when already at the first row."""
-
-        if self.index is not None and self.index <= 0:
-            if self._on_edge_prev is not None:
-                self._on_edge_prev()
-                return
-            if self.children:
-                self.index = len(self.children) - 1
-                return
-        super().action_cursor_up()
+import pygame
 
 from wrestlegm import constants
 from wrestlegm.data import load_match_types, load_wrestlers
@@ -57,6 +16,17 @@ from wrestlegm.state import GameState
 FATIGUE_ICON = "🥱"
 EMPTY_ICON = "⚠️"
 BLOCK_ICON = "⛔"
+SCREEN_WIDTH = 960
+SCREEN_HEIGHT = 720
+PANEL_PADDING = 12
+LINE_SPACING = 6
+FPS = 60
+
+WHITE = (255, 255, 255)
+GRAY = (200, 200, 200)
+DARK_GRAY = (60, 60, 60)
+BLACK = (0, 0, 0)
+ACCENT = (245, 199, 66)
 
 
 def format_stars(rating: float) -> str:
@@ -93,99 +63,797 @@ class BookingDraft:
         return bool(self.wrestler_a_id and self.wrestler_b_id and self.match_type_id)
 
 
-class WrestleGMApp(App):
-    """Top-level Textual application entry point.
+def clamp_index(index: int, count: int) -> int:
+    """Clamp a selection index into a valid range."""
+
+    if count <= 0:
+        return 0
+    return index % count
+
+
+class Screen:
+    """Base screen for pygame UI."""
+
+    def __init__(self) -> None:
+        self.app: WrestleGMApp | None = None
+
+    def on_enter(self) -> None:
+        """Hook called when the screen becomes active."""
+
+    def on_resume(self) -> None:
+        """Hook called when returning to the screen."""
+
+    def handle_key(self, key: int) -> None:
+        """Handle a pygame key event."""
+
+    def update(self, delta: float) -> None:
+        """Update screen state."""
+
+    def render(self, surface: pygame.Surface) -> None:
+        """Render the screen contents."""
+
+
+class WrestleGMApp:
+    """Top-level pygame application entry point.
 
     Responsibilities:
     - Load data definitions and create the shared GameState instance.
-    - Own the application-wide CSS and lifecycle hooks.
-    - Push the initial screen into the navigation stack.
-    """
-
-    CSS = """
-    Screen {
-        align: center middle;
-    }
-
-    .panel {
-        width: 40;
-        height: auto;
-        padding: 1 2;
-        border: solid gray;
-    }
-
-    .section-title {
-        text-style: bold;
-        margin-bottom: 1;
-    }
-
-    Button {
-        width: 18;
-    }
-
-    ListView {
-        height: auto;
-    }
-
-    .spacer {
-        height: 1;
-    }
+    - Own the rendering loop and pygame resources.
+    - Maintain a stack of screens for navigation.
     """
 
     def __init__(self) -> None:
         """Initialize the app with loaded data and a fresh GameState."""
 
-        super().__init__()
         wrestlers = load_wrestlers()
         match_types = load_match_types()
         self.state = GameState(wrestlers, match_types)
+        self.running = False
+        self._screen_stack: list[Screen] = []
+        self._clock: pygame.time.Clock | None = None
+        self._surface: pygame.Surface | None = None
+        self._font: pygame.font.Font | None = None
+        self._small_font: pygame.font.Font | None = None
 
-    def on_mount(self) -> None:
-        """Show the main menu at startup."""
+    @property
+    def surface(self) -> pygame.Surface:
+        """Return the main render surface."""
 
+        if self._surface is None:
+            raise RuntimeError("Surface not initialized")
+        return self._surface
+
+    @property
+    def font(self) -> pygame.font.Font:
+        """Return the primary font."""
+
+        if self._font is None:
+            raise RuntimeError("Font not initialized")
+        return self._font
+
+    @property
+    def small_font(self) -> pygame.font.Font:
+        """Return the secondary font."""
+
+        if self._small_font is None:
+            raise RuntimeError("Small font not initialized")
+        return self._small_font
+
+    @property
+    def screen(self) -> Screen:
+        """Return the active screen."""
+
+        return self._screen_stack[-1]
+
+    def push_screen(self, screen: Screen) -> None:
+        """Push a screen onto the stack."""
+
+        screen.app = self
+        self._screen_stack.append(screen)
+        screen.on_enter()
+
+    def pop_screen(self) -> None:
+        """Pop the current screen and resume the previous one."""
+
+        if len(self._screen_stack) <= 1:
+            return
+        self._screen_stack.pop()
+        self.screen.on_resume()
+
+    def switch_screen(self, screen: Screen) -> None:
+        """Replace the current screen with a new one."""
+
+        self._screen_stack = []
+        self.push_screen(screen)
+
+    def stop(self) -> None:
+        """Stop the pygame loop."""
+
+        self.running = False
+
+    def draw_text(
+        self,
+        surface: pygame.Surface,
+        text: str,
+        x: int,
+        y: int,
+        color: tuple[int, int, int] = WHITE,
+        font: pygame.font.Font | None = None,
+    ) -> None:
+        """Draw text at the given position."""
+
+        font = font or self.font
+        text_surface = font.render(text, True, color)
+        surface.blit(text_surface, (x, y))
+
+    def draw_lines(
+        self,
+        surface: pygame.Surface,
+        lines: list[str],
+        x: int,
+        y: int,
+        color: tuple[int, int, int] = WHITE,
+        font: pygame.font.Font | None = None,
+    ) -> int:
+        """Draw multiple lines and return the next y position."""
+
+        font = font or self.font
+        line_height = font.get_height()
+        for line in lines:
+            self.draw_text(surface, line, x, y, color, font=font)
+            y += line_height + LINE_SPACING
+        return y
+
+    def run(self) -> None:
+        """Run the pygame application."""
+
+        pygame.init()
+        pygame.display.set_caption("WrestleGM")
+        self._surface = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+        self._clock = pygame.time.Clock()
+        self._font = pygame.font.Font(None, 28)
+        self._small_font = pygame.font.Font(None, 22)
+        self.running = True
         self.push_screen(MainMenuScreen())
+
+        while self.running:
+            delta = self._clock.tick(FPS) / 1000.0
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.stop()
+                elif event.type == pygame.KEYDOWN:
+                    self.screen.handle_key(event.key)
+            self.screen.update(delta)
+            self.surface.fill(BLACK)
+            self.screen.render(self.surface)
+            pygame.display.flip()
+        pygame.quit()
+
+
+class MenuList:
+    """Simple list of selectable menu items."""
+
+    def __init__(self, items: list[str], index: int = 0) -> None:
+        self.items = items
+        self.index = index
+
+    def move(self, delta: int) -> None:
+        """Move the selection by delta."""
+
+        self.index = clamp_index(self.index + delta, len(self.items))
+
+    def current(self) -> str:
+        """Return the currently selected item."""
+
+        if not self.items:
+            return ""
+        return self.items[self.index]
 
 
 class MainMenuScreen(Screen):
-    """Main menu screen for global navigation.
+    """Main menu screen for global navigation."""
 
-    Responsibilities:
-    - Present top-level routes (new game, roster, quit).
-    - Dispatch user selection into screen transitions.
-    - Keep focus on the menu list for keyboard navigation.
-    """
+    def __init__(self) -> None:
+        super().__init__()
+        self.menu = MenuList(["New Game", "Roster Overview", "Quit"])
 
-    BINDINGS = [
-        ("enter", "select", "Select"),
-        ("q", "app.quit", "Quit"),
-    ]
+    def handle_key(self, key: int) -> None:
+        """Handle key presses for menu navigation."""
 
-    def compose(self) -> ComposeResult:
-        """Build the main menu layout."""
+        if key in (pygame.K_UP, pygame.K_DOWN):
+            self.menu.move(-1 if key == pygame.K_UP else 1)
+        elif key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+            selection = self.menu.current()
+            if selection == "New Game":
+                self.app.switch_screen(BookingHubScreen())
+            elif selection == "Roster Overview":
+                self.app.push_screen(RosterScreen())
+            elif selection == "Quit":
+                self.app.stop()
+        elif key == pygame.K_q:
+            self.app.stop()
 
-        yield Static("WrestleGM", classes="section-title")
-        self.menu = EdgeAwareListView(
-            ListItem(Static("New Game"), id="new-game"),
-            ListItem(Static("Roster Overview"), id="roster"),
-            ListItem(Static("Quit"), id="quit"),
+    def render(self, surface: pygame.Surface) -> None:
+        """Render the menu."""
+
+        self.app.draw_text(surface, "WrestleGM", PANEL_PADDING, PANEL_PADDING, ACCENT)
+        y = PANEL_PADDING + 48
+        for index, item in enumerate(self.menu.items):
+            prefix = "➤ " if index == self.menu.index else "  "
+            self.app.draw_text(surface, f"{prefix}{item}", PANEL_PADDING, y)
+            y += self.app.font.get_height() + LINE_SPACING
+
+
+class BookingHubScreen(Screen):
+    """Show overview and booking hub for the current card."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.menu = MenuList([])
+        self.message = ""
+
+    def on_enter(self) -> None:
+        """Refresh slot list on entry."""
+
+        self.refresh_menu()
+
+    def on_resume(self) -> None:
+        """Refresh slot list on resume."""
+
+        self.refresh_menu()
+
+    def refresh_menu(self) -> None:
+        """Update menu items based on current show card."""
+
+        items = [self.slot_text(i) for i in range(constants.SHOW_MATCH_COUNT)]
+        items += ["Run Show", "Back"]
+        self.menu = MenuList(items, clamp_index(self.menu.index, len(items)))
+        self.message = ""
+
+    def slot_text(self, index: int) -> str:
+        """Render the slot summary text for a match slot."""
+
+        match = self.app.state.show_card[index]
+        if match is None:
+            return f"Match {index + 1}: [ Empty ]"
+        wrestler_a = self.app.state.roster[match.wrestler_a_id]
+        wrestler_b = self.app.state.roster[match.wrestler_b_id]
+        match_type = self.app.state.match_types[match.match_type_id]
+        return f"Match {index + 1}: {wrestler_a.name} vs {wrestler_b.name} ({match_type.name})"
+
+    def handle_key(self, key: int) -> None:
+        """Handle booking hub navigation."""
+
+        if key in (pygame.K_UP, pygame.K_DOWN):
+            self.menu.move(-1 if key == pygame.K_UP else 1)
+        elif key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+            selection = self.menu.current()
+            if selection.startswith("Match"):
+                slot_index = self.menu.index
+                self.app.push_screen(MatchBookingScreen(slot_index))
+            elif selection == "Run Show":
+                if self.app.state.validate_show():
+                    self.message = f"{BLOCK_ICON} Fill all match slots before running the show."
+                else:
+                    self.app.switch_screen(SimulatingScreen())
+            elif selection == "Back":
+                self.app.switch_screen(MainMenuScreen())
+        elif key == pygame.K_ESCAPE:
+            self.app.switch_screen(MainMenuScreen())
+
+    def render(self, surface: pygame.Surface) -> None:
+        """Render the booking hub screen."""
+
+        self.app.draw_text(surface, f"Show #{self.app.state.show_index}", PANEL_PADDING, PANEL_PADDING, ACCENT)
+        y = PANEL_PADDING + 48
+        for index, item in enumerate(self.menu.items):
+            prefix = "➤ " if index == self.menu.index else "  "
+            color = WHITE
+            if item == "Run Show" and self.app.state.validate_show():
+                color = GRAY
+            self.app.draw_text(surface, f"{prefix}{item}", PANEL_PADDING, y, color)
+            y += self.app.font.get_height() + LINE_SPACING
+        if self.message:
+            self.app.draw_text(surface, self.message, PANEL_PADDING, SCREEN_HEIGHT - 48, ACCENT)
+
+
+class MatchBookingScreen(Screen):
+    """Editor for a single match slot."""
+
+    def __init__(self, slot_index: int) -> None:
+        super().__init__()
+        self.slot_index = slot_index
+        self.draft = BookingDraft()
+        self.menu = MenuList([])
+        self.message = ""
+
+    def on_enter(self) -> None:
+        """Load existing slot data and default match type."""
+
+        existing = self.app.state.show_card[self.slot_index]
+        if existing is not None:
+            self.draft.wrestler_a_id = existing.wrestler_a_id
+            self.draft.wrestler_b_id = existing.wrestler_b_id
+            self.draft.match_type_id = existing.match_type_id
+        elif self.draft.match_type_id is None and self.app.state.match_types:
+            self.draft.match_type_id = next(iter(self.app.state.match_types))
+        self.refresh_menu()
+
+    def refresh_menu(self) -> None:
+        """Refresh field list and actions."""
+
+        items = [
+            self.field_text("Wrestler A", self.draft.wrestler_a_id),
+            self.field_text("Wrestler B", self.draft.wrestler_b_id),
+            self.field_text("Match Type", self.draft.match_type_id, match_type=True),
+            "Confirm",
+            "Clear Slot",
+            "Cancel",
+        ]
+        self.menu = MenuList(items, clamp_index(self.menu.index, len(items)))
+        self.message = ""
+
+    def field_text(self, label: str, value_id: Optional[str], match_type: bool = False) -> str:
+        """Render the display text for a booking field."""
+
+        if value_id is None:
+            return f"{label}: [ Empty ]" if not match_type else f"{label}: [ Unset ]"
+        if match_type:
+            match_type_def = self.app.state.match_types[value_id]
+            return f"{label}: {match_type_def.name}"
+        wrestler = self.app.state.roster[value_id]
+        fatigue = f" {FATIGUE_ICON}" if wrestler.stamina <= constants.STAMINA_MIN_BOOKABLE else ""
+        return f"{label}: {wrestler.name}{fatigue}"
+
+    def validate_draft(self) -> list[str]:
+        """Return validation errors for the current draft selection."""
+
+        if not self.draft.is_complete():
+            return ["incomplete"]
+        match = Match(
+            wrestler_a_id=self.draft.wrestler_a_id or "",
+            wrestler_b_id=self.draft.wrestler_b_id or "",
+            match_type_id=self.draft.match_type_id or "",
         )
-        yield self.menu
-        yield Footer()
+        return self.app.state.validate_match(match, slot_index=self.slot_index)
 
-    def on_mount(self) -> None:
-        """Focus the menu list on entry."""
+    def handle_key(self, key: int) -> None:
+        """Handle navigation and actions."""
 
-        self.menu.focus()
+        if key in (pygame.K_UP, pygame.K_DOWN):
+            self.menu.move(-1 if key == pygame.K_UP else 1)
+        elif key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+            selection = self.menu.current()
+            if selection.startswith("Wrestler A"):
+                self.app.push_screen(
+                    WrestlerSelectionScreen(
+                        slot_index=self.slot_index,
+                        label="A",
+                        current_other_id=self.draft.wrestler_b_id,
+                        booked_ids=self._booked_ids(),
+                        on_select=self.set_wrestler_a,
+                    )
+                )
+            elif selection.startswith("Wrestler B"):
+                self.app.push_screen(
+                    WrestlerSelectionScreen(
+                        slot_index=self.slot_index,
+                        label="B",
+                        current_other_id=self.draft.wrestler_a_id,
+                        booked_ids=self._booked_ids(),
+                        on_select=self.set_wrestler_b,
+                    )
+                )
+            elif selection.startswith("Match Type"):
+                self.app.push_screen(MatchTypeSelectionScreen(on_select=self.set_match_type))
+            elif selection == "Confirm":
+                if self.validate_draft():
+                    self.message = f"{BLOCK_ICON} Complete the booking before confirming."
+                else:
+                    self.app.push_screen(ConfirmBookingModal(self.commit_booking))
+            elif selection == "Clear Slot":
+                self.app.state.clear_slot(self.slot_index)
+                self.app.pop_screen()
+            elif selection == "Cancel":
+                self.app.pop_screen()
+        elif key == pygame.K_ESCAPE:
+            self.app.pop_screen()
 
-    def on_list_view_selected(self, event: ListView.Selected) -> None:
-        """Handle selection of menu options."""
+    def set_wrestler_a(self, wrestler_id: str) -> None:
+        """Update the draft with the selected wrestler A."""
 
-        if event.item.id == "new-game":
-            self.app.switch_screen(BookingHubScreen())
-        elif event.item.id == "roster":
-            self.app.push_screen(RosterScreen())
-        elif event.item.id == "quit":
-            self.app.exit()
+        self.draft.wrestler_a_id = wrestler_id
+        self.refresh_menu()
+
+    def set_wrestler_b(self, wrestler_id: str) -> None:
+        """Update the draft with the selected wrestler B."""
+
+        self.draft.wrestler_b_id = wrestler_id
+        self.refresh_menu()
+
+    def set_match_type(self, match_type_id: str) -> None:
+        """Update the draft with the selected match type."""
+
+        self.draft.match_type_id = match_type_id
+        self.refresh_menu()
+
+    def commit_booking(self) -> None:
+        """Commit the draft match to the show card."""
+
+        match = Match(
+            wrestler_a_id=self.draft.wrestler_a_id or "",
+            wrestler_b_id=self.draft.wrestler_b_id or "",
+            match_type_id=self.draft.match_type_id or "",
+        )
+        self.app.state.set_slot(self.slot_index, match)
+        self.app.pop_screen()
+
+    def _booked_ids(self) -> set[str]:
+        """Return wrestler IDs booked in other slots or current draft."""
+
+        booked: set[str] = set()
+        for index, match in enumerate(self.app.state.show_card):
+            if match is None or index == self.slot_index:
+                continue
+            booked.add(match.wrestler_a_id)
+            booked.add(match.wrestler_b_id)
+        if self.draft.wrestler_a_id:
+            booked.add(self.draft.wrestler_a_id)
+        if self.draft.wrestler_b_id:
+            booked.add(self.draft.wrestler_b_id)
+        return booked
+
+    def render(self, surface: pygame.Surface) -> None:
+        """Render the booking screen."""
+
+        self.app.draw_text(surface, f"Book Match {self.slot_index + 1}", PANEL_PADDING, PANEL_PADDING, ACCENT)
+        y = PANEL_PADDING + 48
+        for index, item in enumerate(self.menu.items):
+            prefix = "➤ " if index == self.menu.index else "  "
+            color = WHITE
+            if item == "Confirm" and self.validate_draft():
+                color = GRAY
+            self.app.draw_text(surface, f"{prefix}{item}", PANEL_PADDING, y, color)
+            y += self.app.font.get_height() + LINE_SPACING
+        if self.message:
+            self.app.draw_text(surface, self.message, PANEL_PADDING, SCREEN_HEIGHT - 48, ACCENT)
+
+
+class WrestlerSelectionScreen(Screen):
+    """Roster picker for assigning a wrestler to a slot side."""
+
+    def __init__(
+        self,
+        slot_index: int,
+        label: str,
+        current_other_id: Optional[str],
+        booked_ids: set[str],
+        on_select: Callable[[str], None],
+    ) -> None:
+        super().__init__()
+        self.slot_index = slot_index
+        self.label = label
+        self.current_other_id = current_other_id
+        self.booked_ids = booked_ids
+        self.on_select = on_select
+        self.menu = MenuList([])
+        self.message = ""
+        self.last_roster_index = 0
+
+    def on_enter(self) -> None:
+        """Build roster menu."""
+
+        items = []
+        for wrestler in self.app.state.roster.values():
+            fatigue = f" {FATIGUE_ICON}" if wrestler.stamina <= constants.STAMINA_MIN_BOOKABLE else ""
+            booked = self.app.state.is_wrestler_booked(
+                wrestler.id,
+                exclude_slot=self.slot_index,
+            )
+            if wrestler.id in self.booked_ids:
+                booked = True
+            booked_marker = " 📅" if booked else ""
+            line = (
+                f"{wrestler.name:<18} {wrestler.alignment[0]}  "
+                f"Sta:{wrestler.stamina:>3}{fatigue}{booked_marker}"
+            )
+            items.append(line)
+        items += ["Select", "Cancel"]
+        self.menu = MenuList(items)
+        self.last_roster_index = 0
+
+    def handle_key(self, key: int) -> None:
+        """Handle selection."""
+
+        if key in (pygame.K_UP, pygame.K_DOWN):
+            self.menu.move(-1 if key == pygame.K_UP else 1)
+            if self.menu.index < len(self.app.state.roster):
+                self.last_roster_index = self.menu.index
+        elif key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+            selection = self.menu.current()
+            if selection == "Select":
+                self.select_current()
+            elif selection == "Cancel":
+                self.app.pop_screen()
+            else:
+                self.select_current()
+        elif key == pygame.K_ESCAPE:
+            self.app.pop_screen()
+
+    def select_current(self) -> None:
+        """Select the highlighted wrestler if valid."""
+
+        if not self.app.state.roster:
+            return
+        roster_index = self.last_roster_index
+        wrestler_id = list(self.app.state.roster.keys())[roster_index]
+        error = self.validate_selection(wrestler_id)
+        if error:
+            self.message = f"{BLOCK_ICON} {error}"
+            return
+        self.on_select(wrestler_id)
+        self.app.pop_screen()
+
+    def validate_selection(self, wrestler_id: str) -> str | None:
+        """Return an error message if the wrestler cannot be selected."""
+
+        if wrestler_id == self.current_other_id:
+            return "Already selected in this match"
+        if self.app.state.is_wrestler_booked(wrestler_id, exclude_slot=self.slot_index):
+            return "Already booked in another match"
+        wrestler = self.app.state.roster[wrestler_id]
+        if wrestler.stamina <= constants.STAMINA_MIN_BOOKABLE:
+            return "Not enough stamina"
+        return None
+
+    def render(self, surface: pygame.Surface) -> None:
+        """Render the wrestler selection list."""
+
+        title = f"Select Wrestler (Match {self.slot_index + 1} · {self.label})"
+        self.app.draw_text(surface, title, PANEL_PADDING, PANEL_PADDING, ACCENT)
+        y = PANEL_PADDING + 48
+        for index, item in enumerate(self.menu.items):
+            prefix = "➤ " if index == self.menu.index else "  "
+            self.app.draw_text(surface, f"{prefix}{item}", PANEL_PADDING, y)
+            y += self.app.small_font.get_height() + LINE_SPACING
+        if self.message:
+            self.app.draw_text(surface, self.message, PANEL_PADDING, SCREEN_HEIGHT - 48, ACCENT)
+
+
+class MatchTypeSelectionScreen(Screen):
+    """Match type picker for a slot."""
+
+    def __init__(self, on_select: Callable[[str], None]) -> None:
+        super().__init__()
+        self.on_select = on_select
+        self.menu = MenuList([])
+        self.description = ""
+        self.last_match_index = 0
+
+    def on_enter(self) -> None:
+        """Build match type list."""
+
+        items = [match_type.name for match_type in self.app.state.match_types.values()]
+        items += ["Select", "Cancel"]
+        self.menu = MenuList(items)
+        self.last_match_index = 0
+        self.update_description()
+
+    def update_description(self) -> None:
+        """Update description for highlighted match type."""
+
+        if self.menu.index >= len(self.app.state.match_types):
+            self.description = ""
+            return
+        match_type = list(self.app.state.match_types.values())[self.menu.index]
+        self.description = match_type.description
+
+    def handle_key(self, key: int) -> None:
+        """Handle key presses."""
+
+        if key in (pygame.K_UP, pygame.K_DOWN):
+            self.menu.move(-1 if key == pygame.K_UP else 1)
+            if self.menu.index < len(self.app.state.match_types):
+                self.last_match_index = self.menu.index
+            self.update_description()
+        elif key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+            selection = self.menu.current()
+            if selection in ("Select", "Cancel"):
+                if selection == "Select":
+                    self.select_current()
+                else:
+                    self.app.pop_screen()
+            else:
+                self.select_current()
+        elif key == pygame.K_ESCAPE:
+            self.app.pop_screen()
+
+    def select_current(self) -> None:
+        """Select the highlighted match type."""
+
+        if not self.app.state.match_types:
+            return
+        match_type_id = list(self.app.state.match_types.keys())[self.last_match_index]
+        self.on_select(match_type_id)
+        self.app.pop_screen()
+
+    def render(self, surface: pygame.Surface) -> None:
+        """Render the match type selection list."""
+
+        self.app.draw_text(surface, "Select Match Type", PANEL_PADDING, PANEL_PADDING, ACCENT)
+        y = PANEL_PADDING + 48
+        for index, item in enumerate(self.menu.items):
+            prefix = "➤ " if index == self.menu.index else "  "
+            self.app.draw_text(surface, f"{prefix}{item}", PANEL_PADDING, y)
+            y += self.app.small_font.get_height() + LINE_SPACING
+        desc_y = SCREEN_HEIGHT - 140
+        self.app.draw_text(surface, "Description:", PANEL_PADDING, desc_y, GRAY, font=self.app.small_font)
+        self.app.draw_lines(
+            surface,
+            self.description.splitlines(),
+            PANEL_PADDING,
+            desc_y + 24,
+            WHITE,
+            font=self.app.small_font,
+        )
+
+
+class ConfirmBookingModal(Screen):
+    """Confirmation modal to guard match commits."""
+
+    def __init__(self, on_confirm: Callable[[], None]) -> None:
+        super().__init__()
+        self.on_confirm = on_confirm
+        self.menu = MenuList(["Book Match", "Cancel"])
+
+    def handle_key(self, key: int) -> None:
+        """Handle modal navigation."""
+
+        if key in (pygame.K_UP, pygame.K_DOWN):
+            self.menu.move(-1 if key == pygame.K_UP else 1)
+        elif key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+            selection = self.menu.current()
+            if selection == "Book Match":
+                self.on_confirm()
+            self.app.pop_screen()
+        elif key == pygame.K_ESCAPE:
+            self.app.pop_screen()
+
+    def render(self, surface: pygame.Surface) -> None:
+        """Render confirmation modal."""
+
+        rect = pygame.Rect(180, 200, 600, 240)
+        pygame.draw.rect(surface, DARK_GRAY, rect)
+        pygame.draw.rect(surface, GRAY, rect, 2)
+        self.app.draw_text(surface, "Confirm booking?", rect.x + 24, rect.y + 24, ACCENT)
+        y = rect.y + 84
+        for index, item in enumerate(self.menu.items):
+            prefix = "➤ " if index == self.menu.index else "  "
+            self.app.draw_text(surface, f"{prefix}{item}", rect.x + 24, y)
+            y += self.app.font.get_height() + LINE_SPACING
+
+
+class SimulatingScreen(Screen):
+    """Simulating screen that runs the show and auto-advances."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.timer = 0.0
+
+    def on_enter(self) -> None:
+        """Run the show and schedule auto-advance."""
+
+        self.app.state.run_show()
+        self.timer = 0.4
+
+    def update(self, delta: float) -> None:
+        """Count down to results."""
+
+        self.timer -= delta
+        if self.timer <= 0:
+            self.app.switch_screen(ResultsScreen())
+
+    def render(self, surface: pygame.Surface) -> None:
+        """Render simulating message."""
+
+        self.app.draw_text(surface, "Simulating show...", PANEL_PADDING, PANEL_PADDING, ACCENT)
+
+
+class ResultsScreen(Screen):
+    """Show results screen for completed matches."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.menu = MenuList(["Continue", "Roster", "Main Menu"])
+
+    def handle_key(self, key: int) -> None:
+        """Handle results navigation."""
+
+        if key in (pygame.K_LEFT, pygame.K_RIGHT, pygame.K_UP, pygame.K_DOWN):
+            delta = -1 if key in (pygame.K_LEFT, pygame.K_UP) else 1
+            self.menu.move(delta)
+        elif key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+            selection = self.menu.current()
+            if selection == "Continue":
+                self.app.switch_screen(BookingHubScreen())
+            elif selection == "Roster":
+                self.app.push_screen(RosterScreen())
+            elif selection == "Main Menu":
+                self.app.switch_screen(MainMenuScreen())
+
+    def render(self, surface: pygame.Surface) -> None:
+        """Render results."""
+
+        self.app.draw_text(surface, "Show Results", PANEL_PADDING, PANEL_PADDING, ACCENT)
+        y = PANEL_PADDING + 48
+        show = self.app.state.last_show
+        if show is None:
+            self.app.draw_text(surface, "No results.", PANEL_PADDING, y)
+        else:
+            lines = []
+            for index, result in enumerate(show.results, start=1):
+                winner = self.app.state.roster[result.winner_id].name
+                loser = self.app.state.roster[result.loser_id].name
+                lines.append(f"Match {index}")
+                lines.append(f" {winner} def. {loser}")
+                lines.append(f" {format_stars(result.rating)}")
+                lines.append("")
+            y = self.app.draw_lines(surface, lines, PANEL_PADDING, y, WHITE)
+            rating = show.show_rating or 0.0
+            self.app.draw_text(surface, f"Show Rating: {format_stars(rating)}", PANEL_PADDING, y + 12)
+        action_y = SCREEN_HEIGHT - 120
+        for index, item in enumerate(self.menu.items):
+            prefix = "➤ " if index == self.menu.index else "  "
+            self.app.draw_text(surface, f"{prefix}{item}", PANEL_PADDING, action_y)
+            action_y += self.app.font.get_height() + LINE_SPACING
+
+
+class RosterScreen(Screen):
+    """Read-only roster listing."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.menu = MenuList([])
+
+    def on_enter(self) -> None:
+        """Build roster list."""
+
+        items = [
+            roster_line(
+                wrestler.name,
+                wrestler.alignment,
+                wrestler.popularity,
+                wrestler.stamina,
+            )
+            for wrestler in self.app.state.roster.values()
+        ]
+        items.append("Back")
+        self.menu = MenuList(items)
+
+    def on_resume(self) -> None:
+        """Refresh roster data."""
+
+        self.on_enter()
+
+    def handle_key(self, key: int) -> None:
+        """Handle roster navigation."""
+
+        if key in (pygame.K_UP, pygame.K_DOWN):
+            self.menu.move(-1 if key == pygame.K_UP else 1)
+        elif key in (pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_ESCAPE):
+            selection = self.menu.current()
+            if selection == "Back" or key == pygame.K_ESCAPE:
+                self.app.pop_screen()
+
+    def render(self, surface: pygame.Surface) -> None:
+        """Render roster list."""
+
+        self.app.draw_text(surface, "Roster Overview", PANEL_PADDING, PANEL_PADDING, ACCENT)
+        y = PANEL_PADDING + 48
+        for index, item in enumerate(self.menu.items):
+            prefix = "➤ " if index == self.menu.index else "  "
+            self.app.draw_text(surface, f"{prefix}{item}", PANEL_PADDING, y, WHITE)
+            y += self.app.small_font.get_height() + LINE_SPACING
 
 
 class BookingHubScreen(Screen):

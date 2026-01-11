@@ -1,21 +1,21 @@
 # WrestleGM
 
-WrestleGM is a terminal-first wrestling management game where you run a promotion
-one show at a time. The game focuses on booking match cards, simulating outcomes,
-and watching roster stats evolve across shows.
+WrestleGM is a wrestling management game where you run a promotion one show at a
+time. The game focuses on booking match cards, simulating outcomes, and watching
+roster stats evolve across shows.
 
 ## Product Vision
 
 - Show-by-show progression is the core loop, not single-match outcomes.
 - Systemic, deterministic simulation with data-driven wrestlers and match types.
-- Keyboard-only Textual UI designed for narrow terminals.
+- Keyboard-only pygame UI designed for a simple windowed presentation.
 - Long-term booking decisions matter through stamina, popularity, and match types.
 
 For the full MVP vision and UX details, see `wrestle_gm_textual_mvp_prd.md`.
 
 ## Current State
 
-- Textual UI with main menu, booking hub, match booking, selection screens, and
+- pygame UI with main menu, booking hub, match booking, selection screens, and
   show results.
 - Fixed 3-match show card with validation (no duplicate wrestlers, stamina limits).
 - Deterministic simulation pipeline: outcome, rating, and stat deltas.

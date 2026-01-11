@@ -4,7 +4,7 @@ from wrestlegm.ui import WrestleGMApp
 
 
 def main() -> None:
-    """Run the WrestleGM Textual app."""
+    """Run the WrestleGM pygame app."""
 
     WrestleGMApp().run()
 
