@@ -7,6 +7,7 @@ The PR test comment currently lists test results in plain bullet format. Tables 
 - Render a table per class grouping in the PR test comment.
 - Keep emoji status indicators and per-test reason summaries.
 - Preserve collapsible group sections.
+- Restrict the PR test workflow to run only when relevant files change.
 
 ## Example Comment
 

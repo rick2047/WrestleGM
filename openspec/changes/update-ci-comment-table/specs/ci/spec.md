@@ -5,3 +5,11 @@ The system SHALL include a detailed list of collected tests in the PR comment, g
 #### Scenario: Report test details
 - **WHEN** the PR test workflow completes
 - **THEN** the PR comment lists test cases grouped by class with per-test status and skip/error reasons in a table
+
+## ADDED Requirements
+### Requirement: PR test path filters
+The system SHALL run PR tests only when relevant files change: `tests/**`, `wrestlegm/**`, `data/**`, `main.py`, `pyproject.toml`, `uv.lock`, or `.github/workflows/pr-tests.yml`.
+
+#### Scenario: Skip PR tests on unrelated changes
+- **WHEN** a pull request changes files outside the relevant paths
+- **THEN** the PR test workflow does not run
