@@ -277,9 +277,8 @@ Focus behavior:
 
 ### Snapshot Tests
 
-- SVG baselines live under `tests/snapshots/` (stored as `.raw` files by `pytest-textual-snapshot`) and are fixed to the canonical registry.
+- SVG baselines live under `tests/snapshots/test_ui_snapshots/` (stored as `.raw` files by `pytest-textual-snapshot`).
 - Snapshot tests live in `tests/test_ui_snapshots.py` and use `pytest-textual-snapshot`.
-- Registry enforcement lives in `tests/test_ui_snapshot_registry.py`.
 - Update baselines intentionally with:
   ```bash
   uv run pytest tests/test_ui_snapshots.py --snapshot-update

@@ -53,12 +53,8 @@ The system SHALL store SVG snapshot baselines in-repo using the `pytest-textual-
 - **AND THEN** filenames are derived from snapshot test function names and stored with the `.raw` extension
 
 ### Requirement: Snapshot enforcement
-The system SHALL fail tests when snapshot output does not match baselines and SHALL reject missing or extra snapshots.
+The system SHALL fail tests when snapshot output does not match baselines.
 
 #### Scenario: Snapshot mismatch handling
 - **WHEN** a generated snapshot differs from its baseline
 - **THEN** the test run fails
-
-#### Scenario: Snapshot registry enforcement
-- **WHEN** snapshot tests run
-- **THEN** the set of snapshots in `tests/snapshots/` MUST exactly match the canonical registry list derived from `tests/test_ui_snapshots.py`

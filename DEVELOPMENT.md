@@ -15,7 +15,7 @@ Use the `gh` CLI for GitHub issues/PRs/comments rather than raw API calls. Assum
 
 ## UI Snapshot Testing
 
-UI snapshot baselines live under `tests/snapshots/` (stored as `.raw` SVG snapshots) and are managed by `pytest-textual-snapshot`. To update snapshots after intentional UI changes, run:
+UI snapshot baselines live under `tests/snapshots/test_ui_snapshots/` (stored as `.raw` SVG snapshots) and are managed by `pytest-textual-snapshot`. To update snapshots after intentional UI changes, run:
 
 ```bash
 uv run pytest tests/test_ui_snapshots.py --snapshot-update
