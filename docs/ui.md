@@ -7,9 +7,8 @@ than in screen classes.
 
 ## Flow Summary
 
-Main Menu -> Booking Hub -> Match Booking -> Wrestler/Match Type Selection ->
-Confirmation Modal -> Simulating -> Results -> (Continue to Booking Hub or
-Roster or Main Menu).
+Main Menu -> Game Hub -> Booking Hub -> Match Booking -> Wrestler/Match Type
+Selection -> Confirmation Modal -> Simulating -> Results -> Game Hub.
 
 ## Navigation Model
 
@@ -34,18 +33,38 @@ Purpose: entry point and global navigation.
 Key bindings:
 - `Enter`: select
 - `q`: quit
+- `Esc`: no effect
 
 Components:
-- `ListView` with items for New Game, Roster Overview, and Quit.
+- `ListView` with items for New Game and Quit.
 - `Footer` for bindings.
 
 State interactions:
-- `New Game` switches to `BookingHubScreen` with current `GameState`.
-- `Roster Overview` pushes `RosterScreen` without changing state.
+- `New Game` initializes a new `GameState` and shows `GameHubScreen`.
 - `Quit` calls `App.exit()`.
 
 Focus behavior:
 - The menu list receives focus on mount.
+
+### GameHubScreen
+
+Purpose: session-level hub for gameplay navigation.
+
+Key bindings:
+- `Enter`: select
+- `q`: quit
+
+Components:
+- `ListView` with items for Book Current Show, Roster Overview, and Exit to Main Menu.
+- `Footer` for bindings.
+
+State interactions:
+- `Book Current Show` switches to `BookingHubScreen`.
+- `Roster Overview` pushes `RosterScreen`.
+- `Exit to Main Menu` switches to `MainMenuScreen`.
+
+Focus behavior:
+- The hub list receives focus on mount and refresh.
 
 ### BookingHubScreen
 
@@ -71,6 +90,7 @@ State interactions:
 - Pulls `show_index` and `show_card` from `GameState`.
 - Uses `GameState.validate_show()` to enable or disable Run Show.
 - Pushes `MatchBookingScreen` for the selected slot.
+- Back returns to `GameHubScreen`.
 
 Focus behavior:
 - The slot list receives focus on mount.
@@ -200,19 +220,17 @@ Purpose: display match outcomes and show rating.
 Key bindings:
 - `Enter`: continue
 - `Up/Down/Left/Right`: move focus between actions
-- `r`: roster
-- `m`: main menu
 
 Components:
 - `Static` title.
 - `Static` results list with star ratings.
 - `Static` show rating summary.
-- `Button` group: Continue, Roster, Main Menu.
+- `Button` group: Continue.
 - `Footer` for bindings.
 
 State interactions:
 - Reads `GameState.last_show` to populate match results and show rating.
-- Continue switches back to `BookingHubScreen` with updated state.
+- Continue switches back to `GameHubScreen` with updated state.
 
 Focus behavior:
 - Continue receives focus on mount, and arrow keys move focus across action buttons.

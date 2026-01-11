@@ -57,13 +57,14 @@ Outcomes:
 
 ## 3. Core Game Loop (MVP)
 
-1. View current show overview
-2. Build or review the show card
-3. Book matches (wrestlers + match types)
-4. Run the show (simulate matches sequentially)
-5. Review match results and **overall show rating**
-6. Apply stat changes at show end
-7. Advance to the next show
+1. Start from Main Menu and select New Game
+2. Land on the Game Hub (session home)
+3. Open the current show overview / booking hub
+4. Build or review the show card
+5. Book matches (wrestlers + match types)
+6. Run the show (simulate matches sequentially)
+7. Review match results and **overall show rating**
+8. Return to the Game Hub and advance to the next show
 
 The game loop is **show-driven**, not match-driven.
 
@@ -671,7 +672,8 @@ This section defines the **full MVP UX** for WrestleGM, including screens, navig
 - `↑ / ↓` – move within vertical lists
 - `← / →` – move between horizontal fields or buttons (where applicable)
 - `Enter` – activate focused element
-- `Esc` – back / cancel (context-dependent)
+- `Esc` – back / cancel (context-dependent; no effect on Game Hub)
+- `Q` – quit (Main Menu, Game Hub)
 - Arrow-key focus loops between lists and action buttons; disabled actions are skipped
 - Focus wraps from last to first and first to last within a screen’s focusable controls
 
@@ -679,7 +681,7 @@ This section defines the **full MVP UX** for WrestleGM, including screens, navig
 
 - Screens are pushed and popped on a stack
 - Selecting an item pops automatically
-- Esc pops the current context unless focus is trapped (e.g. modal)
+- Esc pops the current context unless focus is trapped (e.g. modal); Game Hub ignores Esc
 
 **Session persistence rule**
 
@@ -744,14 +746,15 @@ This ensures discoverability without clutter and keeps the UI self-teaching.
 The MVP consists of the following screens:
 
 1. Main Menu
-2. Show Overview / Booking Hub
-3. Match Booking (single-slot editor)
-4. Wrestler Selection
-5. Match Type Selection
-6. Match Confirmation
-7. Simulating Show
-8. Show Results
-9. Roster Overview
+2. Game Hub
+3. Show Overview / Booking Hub
+4. Match Booking (single-slot editor)
+5. Wrestler Selection
+6. Match Type Selection
+7. Match Confirmation
+8. Simulating Show
+9. Show Results
+10. Roster Overview
 
 ---
 
@@ -760,12 +763,12 @@ The MVP consists of the following screens:
 **Purpose**
 
 - Entry point and global navigation
+- Meta-only screen; gameplay is reachable only via New Game
 
 **Components**
 
 - Vertical menu list:
   - New Game
-  - Roster Overview
   - Quit
 - Static footer metadata (non-persistent context only)
 
@@ -777,10 +780,37 @@ The MVP consists of the following screens:
 
 - Enter selects
 - Esc has no effect
+- Q quits
 
 ---
 
-### 8.7 Show Overview / Booking Hub
+### 8.7 Game Hub
+
+The Game Hub is the **session-level home screen** and the only gateway into gameplay.
+
+**Purpose**
+
+- Provide a safe, non-simulating state between shows
+- Route to booking and roster views
+- Allow explicit exit to the Main Menu
+
+**Components**
+
+- Current show action: Book Current Show
+- Descriptive subtitle line showing the current show number
+- Roster Overview
+- Exit to Main Menu
+
+**Behavior**
+
+- Enter selects the focused option
+- Esc has no effect
+- Q quits the application
+- Exiting to Main Menu ends the current session
+
+---
+
+### 8.8 Show Overview / Booking Hub
 
 The Booking Hub is a **slot-level overview screen**. It shows the current show card and allows the player to choose *which match* to edit.
 
@@ -796,7 +826,7 @@ The Booking Hub is a **slot-level overview screen**. It shows the current show c
 - List of 3 match slots
 - Footer actions:
   - Run Show
-  - Back
+  - Back (return to Game Hub)
 
 **Slot states**
 
@@ -817,7 +847,7 @@ Slots are binary; partial matches do not exist on the show.
 
 ---
 
-### 8.8 Match Booking Screen
+### 8.9 Match Booking Screen
 
 This screen is the **only place where a match can be edited or created**. It owns all booking validation.
 
@@ -853,7 +883,7 @@ No invalid match can ever be written to the show.
 
 ---
 
-### 8.9 Wrestler Selection Screen
+### 8.10 Wrestler Selection Screen
 
 **Components**
 
@@ -880,7 +910,7 @@ No invalid match can ever be written to the show.
 
 ---
 
-### 8.10 Match Type Selection Screen
+### 8.11 Match Type Selection Screen
 
 **Components**
 
@@ -898,7 +928,7 @@ No invalid match can ever be written to the show.
 
 ---
 
-### 8.11 Match Booking Confirmation (Modal)
+### 8.12 Match Booking Confirmation (Modal)
 
 Match booking uses a **modal confirmation dialog**, not a separate screen.
 
@@ -926,7 +956,7 @@ No match details, stats, or repetition are shown in the modal; full context is a
 
 ---
 
-### 8.12 Simulating Show Screen
+### 8.13 Simulating Show Screen
 
 **Components**
 
@@ -941,7 +971,7 @@ No match details, stats, or repetition are shown in the modal; full context is a
 
 ---
 
-### 8.13 Show Results Screen
+### 8.14 Show Results Screen
 
 **Components**
 
@@ -950,18 +980,16 @@ No match details, stats, or repetition are shown in the modal; full context is a
   - Match rating (stars only, half-star precision)
 - Overall show rating (stars only)
 - Footer actions:
-  - Continue (advance to next show)
-  - Roster
-  - Main Menu
+  - Continue (return to Game Hub)
 
 **Behavior**
 
 - Esc does nothing
-- Only explicit actions are allowed
+- Continue returns to the Game Hub
 
 ---
 
-### 8.14 Roster Overview
+### 8.15 Roster Overview
 
 **Components**
 
@@ -979,11 +1007,12 @@ No match details, stats, or repetition are shown in the modal; full context is a
 
 ---
 
-### 8.15 Widget Mapping (Textual)
+### 8.16 Widget Mapping (Textual)
 
 | Screen               | Primary Widgets             |
 | -------------------- | --------------------------- |
 | Main Menu            | ListView, Static, Footer    |
+| Game Hub             | ListView, Static, Footer    |
 | Booking Hub          | ListView, Static, Button    |
 | Match Booking        | ListView, Static, Button    |
 | Wrestler Selection   | DataTable, Static, Button   |
@@ -995,7 +1024,7 @@ No match details, stats, or repetition are shown in the modal; full context is a
 
 ---
 
-### 8.15 Microcopy & Tone Rules
+### 8.17 Microcopy & Tone Rules
 
 - Neutral, observational language
 - No judgment or advice
@@ -1005,7 +1034,7 @@ No match details, stats, or repetition are shown in the modal; full context is a
 
 ---
 
-### 8.16 UX Guarantees
+### 8.18 UX Guarantees
 
 - Keyboard-only interaction
 - Deterministic behavior
@@ -1014,13 +1043,51 @@ No match details, stats, or repetition are shown in the modal; full context is a
 
 ---
 
-### 8.17 ASCII Screen Mockups (Authoritative)
+### 8.19 ASCII Screen Mockups (Authoritative)
 
 The following ASCII mockups define the **intended visual layout** for all MVP screens after the slot-based booking redesign.
 
 ---
 
-#### 8.17.1 Booking Hub (Slot-Level)
+#### 8.19.1 Main Menu
+
+```text
+┌──────────────────────────────────────┐
+│ WrestleGM                            │
+│ Main Menu                            │
+├──────────────────────────────────────┤
+│ ▸ New Game                           │
+│                                      │
+│   Quit                               │
+│                                      │
+├──────────────────────────────────────┤
+│ ↑↓ Navigate   Enter Select           │
+└──────────────────────────────────────┘
+```
+
+---
+
+#### 8.19.2 Game Hub
+
+```text
+┌──────────────────────────────────────┐
+│ WrestleGM                            │
+│ Game Hub                             │
+├──────────────────────────────────────┤
+│ ▸ Book Current Show                  │
+│   Show #12                           │
+│                                      │
+│   Roster Overview                    │
+│                                      │
+│   Exit to Main Menu                  │
+├──────────────────────────────────────┤
+│ ↑↓ Navigate   Enter Select   Q Quit  │
+└──────────────────────────────────────┘
+```
+
+---
+
+#### 8.19.3 Booking Hub (Slot-Level)
 
 ```text
 ┌──────────────────────────────────────┐
@@ -1046,7 +1113,7 @@ The following ASCII mockups define the **intended visual layout** for all MVP sc
 
 ---
 
-#### 8.17.2 Match Booking (Empty Slot)
+#### 8.19.4 Match Booking (Empty Slot)
 
 ```text
 ┌──────────────────────────────────────┐
@@ -1070,7 +1137,7 @@ The following ASCII mockups define the **intended visual layout** for all MVP sc
 
 ---
 
-#### 8.17.3 Match Booking (Filled Slot)
+#### 8.19.5 Match Booking (Filled Slot)
 
 ```text
 ┌──────────────────────────────────────┐
@@ -1095,7 +1162,7 @@ The following ASCII mockups define the **intended visual layout** for all MVP sc
 
 ---
 
-#### 8.17.4 Wrestler Selection
+#### 8.19.6 Wrestler Selection
 
 Select Wrestler (Match 3 · A)
 
@@ -1111,7 +1178,7 @@ Select Wrestler (Match 3 · A)
 
 ---
 
-#### 8.17.5 Match Type Selection
+#### 8.19.7 Match Type Selection
 
 ```text
 ┌──────────────────────────────────────┐
@@ -1132,7 +1199,7 @@ Select Wrestler (Match 3 · A)
 
 ---
 
-#### 8.17.6 Match Booking Confirmation (Modal)
+#### 8.19.8 Match Booking Confirmation (Modal)
 
 ```text
               ┌──────────────────────┐
@@ -1145,7 +1212,7 @@ Select Wrestler (Match 3 · A)
 
 ---
 
-#### 8.17.7 Show Results
+#### 8.19.9 Show Results
 
 ```text
 ┌──────────────────────────────────────┐
@@ -1165,13 +1232,13 @@ Select Wrestler (Match 3 · A)
 ├──────────────────────────────────────┤
 │ Show Rating: ★★★½☆                   │
 ├──────────────────────────────────────┤
-│ [ Continue ] [ Roster ] [ Main Menu ]│
+│ [ Continue ]                         │
 └──────────────────────────────────────┘
 ```
 
 ---
 
-#### 8.17.8 Roster Overview
+#### 8.19.10 Roster Overview
 
 Roster Overview
 
