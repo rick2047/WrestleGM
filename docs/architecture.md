@@ -9,15 +9,15 @@ UI-agnostic so the front-end can evolve without rewriting match rules.
 
 - `wrestlegm.models`: dataclasses that define the domain vocabulary.
 - `wrestlegm.data`: JSON loading for wrestlers and match types.
-- `wrestlegm.sim`: deterministic match and show simulation pipeline.
+- `wrestlegm.sim`: deterministic match and show simulation via `SimulationEngine`.
 - `wrestlegm.state`: in-memory game state, booking validation, and lifecycle.
 - `wrestlegm.ui`: Textual screens and navigation flow.
 - `main.py`: app entry point.
 
 ## Module Boundaries
 
-- `wrestlegm.sim` accepts plain data and returns results without mutating state.
-- `wrestlegm.state` owns mutation (applying deltas, advancing shows, recovery).
+- `wrestlegm.sim` owns RNG and returns results without mutating state.
+- `wrestlegm.state` owns mutation via `ShowApplier` (applying deltas, recovery).
 - `wrestlegm.ui` never computes match outcomes; it only orchestrates flow.
 - `wrestlegm.data` is the only place that reads JSON from disk.
 
@@ -31,10 +31,9 @@ Key classes coordinate the show loop as follows:
 - `WrestleGMApp` creates `GameState` from data loaders and owns the screen stack.
 - UI screens (such as `BookingHubScreen` and `ResultsScreen`) read from
   `GameState` and request transitions.
-- `GameState` validates bookings and calls the simulation functions in
-  `wrestlegm.sim`.
-- Simulation functions return `MatchResult` data without mutating state.
-- `GameState` applies deltas and updates the roster after the show completes.
+- `GameState` validates bookings and calls `SimulationEngine`.
+- `SimulationEngine` returns `MatchResult` data without mutating state.
+- `ShowApplier` applies deltas and updates the roster after the show completes.
 
 ## Class Diagram (Conceptual)
 
@@ -45,16 +44,18 @@ WrestleGMApp
 GameState <-----------------------------+
   |                                     |
   | uses                                | reads/writes
-  v                                     |
-Simulation (simulate_* functions)       |
   |                                     |
-  v                                     |
-MatchResult ----------------------------+
+  +-> SimulationEngine                  |
+  |       |                             |
+  |       v                             |
+  |   MatchResult                       |
+  |                                     |
+  +-> ShowApplier ----------------------+
 
 UI Screens (MainMenu, BookingHub, MatchBooking, Results)
   |
   v
-GameState (validate, run_show, apply_show_results)
+GameState (validate, run_show)
 ```
 
 ## Data Flow
@@ -63,7 +64,7 @@ GameState (validate, run_show, apply_show_results)
 2. `GameState` builds roster state, match type definitions, and RNG seed.
 3. UI screens read from `GameState` and write bookings through validation.
 4. Simulation runs only when a show is valid, returning match results.
-5. State applies deltas at show end and advances to the next show.
+5. `ShowApplier` applies deltas and recovery, then state advances to the next show.
 
 ## Show Lifecycle
 
@@ -84,9 +85,9 @@ GameState (validate, run_show, apply_show_results)
 
 ## Determinism
 
-The simulation uses a single seeded RNG stored in `GameState`. Given identical
-inputs (roster stats, match types, show card, and seed), match outcomes and
-ratings are reproducible.
+The simulation uses a single seeded RNG stored in `SimulationEngine`. Given
+identical inputs (roster stats, match types, show card, and seed), match
+outcomes and ratings are reproducible.
 
 ## State Mutation Rules
 
