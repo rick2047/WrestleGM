@@ -8,6 +8,37 @@ The PR test comment currently lists test results in plain bullet format. Tables 
 - Keep emoji status indicators and per-test reason summaries.
 - Preserve collapsible group sections.
 
+## Example Comment
+
+```markdown
+<!-- pr-tests -->
+## PR Test Results
+Status: ✅ PASSED
+Run: https://github.com/org/repo/actions/runs/123456789
+Totals: ❌ 0 failed, 🛑 0 error, ⚠️ 1 skipped, ✅ 8 passed
+
+<details>
+<summary>TestMatchSimulation (tests.test_simulation_engine) (❌ 0 failed, 🛑 0 error, ⚠️ 0 skipped, ✅ 3 passed)</summary>
+
+| Test | Status | Reason |
+| --- | --- | --- |
+| `test_outcome_probability_clamps` | ✅ PASSED | |
+| `test_rating_bounds` | ✅ PASSED | |
+| `test_alignment_modifiers` | ✅ PASSED | |
+
+</details>
+
+<details>
+<summary>TestMutation (tests.test_simulation_engine) (❌ 0 failed, 🛑 0 error, ⚠️ 1 skipped, ✅ 1 passed)</summary>
+
+| Test | Status | Reason |
+| --- | --- | --- |
+| `test_clamp_and_recovery` | ✅ PASSED | |
+| `test_future_case` | ⚠️ SKIPPED | feature not enabled yet |
+
+</details>
+```
+
 ## Impact
 - Affected specs: `specs/ci/spec.md`
 - Affected code/docs: `.github/scripts/pytest_comment.py`
