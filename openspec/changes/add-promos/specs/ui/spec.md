@@ -17,6 +17,13 @@ The system SHALL reuse the existing wrestler selection screen for promo booking 
 - **WHEN** the user opens wrestler selection from promo booking
 - **THEN** the table layout, columns, and indicators match the match-booking selection screen
 
+### Requirement: Mic skill visibility in roster and selection
+The system SHALL display wrestler mic skill on the roster overview and wrestler selection screens using the same table layout.
+
+#### Scenario: Mic skill column shown
+- **WHEN** the roster overview or wrestler selection screen renders
+- **THEN** the table includes a Mic column showing each wrestler's mic skill value
+
 ## ADDED UI Mockups
 
 ### Show Screen (Slot-Level)

@@ -999,6 +999,7 @@ class WrestlerSelectionScreen(Screen):
         )
         self.table.add_column("Name", key="name")
         self.table.add_column("Sta", key="sta")
+        self.table.add_column("Mic", key="mic")
         self.table.add_column("Pop", key="pop")
         for wrestler in self.app.state.roster.values():
             booked = self.app.state.is_wrestler_booked(
@@ -1011,6 +1012,7 @@ class WrestlerSelectionScreen(Screen):
             self.table.add_row(
                 build_name_cell(wrestler.name, wrestler.alignment),
                 f"{wrestler.stamina:>3}",
+                f"{wrestler.mic_skill:>3}",
                 build_pop_cell(wrestler.popularity, wrestler.stamina, booked_marker),
                 key=wrestler.id,
             )
@@ -1468,6 +1470,7 @@ class RosterScreen(Screen):
         )
         self.table.add_column("Name", key="name")
         self.table.add_column("Sta", key="sta")
+        self.table.add_column("Mic", key="mic")
         self.table.add_column("Pop", key="pop")
         yield self.table
         self.back_button = Button("Back", id="back")
@@ -1490,6 +1493,7 @@ class RosterScreen(Screen):
             self.table.add_row(
                 build_name_cell(wrestler.name, wrestler.alignment),
                 f"{wrestler.stamina:>3}",
+                f"{wrestler.mic_skill:>3}",
                 build_pop_cell(wrestler.popularity, wrestler.stamina),
                 key=wrestler.id,
             )
