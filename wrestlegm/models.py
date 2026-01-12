@@ -53,14 +53,15 @@ class MatchTypeDefinition:
     name: str
     description: str
     modifiers: MatchTypeModifiers
+    min_wrestlers: int = 2
+    max_wrestlers: int = 2
 
 
 @dataclass(frozen=True)
 class Match:
     """Booked match within a show."""
 
-    wrestler_a_id: str
-    wrestler_b_id: str
+    wrestler_ids: List[str]
     match_type_id: str
 
 
@@ -84,7 +85,7 @@ class MatchResult:
     """Immutable result of a simulated match."""
 
     winner_id: str
-    loser_id: str
+    non_winner_ids: List[str]
     rating: float
     match_type_id: str
     applied_modifiers: MatchTypeModifiers

@@ -73,14 +73,21 @@ class GameState:
         """Return validation errors for a match in a slot."""
 
         errors: List[str] = []
-        if match.wrestler_a_id == match.wrestler_b_id:
-            errors.append("duplicate_wrestler")
-        if match.wrestler_a_id not in self.roster or match.wrestler_b_id not in self.roster:
-            errors.append("unknown_wrestler")
         if match.match_type_id not in self.match_types:
             errors.append("unknown_match_type")
+        if len(set(match.wrestler_ids)) != len(match.wrestler_ids):
+            errors.append("duplicate_wrestler")
+        for wrestler_id in match.wrestler_ids:
+            if wrestler_id not in self.roster:
+                errors.append("unknown_wrestler")
+                break
 
-        for wrestler_id in (match.wrestler_a_id, match.wrestler_b_id):
+        match_type = self.match_types.get(match.match_type_id)
+        if match_type is not None:
+            if not (match_type.min_wrestlers <= len(match.wrestler_ids) <= match_type.max_wrestlers):
+                errors.append("invalid_wrestler_count")
+
+        for wrestler_id in match.wrestler_ids:
             if wrestler_id not in self.roster:
                 continue
             if self.is_wrestler_booked(wrestler_id, exclude_slot=slot_index):
@@ -127,7 +134,7 @@ class GameState:
             if exclude_slot is not None and index == exclude_slot:
                 continue
             if isinstance(slot, Match):
-                if wrestler_id in (slot.wrestler_a_id, slot.wrestler_b_id):
+                if wrestler_id in slot.wrestler_ids:
                     return True
             else:
                 if wrestler_id == slot.wrestler_id:
@@ -147,7 +154,7 @@ class GameState:
             assert slot is not None
             errors.extend(self.validate_slot(slot, slot_index=index))
             if isinstance(slot, Match):
-                wrestler_ids = (slot.wrestler_a_id, slot.wrestler_b_id)
+                wrestler_ids = tuple(slot.wrestler_ids)
             else:
                 wrestler_ids = (slot.wrestler_id,)
             for wrestler_id in wrestler_ids:
@@ -194,7 +201,7 @@ class ShowApplier:
                 participants.add(result.wrestler_id)
             else:
                 participants.add(result.winner_id)
-                participants.add(result.loser_id)
+                participants.update(result.non_winner_ids)
             for wrestler_id, delta in result.stat_deltas.items():
                 current = aggregated.get(wrestler_id, StatDelta(popularity=0, stamina=0))
                 aggregated[wrestler_id] = StatDelta(

@@ -3,7 +3,14 @@
 from __future__ import annotations
 
 from wrestlegm import constants
-from wrestlegm.ui import BookingHubScreen, GameHubScreen, MainMenuScreen, ResultsScreen, RosterScreen
+from wrestlegm.ui import (
+    BookingHubScreen,
+    GameHubScreen,
+    MainMenuScreen,
+    MatchBookingScreen,
+    ResultsScreen,
+    RosterScreen,
+)
 
 from tests.ui_test_utils import (
     TestWrestleGMApp,
@@ -54,14 +61,12 @@ def test_core_flow_new_game_booking_results_roster() -> None:
                     row_a = next(row_cursor)
                     row_b = next(row_cursor)
                     await open_match_booking(pilot, slot_index)
+                    await select_match_type(pilot, 0)
                     await pilot.press("enter")
                     await select_wrestler(pilot, row_a)
 
                     await pilot.press("down", "enter")
                     await select_wrestler(pilot, row_b)
-
-                    await pilot.press("down", "enter")
-                    await select_match_type(pilot, 0)
                     await confirm_booking(pilot)
                 else:
                     row = next(row_cursor)
@@ -82,5 +87,39 @@ def test_core_flow_new_game_booking_results_roster() -> None:
 
             await pilot.press("enter")
             await wait_for_screen(pilot, GameHubScreen)
+
+    run_async(run_flow())
+
+
+def test_match_type_change_trims_rows() -> None:
+    """Ensure match type changes keep earliest wrestlers and trim extras."""
+
+    async def run_flow() -> None:
+        app = TestWrestleGMApp()
+        async with app.run_test(size=VIEWPORT_SIZE) as pilot:
+            await start_new_game(pilot)
+            await open_booking_hub(pilot)
+            await open_match_booking(pilot, 0)
+            await select_match_type(pilot, 1)
+
+            assert_screen(app, MatchBookingScreen)
+            await pilot.press("enter")
+            await select_wrestler(pilot, 0)
+
+            await pilot.press("down", "enter")
+            await select_wrestler(pilot, 1)
+
+            await pilot.press("down", "enter")
+            await select_wrestler(pilot, 2)
+
+            assert_screen(app, MatchBookingScreen)
+            screen = app.screen
+            assert len(screen.draft.wrestler_ids) == 3
+
+            await pilot.press("down", "enter")
+            await select_match_type(pilot, 0)
+
+            assert_screen(app, MatchBookingScreen)
+            assert len(screen.draft.wrestler_ids) == 2
 
     run_async(run_flow())

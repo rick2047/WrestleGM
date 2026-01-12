@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Callable, Optional
 
 from textual.app import App, ComposeResult
@@ -49,6 +49,62 @@ class EdgeAwareListView(ListView):
         super().action_cursor_up()
 
 
+class FilteredListView(EdgeAwareListView):
+    """ListView that skips non-visible items during navigation."""
+
+    def __init__(
+        self,
+        *items: ListItem,
+        is_item_active: Callable[[ListItem], bool],
+        on_edge_prev: Callable[[], None] | None = None,
+        on_edge_next: Callable[[], None] | None = None,
+    ) -> None:
+        super().__init__(*items, on_edge_prev=on_edge_prev, on_edge_next=on_edge_next)
+        self._is_item_active = is_item_active
+
+    def _active_indices(self) -> list[int]:
+        return [
+            index
+            for index, item in enumerate(self.children)
+            if self._is_item_active(item)
+        ]
+
+    def action_cursor_down(self) -> None:
+        active = self._active_indices()
+        if not active:
+            return
+        if self.index is None:
+            self.index = active[0]
+            return
+        if self.index == active[-1]:
+            if self._on_edge_next is not None:
+                self._on_edge_next()
+                return
+            self.index = active[0]
+            return
+        for index in active:
+            if index > (self.index or 0):
+                self.index = index
+                return
+
+    def action_cursor_up(self) -> None:
+        active = self._active_indices()
+        if not active:
+            return
+        if self.index is None:
+            self.index = active[-1]
+            return
+        if self.index == active[0]:
+            if self._on_edge_prev is not None:
+                self._on_edge_prev()
+                return
+            self.index = active[-1]
+            return
+        for index in reversed(active):
+            if index < (self.index or 0):
+                self.index = index
+                return
+
 class EdgeAwareDataTable(DataTable):
     """DataTable that can hand off focus when the cursor hits an edge."""
 
@@ -83,7 +139,7 @@ class EdgeAwareDataTable(DataTable):
 
 from wrestlegm import constants
 from wrestlegm.data import load_match_types, load_wrestlers
-from wrestlegm.models import Match, Promo, PromoResult
+from wrestlegm.models import Match, Promo, PromoResult, WrestlerState
 from wrestlegm.state import GameState
 
 
@@ -115,6 +171,14 @@ def build_pop_cell(popularity: int, stamina: int, booked_marker: str = "") -> st
 
     fatigue = f" {FATIGUE_ICON}" if stamina <= constants.STAMINA_MIN_BOOKABLE else ""
     return f"{popularity:>3}{fatigue}{booked_marker}"
+
+
+def build_match_participants(wrestlers: list[WrestlerState]) -> str:
+    """Format a vs-separated list of wrestlers with alignment emoji."""
+
+    return " vs ".join(
+        build_name_cell(wrestler.name, wrestler.alignment) for wrestler in wrestlers
+    )
 
 
 def slot_label(slot_index: int, slot_type: str) -> str:
@@ -152,14 +216,25 @@ class BookingDraft:
     - Provide a completeness check used by UI validation.
     """
 
-    wrestler_a_id: Optional[str] = None
-    wrestler_b_id: Optional[str] = None
+    wrestler_ids: list[Optional[str]] = field(default_factory=list)
     match_type_id: Optional[str] = None
 
-    def is_complete(self) -> bool:
+    def is_complete(self, required_count: int) -> bool:
         """Return True when all booking fields are set."""
 
-        return bool(self.wrestler_a_id and self.wrestler_b_id and self.match_type_id)
+        if not self.match_type_id or len(self.wrestler_ids) != required_count:
+            return False
+        return all(self.wrestler_ids)
+
+    def ensure_size(self, required_count: int) -> None:
+        """Resize wrestler slots to match the required count."""
+
+        if required_count < 0:
+            return
+        if len(self.wrestler_ids) > required_count:
+            self.wrestler_ids = self.wrestler_ids[:required_count]
+        elif len(self.wrestler_ids) < required_count:
+            self.wrestler_ids.extend([None] * (required_count - len(self.wrestler_ids)))
 
 
 @dataclass
@@ -410,14 +485,8 @@ class BookingHubScreen(Screen):
         if slot is None:
             return f"{label}\n[ Empty ]"
         if isinstance(slot, Match):
-            wrestler_a = self.app.state.roster[slot.wrestler_a_id]
-            wrestler_b = self.app.state.roster[slot.wrestler_b_id]
-            match_type = self.app.state.match_types[slot.match_type_id]
-            return (
-                f"{label}\n"
-                f"{wrestler_a.name} vs {wrestler_b.name}\n"
-                f"Type: {match_type.name}"
-            )
+            wrestlers = [self.app.state.roster[w_id] for w_id in slot.wrestler_ids]
+            return f"{label}\n{build_match_participants(wrestlers)}"
         wrestler = self.app.state.roster[slot.wrestler_id]
         return f"{label}\n{wrestler.name}"
 
@@ -428,7 +497,7 @@ class BookingHubScreen(Screen):
         if index is None:
             return
         if self.app.state.slot_type(index) == "match":
-            self.app.push_screen(MatchBookingScreen(index))
+            self.open_match_type_selection(index)
         else:
             self.app.push_screen(PromoBookingScreen(index))
 
@@ -441,9 +510,31 @@ class BookingHubScreen(Screen):
         if index is None:
             return
         if self.app.state.slot_type(index) == "match":
-            self.app.push_screen(MatchBookingScreen(index))
+            self.open_match_type_selection(index)
         else:
             self.app.push_screen(PromoBookingScreen(index))
+
+    def open_match_type_selection(self, slot_index: int) -> None:
+        """Open match type selection before booking a match slot."""
+
+        existing = self.app.state.show_card[slot_index]
+        initial_match_type_id = None
+        if isinstance(existing, Match):
+            initial_match_type_id = existing.match_type_id
+        self.app.push_screen(
+            MatchTypeSelectionScreen(
+                slot_index=slot_index,
+                initial_match_type_id=initial_match_type_id,
+                on_select=lambda match_type_id: self.open_match_booking(
+                    slot_index, match_type_id
+                ),
+            )
+        )
+
+    def open_match_booking(self, slot_index: int, match_type_id: str) -> None:
+        """Open match booking with a preselected match type."""
+
+        self.app.push_screen(MatchBookingScreen(slot_index, match_type_id))
 
     def action_run_show(self) -> None:
         """Run the show if the current card is valid."""
@@ -516,12 +607,13 @@ class MatchBookingScreen(Screen):
         ("escape", "cancel", "Cancel"),
     ]
 
-    def __init__(self, slot_index: int) -> None:
+    def __init__(self, slot_index: int, initial_match_type_id: Optional[str] = None) -> None:
         """Create a booking screen for a specific slot."""
 
         super().__init__()
         self.slot_index = slot_index
         self.draft = BookingDraft()
+        self.initial_match_type_id = initial_match_type_id
 
     def compose(self) -> ComposeResult:
         """Build the match booking layout."""
@@ -531,15 +623,21 @@ class MatchBookingScreen(Screen):
         self.detail = Static("", classes="section-title")
         yield self.detail
 
-        self.field_items = {
-            "a": Static(""),
-            "b": Static(""),
-            "type": Static(""),
-        }
-        self.fields = EdgeAwareListView(
-            ListItem(self.field_items["a"], id="field-a"),
-            ListItem(self.field_items["b"], id="field-b"),
-            ListItem(self.field_items["type"], id="field-type"),
+        max_wrestlers = max(
+            (match_type.max_wrestlers for match_type in self.app.state.match_types.values()),
+            default=2,
+        )
+        self.wrestler_items: list[Static] = []
+        self.wrestler_list_items: list[ListItem] = []
+        for index in range(max_wrestlers):
+            item = Static("")
+            self.wrestler_items.append(item)
+            self.wrestler_list_items.append(ListItem(item, id=f"field-wrestler-{index}"))
+        self.match_type_item = Static("")
+        self.fields = FilteredListView(
+            *self.wrestler_list_items,
+            ListItem(self.match_type_item, id="field-type"),
+            is_item_active=lambda item: item.styles.display != "none",
             on_edge_prev=self.action_focus_prev,
             on_edge_next=self.action_focus_next,
         )
@@ -560,32 +658,43 @@ class MatchBookingScreen(Screen):
 
         self.fields.focus()
         existing = self.app.state.show_card[self.slot_index]
-        if existing is not None:
-            self.draft.wrestler_a_id = existing.wrestler_a_id
-            self.draft.wrestler_b_id = existing.wrestler_b_id
+        if isinstance(existing, Match):
+            self.draft.wrestler_ids = list(existing.wrestler_ids)
             self.draft.match_type_id = existing.match_type_id
+        if self.initial_match_type_id is not None:
+            self.draft.match_type_id = self.initial_match_type_id
         elif self.draft.match_type_id is None and self.app.state.match_types:
             self.draft.match_type_id = next(iter(self.app.state.match_types))
+        self._apply_match_type_change()
         self.refresh_view()
 
     def refresh_view(self) -> None:
         """Update field labels, buttons, and match summary."""
 
         self.header.update(f"Book {slot_label(self.slot_index, 'match')}")
-        if self.draft.wrestler_a_id and self.draft.wrestler_b_id:
-            wrestler_a = self.app.state.roster[self.draft.wrestler_a_id]
-            wrestler_b = self.app.state.roster[self.draft.wrestler_b_id]
-            self.detail.update(f"{wrestler_a.name} vs {wrestler_b.name}")
-        else:
-            self.detail.update("")
+        self.detail.update(self.match_type_label())
 
-        self.field_items["a"].update(self.field_text("Wrestler A", self.draft.wrestler_a_id))
-        self.field_items["b"].update(self.field_text("Wrestler B", self.draft.wrestler_b_id))
-        self.field_items["type"].update(
+        required_count = self.required_wrestler_count()
+        for index, item in enumerate(self.wrestler_items):
+            list_item = self.wrestler_list_items[index]
+            if index < required_count:
+                wrestler_id = self.draft.wrestler_ids[index]
+                item.update(self.wrestler_field_text(wrestler_id))
+                list_item.styles.display = "block"
+            else:
+                list_item.styles.display = "none"
+
+        self.match_type_item.update(
             self.field_text("Match Type", self.draft.match_type_id, match_type=True)
         )
+        if (
+            self.fields.index is not None
+            and self.fields.index < len(self.wrestler_list_items)
+            and self.fields.index >= required_count
+        ):
+            self.fields.index = 0 if required_count else len(self.wrestler_list_items)
 
-        self.confirm_button.disabled = not self.draft.is_complete() or bool(
+        self.confirm_button.disabled = not self.draft.is_complete(required_count) or bool(
             self.validate_draft()
         )
         self.clear_button.disabled = self.app.state.show_card[self.slot_index] is None
@@ -599,17 +708,45 @@ class MatchBookingScreen(Screen):
             match_type_def = self.app.state.match_types[value_id]
             return f"{label}\n{match_type_def.name}"
         wrestler = self.app.state.roster[value_id]
-        fatigue = f" {FATIGUE_ICON}" if wrestler.stamina <= constants.STAMINA_MIN_BOOKABLE else ""
-        return f"{label}\n{wrestler.name}{fatigue}"
+        return f"{label}\n{build_name_cell(wrestler.name, wrestler.alignment)}"
+
+    def wrestler_field_text(self, wrestler_id: Optional[str]) -> str:
+        """Render the display text for a wrestler row."""
+
+        if wrestler_id is None:
+            return "[ Empty ]"
+        wrestler = self.app.state.roster[wrestler_id]
+        return build_name_cell(wrestler.name, wrestler.alignment)
+
+    def match_type_label(self) -> str:
+        """Return the current match type label for the header detail."""
+
+        if self.draft.match_type_id is None:
+            return ""
+        return self.app.state.match_types[self.draft.match_type_id].name
+
+    def required_wrestler_count(self) -> int:
+        """Return the required wrestler count for the selected match type."""
+
+        if self.draft.match_type_id is None:
+            return 0
+        match_type = self.app.state.match_types[self.draft.match_type_id]
+        return match_type.min_wrestlers
+
+    def _apply_match_type_change(self) -> None:
+        """Ensure draft wrestler slots match the selected match type."""
+
+        self.draft.ensure_size(self.required_wrestler_count())
 
     def validate_draft(self) -> list[str]:
         """Return validation errors for the current draft selection."""
 
-        if not self.draft.is_complete():
+        required_count = self.required_wrestler_count()
+        if not self.draft.is_complete(required_count):
             return ["incomplete"]
+        wrestler_ids = [wrestler_id for wrestler_id in self.draft.wrestler_ids if wrestler_id]
         match = Match(
-            wrestler_a_id=self.draft.wrestler_a_id or "",
-            wrestler_b_id=self.draft.wrestler_b_id or "",
+            wrestler_ids=wrestler_ids,
             match_type_id=self.draft.match_type_id or "",
         )
         return self.app.state.validate_match(match, slot_index=self.slot_index)
@@ -620,49 +757,43 @@ class MatchBookingScreen(Screen):
         selected = self.fields.index
         if selected is None:
             return
-        if selected == 0:
-            title = f"Select Wrestler ({slot_label(self.slot_index, 'match')} · A)"
+        if selected < len(self.wrestler_list_items):
+            required_count = self.required_wrestler_count()
+            if selected >= required_count:
+                return
+            title = f"Select Wrestler ({slot_label(self.slot_index, 'match')} · {selected + 1})"
+            current_ids = self._current_ids(exclude_index=selected)
             self.app.push_screen(
                 WrestlerSelectionScreen(
                     slot_index=self.slot_index,
                     title=title,
-                    current_other_id=self.draft.wrestler_b_id,
+                    current_ids=current_ids,
                     booked_ids=self._booked_ids(),
-                    on_select=self.set_wrestler_a,
+                    on_select=lambda wrestler_id: self.set_wrestler(selected, wrestler_id),
                 )
             )
-        elif selected == 1:
-            title = f"Select Wrestler ({slot_label(self.slot_index, 'match')} · B)"
+        else:
             self.app.push_screen(
-                WrestlerSelectionScreen(
+                MatchTypeSelectionScreen(
                     slot_index=self.slot_index,
-                    title=title,
-                    current_other_id=self.draft.wrestler_a_id,
-                    booked_ids=self._booked_ids(),
-                    on_select=self.set_wrestler_b,
+                    initial_match_type_id=self.draft.match_type_id,
+                    on_select=self.set_match_type,
                 )
             )
-        elif selected == 2:
-            self.app.push_screen(
-                MatchTypeSelectionScreen(on_select=self.set_match_type)
-            )
 
-    def set_wrestler_a(self, wrestler_id: str) -> None:
-        """Update the draft with the selected wrestler A."""
+    def set_wrestler(self, index: int, wrestler_id: str) -> None:
+        """Update the draft with the selected wrestler."""
 
-        self.draft.wrestler_a_id = wrestler_id
-        self.refresh_view()
-
-    def set_wrestler_b(self, wrestler_id: str) -> None:
-        """Update the draft with the selected wrestler B."""
-
-        self.draft.wrestler_b_id = wrestler_id
+        if index >= len(self.draft.wrestler_ids):
+            return
+        self.draft.wrestler_ids[index] = wrestler_id
         self.refresh_view()
 
     def set_match_type(self, match_type_id: str) -> None:
         """Update the draft with the selected match type."""
 
         self.draft.match_type_id = match_type_id
+        self._apply_match_type_change()
         self.refresh_view()
 
     def action_cancel(self) -> None:
@@ -723,37 +854,14 @@ class MatchBookingScreen(Screen):
         index = event.index
         if index is None:
             return
-        if index == 0:
-            title = f"Select Wrestler ({slot_label(self.slot_index, 'match')} · A)"
-            self.app.push_screen(
-                WrestlerSelectionScreen(
-                    slot_index=self.slot_index,
-                    title=title,
-                    current_other_id=self.draft.wrestler_b_id,
-                    booked_ids=self._booked_ids(),
-                    on_select=self.set_wrestler_a,
-                )
-            )
-        elif index == 1:
-            title = f"Select Wrestler ({slot_label(self.slot_index, 'match')} · B)"
-            self.app.push_screen(
-                WrestlerSelectionScreen(
-                    slot_index=self.slot_index,
-                    title=title,
-                    current_other_id=self.draft.wrestler_a_id,
-                    booked_ids=self._booked_ids(),
-                    on_select=self.set_wrestler_b,
-                )
-            )
-        elif index == 2:
-            self.app.push_screen(MatchTypeSelectionScreen(on_select=self.set_match_type))
+        self.fields.index = index
+        self.action_select_field()
 
     def commit_booking(self) -> None:
         """Commit the draft match to the show card."""
 
         match = Match(
-            wrestler_a_id=self.draft.wrestler_a_id or "",
-            wrestler_b_id=self.draft.wrestler_b_id or "",
+            wrestler_ids=[wrestler_id for wrestler_id in self.draft.wrestler_ids if wrestler_id],
             match_type_id=self.draft.match_type_id or "",
         )
         self.app.state.set_slot(self.slot_index, match)
@@ -773,15 +881,20 @@ class MatchBookingScreen(Screen):
             if slot is None or index == self.slot_index:
                 continue
             if isinstance(slot, Match):
-                booked.add(slot.wrestler_a_id)
-                booked.add(slot.wrestler_b_id)
+                booked.update(slot.wrestler_ids)
             else:
                 booked.add(slot.wrestler_id)
-        if self.draft.wrestler_a_id:
-            booked.add(self.draft.wrestler_a_id)
-        if self.draft.wrestler_b_id:
-            booked.add(self.draft.wrestler_b_id)
+        booked.update(wrestler_id for wrestler_id in self.draft.wrestler_ids if wrestler_id)
         return booked
+
+    def _current_ids(self, exclude_index: int) -> set[str]:
+        """Return wrestler IDs selected in the draft excluding the active row."""
+
+        return {
+            wrestler_id
+            for index, wrestler_id in enumerate(self.draft.wrestler_ids)
+            if wrestler_id and index != exclude_index
+        }
 
 
 class PromoBookingScreen(Screen):
@@ -863,7 +976,7 @@ class PromoBookingScreen(Screen):
             WrestlerSelectionScreen(
                 slot_index=self.slot_index,
                 title=title,
-                current_other_id=None,
+                current_ids=set(),
                 booked_ids=self._booked_ids(),
                 on_select=self.set_wrestler,
                 allow_low_stamina=True,
@@ -944,8 +1057,7 @@ class PromoBookingScreen(Screen):
             if slot is None or index == self.slot_index:
                 continue
             if isinstance(slot, Match):
-                booked.add(slot.wrestler_a_id)
-                booked.add(slot.wrestler_b_id)
+                booked.update(slot.wrestler_ids)
             else:
                 booked.add(slot.wrestler_id)
         if self.draft.wrestler_id:
@@ -973,7 +1085,7 @@ class WrestlerSelectionScreen(Screen):
         self,
         slot_index: int,
         title: str,
-        current_other_id: Optional[str],
+        current_ids: set[str],
         booked_ids: set[str],
         on_select: Callable[[str], None],
         allow_low_stamina: bool = False,
@@ -983,7 +1095,7 @@ class WrestlerSelectionScreen(Screen):
         super().__init__()
         self.slot_index = slot_index
         self.title = title
-        self.current_other_id = current_other_id
+        self.current_ids = current_ids
         self.booked_ids = booked_ids
         self.on_select = on_select
         self.allow_low_stamina = allow_low_stamina
@@ -1096,7 +1208,7 @@ class WrestlerSelectionScreen(Screen):
     def validate_selection(self, wrestler_id: str) -> str | None:
         """Return an error message if the wrestler cannot be selected."""
 
-        if wrestler_id == self.current_other_id:
+        if wrestler_id in self.current_ids:
             return "Already selected in this match"
         if self.app.state.is_wrestler_booked(wrestler_id, exclude_slot=self.slot_index):
             return "Already booked in another slot"
@@ -1129,17 +1241,29 @@ class MatchTypeSelectionScreen(Screen):
         ("escape", "cancel", "Cancel"),
     ]
 
-    def __init__(self, on_select: Callable[[str], None]) -> None:
+    def __init__(
+        self,
+        on_select: Callable[[str], None],
+        slot_index: int | None = None,
+        initial_match_type_id: str | None = None,
+    ) -> None:
         """Create a match type selection screen."""
 
         super().__init__()
         self.on_select = on_select
+        self.slot_index = slot_index
+        self.initial_match_type_id = initial_match_type_id
         self.description = Static("")
 
     def compose(self) -> ComposeResult:
         """Build the match type selection layout."""
 
-        yield Static("Select Match Type")
+        title = (
+            slot_label(self.slot_index, "match")
+            if self.slot_index is not None
+            else "Select Match Type"
+        )
+        yield Static(title)
         list_items: list[ListItem] = []
         for match_type in self.app.state.match_types.values():
             list_items.append(ListItem(Static(match_type.name), id=match_type.id))
@@ -1161,10 +1285,15 @@ class MatchTypeSelectionScreen(Screen):
         """Focus the match type list and refresh description."""
 
         self.list_view.focus()
-        self.update_description()
         if self.list_view.children:
-            self.list_view.index = 0
-            self.update_description()
+            if self.initial_match_type_id is not None:
+                for index, child in enumerate(self.list_view.children):
+                    if child.id == self.initial_match_type_id:
+                        self.list_view.index = index
+                        break
+            if self.list_view.index is None:
+                self.list_view.index = 0
+        self.update_description()
 
     def update_description(self) -> None:
         """Refresh the description panel based on highlight."""
@@ -1194,8 +1323,9 @@ class MatchTypeSelectionScreen(Screen):
         selected = self.list_view.children[index]
         if selected.id is None:
             return
-        self.on_select(selected.id)
+        match_type_id = selected.id
         self.app.pop_screen()
+        self.on_select(match_type_id)
 
     def action_cancel(self) -> None:
         """Close the selection screen without changes."""
@@ -1245,8 +1375,8 @@ class MatchTypeSelectionScreen(Screen):
         match_type_id = event.item.id
         if match_type_id is None:
             return
-        self.on_select(match_type_id)
         self.app.pop_screen()
+        self.on_select(match_type_id)
 
 
 class ConfirmBookingModal(ModalScreen):
@@ -1397,9 +1527,12 @@ class ResultsScreen(Screen):
             if isinstance(slot, Match):
                 label = slot_label(index, "match")
                 winner = self.app.state.roster[result.winner_id].name
-                loser = self.app.state.roster[result.loser_id].name
+                non_winners = ", ".join(
+                    self.app.state.roster[wrestler_id].name
+                    for wrestler_id in result.non_winner_ids
+                )
                 lines.append(label)
-                lines.append(f" {winner} def. {loser}")
+                lines.append(f" {winner} def. {non_winners}")
                 lines.append(f" {format_stars(result.rating)}")
                 lines.append("")
             else:
