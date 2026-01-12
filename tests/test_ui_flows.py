@@ -12,6 +12,7 @@ from tests.ui_test_utils import (
     confirm_booking,
     open_booking_hub,
     open_match_booking,
+    open_promo_booking,
     open_roster,
     run_async,
     select_match_type,
@@ -47,20 +48,30 @@ def test_core_flow_new_game_booking_results_roster() -> None:
             await open_booking_hub(pilot)
             assert_screen(app, BookingHubScreen)
 
-            for slot_index, (row_a, row_b) in enumerate([(0, 1), (2, 3), (4, 5)]):
-                await open_match_booking(pilot, slot_index)
-                await pilot.press("enter")
-                await select_wrestler(pilot, row_a)
+            row_cursor = iter(range(8))
+            for slot_index, slot_type in enumerate(constants.SHOW_SLOT_TYPES):
+                if slot_type == "match":
+                    row_a = next(row_cursor)
+                    row_b = next(row_cursor)
+                    await open_match_booking(pilot, slot_index)
+                    await pilot.press("enter")
+                    await select_wrestler(pilot, row_a)
 
-                await pilot.press("down", "enter")
-                await select_wrestler(pilot, row_b)
+                    await pilot.press("down", "enter")
+                    await select_wrestler(pilot, row_b)
 
-                await pilot.press("down", "enter")
-                await select_match_type(pilot, 0)
-                await confirm_booking(pilot)
+                    await pilot.press("down", "enter")
+                    await select_match_type(pilot, 0)
+                    await confirm_booking(pilot)
+                else:
+                    row = next(row_cursor)
+                    await open_promo_booking(pilot, slot_index)
+                    await pilot.press("enter")
+                    await select_wrestler(pilot, row)
+                    await confirm_booking(pilot)
 
                 assert app.state.show_card[slot_index] is not None
-                if slot_index < constants.SHOW_MATCH_COUNT - 1:
+                if slot_index < constants.SHOW_SLOT_COUNT - 1:
                     booking_hub = app.screen
                     assert booking_hub.run_button.disabled
 

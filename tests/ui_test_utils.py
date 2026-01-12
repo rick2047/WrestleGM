@@ -9,8 +9,9 @@ from typing import Awaitable
 from textual.app import App
 from textual.pilot import Pilot
 
+from wrestlegm import constants
 from wrestlegm.data import load_match_types, load_wrestlers
-from wrestlegm.models import Match
+from wrestlegm.models import Match, Promo
 from wrestlegm.state import GameState
 from wrestlegm.ui import (
     BookingHubScreen,
@@ -19,6 +20,7 @@ from wrestlegm.ui import (
     MainMenuScreen,
     MatchBookingScreen,
     MatchTypeSelectionScreen,
+    PromoBookingScreen,
     ResultsScreen,
     RosterScreen,
     WrestleGMApp,
@@ -54,24 +56,35 @@ def run_async(coro: Awaitable[None]) -> None:
     asyncio.run(coro)
 
 
-def build_test_matches(state: GameState) -> list[Match]:
+def build_test_slots(state: GameState) -> list[Match | Promo]:
     """Build a full show card from the fixture roster."""
 
     wrestler_ids = list(state.roster.keys())
     match_type_id = next(iter(state.match_types))
-    return [
-        Match(wrestler_a_id=wrestler_ids[0], wrestler_b_id=wrestler_ids[1], match_type_id=match_type_id),
-        Match(wrestler_a_id=wrestler_ids[2], wrestler_b_id=wrestler_ids[3], match_type_id=match_type_id),
-        Match(wrestler_a_id=wrestler_ids[4], wrestler_b_id=wrestler_ids[5], match_type_id=match_type_id),
-    ]
+    slots: list[Match | Promo] = []
+    cursor = 0
+    for slot_type in constants.SHOW_SLOT_TYPES:
+        if slot_type == "match":
+            slots.append(
+                Match(
+                    wrestler_a_id=wrestler_ids[cursor],
+                    wrestler_b_id=wrestler_ids[cursor + 1],
+                    match_type_id=match_type_id,
+                )
+            )
+            cursor += 2
+        else:
+            slots.append(Promo(wrestler_id=wrestler_ids[cursor]))
+            cursor += 1
+    return slots
 
 
 def seed_show_card(state: GameState) -> None:
     """Populate the show card with deterministic matches."""
 
-    matches = build_test_matches(state)
-    for index, match in enumerate(matches):
-        state.set_slot(index, match)
+    slots = build_test_slots(state)
+    for index, slot in enumerate(slots):
+        state.set_slot(index, slot)
 
 
 def assert_screen(app: WrestleGMApp, screen_type: type[object]) -> None:
@@ -80,7 +93,11 @@ def assert_screen(app: WrestleGMApp, screen_type: type[object]) -> None:
     assert isinstance(app.screen, screen_type)
 
 
-async def wait_for_screen(pilot: Pilot, screen_type: type[object], attempts: int = 40) -> None:
+async def wait_for_screen(
+    pilot: Pilot,
+    screen_type: type[object] | tuple[type[object], ...],
+    attempts: int = 40,
+) -> None:
     """Wait for a screen to become active."""
 
     for _ in range(attempts):
@@ -138,6 +155,26 @@ async def open_match_booking(pilot: Pilot, slot_index: int) -> None:
     await wait_for_screen(pilot, MatchBookingScreen)
 
 
+async def open_promo_booking(pilot: Pilot, slot_index: int) -> None:
+    """Open promo booking for a slot from the booking hub."""
+
+    booking_hub = pilot.app.screen
+    if not isinstance(booking_hub, BookingHubScreen):
+        raise AssertionError("Expected BookingHubScreen")
+
+    if booking_hub.slot_list.index is None:
+        await pilot.press("down")
+        await pilot.pause(0.05)
+
+    for _ in range(10):
+        if booking_hub.slot_list.index == slot_index:
+            break
+        await pilot.press("down")
+        await pilot.pause(0.05)
+    await pilot.press("enter")
+    await wait_for_screen(pilot, PromoBookingScreen)
+
+
 async def select_wrestler(pilot: Pilot, row_index: int) -> None:
     """Select a wrestler by row index in the selection screen."""
 
@@ -145,7 +182,7 @@ async def select_wrestler(pilot: Pilot, row_index: int) -> None:
     for _ in range(row_index):
         await pilot.press("down")
     await pilot.press("enter")
-    await wait_for_screen(pilot, MatchBookingScreen)
+    await wait_for_screen(pilot, (MatchBookingScreen, PromoBookingScreen))
 
 
 async def select_match_type(pilot: Pilot, row_index: int = 0) -> None:

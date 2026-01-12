@@ -1,8 +1,66 @@
 [
-  {"id": "alpha", "name": "Alpha Ace", "alignment": "Face", "popularity": 80, "stamina": 80},
-  {"id": "bravo", "name": "Bravo Blade", "alignment": "Heel", "popularity": 70, "stamina": 78},
-  {"id": "charlie", "name": "Charlie Clutch", "alignment": "Face", "popularity": 65, "stamina": 74},
-  {"id": "delta", "name": "Delta Drop", "alignment": "Heel", "popularity": 60, "stamina": 72},
-  {"id": "echo", "name": "Echo Edge", "alignment": "Face", "popularity": 55, "stamina": 70},
-  {"id": "foxtrot", "name": "Foxtrot Fury", "alignment": "Heel", "popularity": 50, "stamina": 68}
+  {
+    "id": "alpha",
+    "name": "Alpha Ace",
+    "alignment": "Face",
+    "popularity": 80,
+    "stamina": 80,
+    "mic_skill": 80
+  },
+  {
+    "id": "bravo",
+    "name": "Bravo Blade",
+    "alignment": "Heel",
+    "popularity": 70,
+    "stamina": 78,
+    "mic_skill": 70
+  },
+  {
+    "id": "charlie",
+    "name": "Charlie Clutch",
+    "alignment": "Face",
+    "popularity": 65,
+    "stamina": 74,
+    "mic_skill": 65
+  },
+  {
+    "id": "delta",
+    "name": "Delta Drop",
+    "alignment": "Heel",
+    "popularity": 60,
+    "stamina": 72,
+    "mic_skill": 60
+  },
+  {
+    "id": "echo",
+    "name": "Echo Edge",
+    "alignment": "Face",
+    "popularity": 55,
+    "stamina": 70,
+    "mic_skill": 55
+  },
+  {
+    "id": "foxtrot",
+    "name": "Foxtrot Fury",
+    "alignment": "Heel",
+    "popularity": 50,
+    "stamina": 68,
+    "mic_skill": 50
+  },
+  {
+    "id": "gamma",
+    "name": "Gamma Groove",
+    "alignment": "Face",
+    "popularity": 45,
+    "stamina": 66,
+    "mic_skill": 55
+  },
+  {
+    "id": "hotel",
+    "name": "Hotel Havoc",
+    "alignment": "Heel",
+    "popularity": 40,
+    "stamina": 64,
+    "mic_skill": 52
+  }
 ]

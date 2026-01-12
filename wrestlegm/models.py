@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, List, Literal
+from typing import Dict, List, Literal, Union
 
 Alignment = Literal["Face", "Heel"]
 
@@ -17,6 +17,7 @@ class WrestlerState:
     alignment: Alignment
     popularity: int
     stamina: int
+    mic_skill: int
 
 
 @dataclass(frozen=True)
@@ -28,6 +29,7 @@ class WrestlerDefinition:
     alignment: Alignment
     popularity: int
     stamina: int
+    mic_skill: int
 
 
 @dataclass(frozen=True)
@@ -63,6 +65,13 @@ class Match:
 
 
 @dataclass(frozen=True)
+class Promo:
+    """Booked promo within a show."""
+
+    wrestler_id: str
+
+
+@dataclass(frozen=True)
 class StatDelta:
     """Per-wrestler stat change from a match."""
 
@@ -82,11 +91,24 @@ class MatchResult:
     stat_deltas: Dict[str, StatDelta]
 
 
+@dataclass(frozen=True)
+class PromoResult:
+    """Immutable result of a simulated promo."""
+
+    wrestler_id: str
+    rating: float
+    stat_deltas: Dict[str, StatDelta]
+
+
+ShowSlot = Union[Match, Promo]
+ShowResult = Union[MatchResult, PromoResult]
+
+
 @dataclass
 class Show:
     """Show state and results."""
 
     show_index: int
-    scheduled_matches: List[Match]
-    results: List[MatchResult]
+    scheduled_slots: List[ShowSlot]
+    results: List[ShowResult]
     show_rating: float | None = None

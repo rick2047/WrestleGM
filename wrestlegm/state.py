@@ -8,7 +8,11 @@ from wrestlegm import constants
 from wrestlegm.models import (
     Match,
     MatchTypeDefinition,
+    Promo,
+    PromoResult,
     Show,
+    ShowResult,
+    ShowSlot,
     StatDelta,
     WrestlerDefinition,
     WrestlerState,
@@ -34,6 +38,7 @@ class GameState:
                 alignment=wrestler.alignment,
                 popularity=wrestler.popularity,
                 stamina=wrestler.stamina,
+                mic_skill=wrestler.mic_skill,
             )
             for wrestler in wrestlers
         }
@@ -41,23 +46,28 @@ class GameState:
             match_type.id: match_type for match_type in match_types
         }
         self.show_index = 1
-        self.show_card: List[Optional[Match]] = [None] * constants.SHOW_MATCH_COUNT
+        self.show_card: List[Optional[ShowSlot]] = [None] * constants.SHOW_SLOT_COUNT
         self.last_show: Show | None = None
 
     def clear_slot(self, slot_index: int) -> None:
-        """Clear a match slot."""
+        """Clear a show slot."""
 
         self.show_card[slot_index] = None
 
-    def set_slot(self, slot_index: int, match: Match) -> None:
-        """Set a match slot after validation."""
+    def set_slot(self, slot_index: int, slot: ShowSlot) -> None:
+        """Set a slot after validation."""
 
-        errors = self.validate_match(match, slot_index=slot_index)
+        errors = self.validate_slot(slot, slot_index=slot_index)
         if errors:
             raise ValueError(
-                "Invalid match: " + ", ".join(errors)
+                "Invalid slot: " + ", ".join(errors)
             )
-        self.show_card[slot_index] = match
+        self.show_card[slot_index] = slot
+
+    def slot_type(self, slot_index: int) -> str:
+        """Return the expected slot type for an index."""
+
+        return constants.SHOW_SLOT_TYPES[slot_index]
 
     def validate_match(self, match: Match, slot_index: int | None = None) -> List[str]:
         """Return validation errors for a match in a slot."""
@@ -81,31 +91,66 @@ class GameState:
                 break
         return errors
 
+    def validate_promo(self, promo: Promo, slot_index: int | None = None) -> List[str]:
+        """Return validation errors for a promo in a slot."""
+
+        errors: List[str] = []
+        if promo.wrestler_id not in self.roster:
+            errors.append("unknown_wrestler")
+            return errors
+        if self.is_wrestler_booked(promo.wrestler_id, exclude_slot=slot_index):
+            errors.append("already_booked")
+        return errors
+
+    def validate_slot(self, slot: ShowSlot, slot_index: int | None = None) -> List[str]:
+        """Return validation errors for a slot entry."""
+
+        errors: List[str] = []
+        if slot_index is not None:
+            expected = self.slot_type(slot_index)
+            if expected == "match" and not isinstance(slot, Match):
+                errors.append("slot_type_mismatch")
+            if expected == "promo" and not isinstance(slot, Promo):
+                errors.append("slot_type_mismatch")
+        if isinstance(slot, Match):
+            errors.extend(self.validate_match(slot, slot_index=slot_index))
+        else:
+            errors.extend(self.validate_promo(slot, slot_index=slot_index))
+        return errors
+
     def is_wrestler_booked(self, wrestler_id: str, exclude_slot: int | None = None) -> bool:
         """Check whether a wrestler is already booked in the show card."""
 
-        for index, match in enumerate(self.show_card):
-            if match is None:
+        for index, slot in enumerate(self.show_card):
+            if slot is None:
                 continue
             if exclude_slot is not None and index == exclude_slot:
                 continue
-            if wrestler_id in (match.wrestler_a_id, match.wrestler_b_id):
-                return True
+            if isinstance(slot, Match):
+                if wrestler_id in (slot.wrestler_a_id, slot.wrestler_b_id):
+                    return True
+            else:
+                if wrestler_id == slot.wrestler_id:
+                    return True
         return False
 
     def validate_show(self) -> List[str]:
         """Return validation errors for the full show card."""
 
         errors: List[str] = []
-        if any(match is None for match in self.show_card):
+        if any(slot is None for slot in self.show_card):
             errors.append("incomplete")
             return errors
 
         seen: set[str] = set()
-        for index, match in enumerate(self.show_card):
-            assert match is not None
-            errors.extend(self.validate_match(match, slot_index=index))
-            for wrestler_id in (match.wrestler_a_id, match.wrestler_b_id):
+        for index, slot in enumerate(self.show_card):
+            assert slot is not None
+            errors.extend(self.validate_slot(slot, slot_index=index))
+            if isinstance(slot, Match):
+                wrestler_ids = (slot.wrestler_a_id, slot.wrestler_b_id)
+            else:
+                wrestler_ids = (slot.wrestler_id,)
+            for wrestler_id in wrestler_ids:
                 if wrestler_id in seen:
                     errors.append("duplicate_wrestler")
                 seen.add(wrestler_id)
@@ -118,15 +163,15 @@ class GameState:
         if errors:
             raise ValueError("Show is invalid: " + ", ".join(errors))
 
-        matches = [match for match in self.show_card if match is not None]
-        show = Show(show_index=self.show_index, scheduled_matches=matches, results=[])
-        results = self.engine.simulate_show(matches, self.roster, self.match_types)
+        slots: List[ShowSlot] = [slot for slot in self.show_card if slot is not None]
+        show = Show(show_index=self.show_index, scheduled_slots=slots, results=[])
+        results = self.engine.simulate_show(slots, self.roster, self.match_types)
         show.results = results
         show.show_rating = self.engine.aggregate_show_rating(results)
         self.applier.apply(show, self.roster)
         self.last_show = show
         self.show_index += 1
-        self.show_card = [None] * constants.SHOW_MATCH_COUNT
+        self.show_card = [None] * constants.SHOW_SLOT_COUNT
         return show
 
     def apply_show_results(self, show: Show) -> None:
@@ -145,8 +190,11 @@ class ShowApplier:
         participants: set[str] = set()
 
         for result in show.results:
-            participants.add(result.winner_id)
-            participants.add(result.loser_id)
+            if isinstance(result, PromoResult):
+                participants.add(result.wrestler_id)
+            else:
+                participants.add(result.winner_id)
+                participants.add(result.loser_id)
             for wrestler_id, delta in result.stat_deltas.items():
                 current = aggregated.get(wrestler_id, StatDelta(popularity=0, stamina=0))
                 aggregated[wrestler_id] = StatDelta(
@@ -165,6 +213,7 @@ class ShowApplier:
                 alignment=wrestler.alignment,
                 popularity=pop,
                 stamina=sta,
+                mic_skill=wrestler.mic_skill,
             )
 
         for wrestler_id, wrestler in new_values.items():

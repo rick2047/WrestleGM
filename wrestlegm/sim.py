@@ -12,6 +12,10 @@ from wrestlegm.models import (
     MatchResult,
     MatchTypeDefinition,
     MatchTypeModifiers,
+    Promo,
+    PromoResult,
+    ShowResult,
+    ShowSlot,
     StatDelta,
     WrestlerState,
 )
@@ -40,6 +44,16 @@ class RatingDebug:
     alignment_mod: float
     rating_bonus: float
     rating_variance: int
+    swing: int
+    rating_100: float
+    rating_stars: float
+
+
+@dataclass(frozen=True)
+class PromoRatingDebug:
+    """Debug payload for promo rating simulation."""
+
+    base_100: float
     swing: int
     rating_100: float
     rating_stars: float
@@ -159,6 +173,34 @@ class SimulationEngine:
             ),
         }
 
+    def simulate_promo_rating(
+        self,
+        wrestler: WrestlerState,
+    ) -> tuple[float, float, PromoRatingDebug]:
+        """Simulate a promo rating in stars and return quality in 0-100 space."""
+
+        base_100 = wrestler.mic_skill * 0.7 + wrestler.popularity * 0.3
+        swing = self.rng.randint(-constants.PROMO_VARIANCE, constants.PROMO_VARIANCE)
+        rating_100 = clamp(base_100 + swing, 0, 100)
+        rating_stars = round((rating_100 / 100) * 5, 1)
+        debug = PromoRatingDebug(
+            base_100=base_100,
+            swing=swing,
+            rating_100=rating_100,
+            rating_stars=rating_stars,
+        )
+        return rating_stars, rating_100, debug
+
+    def simulate_promo_deltas(self, rating_100: float) -> StatDelta:
+        """Compute stat deltas for a promo."""
+
+        pop_delta = 5 if rating_100 >= 50 else -5
+        stamina_delta = constants.STAMINA_RECOVERY_PER_SHOW // 2
+        return StatDelta(
+            popularity=pop_delta,
+            stamina=stamina_delta,
+        )
+
     def simulate_match(
         self,
         match: Match,
@@ -188,18 +230,41 @@ class SimulationEngine:
             stat_deltas=deltas,
         )
 
+    def simulate_promo(
+        self,
+        promo: Promo,
+        roster: Dict[str, WrestlerState],
+    ) -> PromoResult:
+        """Run the deterministic simulation pipeline for a promo."""
+
+        wrestler = roster[promo.wrestler_id]
+        rating, rating_100, _ = self.simulate_promo_rating(wrestler)
+        deltas = self.simulate_promo_deltas(rating_100)
+        deltas = {promo.wrestler_id: deltas}
+        return PromoResult(
+            wrestler_id=promo.wrestler_id,
+            rating=rating,
+            stat_deltas=deltas,
+        )
+
     def simulate_show(
         self,
-        matches: Iterable[Match],
+        slots: Iterable[ShowSlot],
         roster: Dict[str, WrestlerState],
         match_types: Dict[str, MatchTypeDefinition],
-    ) -> List[MatchResult]:
-        """Simulate all matches in a show in card order."""
+    ) -> List[ShowResult]:
+        """Simulate all slots in a show in card order."""
 
-        return [self.simulate_match(match, roster, match_types) for match in matches]
+        results: List[ShowResult] = []
+        for slot in slots:
+            if isinstance(slot, Match):
+                results.append(self.simulate_match(slot, roster, match_types))
+            else:
+                results.append(self.simulate_promo(slot, roster))
+        return results
 
-    def aggregate_show_rating(self, results: Iterable[MatchResult]) -> float:
-        """Compute the arithmetic mean of match ratings."""
+    def aggregate_show_rating(self, results: Iterable[ShowResult]) -> float:
+        """Compute the arithmetic mean of slot ratings."""
 
         ratings = [result.rating for result in results]
         if not ratings:
