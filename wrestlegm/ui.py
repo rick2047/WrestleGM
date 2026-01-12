@@ -83,7 +83,7 @@ class EdgeAwareDataTable(DataTable):
 
 from wrestlegm import constants
 from wrestlegm.data import load_match_types, load_wrestlers
-from wrestlegm.models import Match
+from wrestlegm.models import Match, Promo, PromoResult
 from wrestlegm.state import GameState
 
 
@@ -115,6 +115,17 @@ def build_pop_cell(popularity: int, stamina: int, booked_marker: str = "") -> st
 
     fatigue = f" {FATIGUE_ICON}" if stamina <= constants.STAMINA_MIN_BOOKABLE else ""
     return f"{popularity:>3}{fatigue}{booked_marker}"
+
+
+def slot_label(slot_index: int, slot_type: str) -> str:
+    """Return the label for a slot index and type."""
+
+    count = sum(
+        1
+        for index in range(slot_index + 1)
+        if constants.SHOW_SLOT_TYPES[index] == slot_type
+    )
+    return f"{slot_type.title()} {count}"
 
 
 def row_key_to_id(row_key: object) -> str:
@@ -149,6 +160,18 @@ class BookingDraft:
         """Return True when all booking fields are set."""
 
         return bool(self.wrestler_a_id and self.wrestler_b_id and self.match_type_id)
+
+
+@dataclass
+class PromoDraft:
+    """Track in-progress promo booking choices before committing."""
+
+    wrestler_id: Optional[str] = None
+
+    def is_complete(self) -> bool:
+        """Return True when the promo wrestler is set."""
+
+        return bool(self.wrestler_id)
 
 
 class WrestleGMApp(App):
@@ -345,7 +368,7 @@ class BookingHubScreen(Screen):
 
         self.slot_items: list[Static] = []
         slot_list_items: list[ListItem] = []
-        for index in range(constants.SHOW_MATCH_COUNT):
+        for index in range(constants.SHOW_SLOT_COUNT):
             slot_static = Static("", id=f"slot-{index}")
             self.slot_items.append(slot_static)
             slot_list_items.append(ListItem(slot_static, id=f"slot-item-{index}"))
@@ -381,17 +404,22 @@ class BookingHubScreen(Screen):
     def slot_text(self, index: int) -> str:
         """Render the slot summary text for a match slot."""
 
-        match = self.app.state.show_card[index]
-        if match is None:
-            return f"Match {index + 1}\n[ Empty ]"
-        wrestler_a = self.app.state.roster[match.wrestler_a_id]
-        wrestler_b = self.app.state.roster[match.wrestler_b_id]
-        match_type = self.app.state.match_types[match.match_type_id]
-        return (
-            f"Match {index + 1}\n"
-            f"{wrestler_a.name} vs {wrestler_b.name}\n"
-            f"Type: {match_type.name}"
-        )
+        slot = self.app.state.show_card[index]
+        slot_type = self.app.state.slot_type(index)
+        label = slot_label(index, slot_type)
+        if slot is None:
+            return f"{label}\n[ Empty ]"
+        if isinstance(slot, Match):
+            wrestler_a = self.app.state.roster[slot.wrestler_a_id]
+            wrestler_b = self.app.state.roster[slot.wrestler_b_id]
+            match_type = self.app.state.match_types[slot.match_type_id]
+            return (
+                f"{label}\n"
+                f"{wrestler_a.name} vs {wrestler_b.name}\n"
+                f"Type: {match_type.name}"
+            )
+        wrestler = self.app.state.roster[slot.wrestler_id]
+        return f"{label}\n{wrestler.name}"
 
     def action_edit_slot(self) -> None:
         """Open the booking screen for the selected slot."""
@@ -399,7 +427,10 @@ class BookingHubScreen(Screen):
         index = self.slot_list.index
         if index is None:
             return
-        self.app.push_screen(MatchBookingScreen(index))
+        if self.app.state.slot_type(index) == "match":
+            self.app.push_screen(MatchBookingScreen(index))
+        else:
+            self.app.push_screen(PromoBookingScreen(index))
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
         """Handle slot selection from the list view."""
@@ -409,7 +440,10 @@ class BookingHubScreen(Screen):
         index = event.index
         if index is None:
             return
-        self.app.push_screen(MatchBookingScreen(index))
+        if self.app.state.slot_type(index) == "match":
+            self.app.push_screen(MatchBookingScreen(index))
+        else:
+            self.app.push_screen(PromoBookingScreen(index))
 
     def action_run_show(self) -> None:
         """Run the show if the current card is valid."""
@@ -537,7 +571,7 @@ class MatchBookingScreen(Screen):
     def refresh_view(self) -> None:
         """Update field labels, buttons, and match summary."""
 
-        self.header.update(f"Book Match {self.slot_index + 1}")
+        self.header.update(f"Book {slot_label(self.slot_index, 'match')}")
         if self.draft.wrestler_a_id and self.draft.wrestler_b_id:
             wrestler_a = self.app.state.roster[self.draft.wrestler_a_id]
             wrestler_b = self.app.state.roster[self.draft.wrestler_b_id]
@@ -587,20 +621,22 @@ class MatchBookingScreen(Screen):
         if selected is None:
             return
         if selected == 0:
+            title = f"Select Wrestler ({slot_label(self.slot_index, 'match')} · A)"
             self.app.push_screen(
                 WrestlerSelectionScreen(
                     slot_index=self.slot_index,
-                    label="A",
+                    title=title,
                     current_other_id=self.draft.wrestler_b_id,
                     booked_ids=self._booked_ids(),
                     on_select=self.set_wrestler_a,
                 )
             )
         elif selected == 1:
+            title = f"Select Wrestler ({slot_label(self.slot_index, 'match')} · B)"
             self.app.push_screen(
                 WrestlerSelectionScreen(
                     slot_index=self.slot_index,
-                    label="B",
+                    title=title,
                     current_other_id=self.draft.wrestler_a_id,
                     booked_ids=self._booked_ids(),
                     on_select=self.set_wrestler_b,
@@ -688,20 +724,22 @@ class MatchBookingScreen(Screen):
         if index is None:
             return
         if index == 0:
+            title = f"Select Wrestler ({slot_label(self.slot_index, 'match')} · A)"
             self.app.push_screen(
                 WrestlerSelectionScreen(
                     slot_index=self.slot_index,
-                    label="A",
+                    title=title,
                     current_other_id=self.draft.wrestler_b_id,
                     booked_ids=self._booked_ids(),
                     on_select=self.set_wrestler_a,
                 )
             )
         elif index == 1:
+            title = f"Select Wrestler ({slot_label(self.slot_index, 'match')} · B)"
             self.app.push_screen(
                 WrestlerSelectionScreen(
                     slot_index=self.slot_index,
-                    label="B",
+                    title=title,
                     current_other_id=self.draft.wrestler_a_id,
                     booked_ids=self._booked_ids(),
                     on_select=self.set_wrestler_b,
@@ -731,15 +769,187 @@ class MatchBookingScreen(Screen):
         """Return wrestler IDs booked in other slots or current draft."""
 
         booked: set[str] = set()
-        for index, match in enumerate(self.app.state.show_card):
-            if match is None or index == self.slot_index:
+        for index, slot in enumerate(self.app.state.show_card):
+            if slot is None or index == self.slot_index:
                 continue
-            booked.add(match.wrestler_a_id)
-            booked.add(match.wrestler_b_id)
+            if isinstance(slot, Match):
+                booked.add(slot.wrestler_a_id)
+                booked.add(slot.wrestler_b_id)
+            else:
+                booked.add(slot.wrestler_id)
         if self.draft.wrestler_a_id:
             booked.add(self.draft.wrestler_a_id)
         if self.draft.wrestler_b_id:
             booked.add(self.draft.wrestler_b_id)
+        return booked
+
+
+class PromoBookingScreen(Screen):
+    """Editor for a single promo slot."""
+
+    BINDINGS = [
+        ("enter", "select_field", "Select"),
+        ("up", "focus_prev", "Prev"),
+        ("down", "focus_next", "Next"),
+        ("escape", "cancel", "Cancel"),
+    ]
+
+    def __init__(self, slot_index: int) -> None:
+        super().__init__()
+        self.slot_index = slot_index
+        self.draft = PromoDraft()
+
+    def compose(self) -> ComposeResult:
+        self.header = Static("", classes="section-title")
+        yield self.header
+        self.detail = Static("", classes="section-title")
+        yield self.detail
+
+        self.field_item = Static("")
+        self.fields = EdgeAwareListView(
+            ListItem(self.field_item, id="field-wrestler"),
+            on_edge_prev=self.action_focus_prev,
+            on_edge_next=self.action_focus_next,
+        )
+        yield self.fields
+
+        with Vertical():
+            self.confirm_button = Button("Confirm", id="confirm")
+            self.clear_button = Button("Clear Slot", id="clear")
+            self.cancel_button = Button("Cancel", id="cancel")
+            yield self.confirm_button
+            yield self.clear_button
+            yield self.cancel_button
+
+        yield Footer()
+
+    def on_mount(self) -> None:
+        self.fields.focus()
+        existing = self.app.state.show_card[self.slot_index]
+        if isinstance(existing, Promo):
+            self.draft.wrestler_id = existing.wrestler_id
+        self.refresh_view()
+
+    def refresh_view(self) -> None:
+        label = slot_label(self.slot_index, "promo")
+        self.header.update(f"Book {label}")
+        if self.draft.wrestler_id:
+            wrestler = self.app.state.roster[self.draft.wrestler_id]
+            self.detail.update(wrestler.name)
+        else:
+            self.detail.update("")
+
+        self.field_item.update(self.field_text("Wrestler", self.draft.wrestler_id))
+        self.confirm_button.disabled = not self.draft.is_complete() or bool(
+            self.validate_draft()
+        )
+        self.clear_button.disabled = self.app.state.show_card[self.slot_index] is None
+
+    def field_text(self, label: str, value_id: Optional[str]) -> str:
+        if value_id is None:
+            return f"{label}\n[ Empty ]"
+        wrestler = self.app.state.roster[value_id]
+        return f"{label}\n{wrestler.name}"
+
+    def validate_draft(self) -> list[str]:
+        if not self.draft.is_complete():
+            return ["incomplete"]
+        promo = Promo(wrestler_id=self.draft.wrestler_id or "")
+        return self.app.state.validate_promo(promo, slot_index=self.slot_index)
+
+    def action_select_field(self) -> None:
+        title = f"Select Wrestler ({slot_label(self.slot_index, 'promo')})"
+        self.app.push_screen(
+            WrestlerSelectionScreen(
+                slot_index=self.slot_index,
+                title=title,
+                current_other_id=None,
+                booked_ids=self._booked_ids(),
+                on_select=self.set_wrestler,
+                allow_low_stamina=True,
+            )
+        )
+
+    def on_list_view_selected(self, event: ListView.Selected) -> None:
+        """Handle selection from the field list."""
+
+        if event.list_view is not self.fields:
+            return
+        self.action_select_field()
+
+    def set_wrestler(self, wrestler_id: str) -> None:
+        self.draft.wrestler_id = wrestler_id
+        self.refresh_view()
+
+    def action_cancel(self) -> None:
+        self.app.pop_screen()
+
+    def action_focus_next(self) -> None:
+        self._move_focus(1)
+
+    def action_focus_prev(self) -> None:
+        self._move_focus(-1)
+
+    def _move_focus(self, delta: int) -> None:
+        focus_order = [self.fields, self.confirm_button, self.clear_button, self.cancel_button]
+        focused = self.app.focused
+        if focused not in focus_order:
+            focus_order[0].focus()
+            return
+        index = focus_order.index(focused)
+        next_index = index
+        for _ in range(len(focus_order)):
+            next_index = (next_index + delta) % len(focus_order)
+            candidate = focus_order[next_index]
+            if candidate is self.fields or not candidate.disabled:
+                if candidate is self.fields and focused is not self.fields:
+                    self.fields.index = 0
+                candidate.focus()
+                return
+
+    def action_clear(self) -> None:
+        if self.app.state.show_card[self.slot_index] is None:
+            return
+        self.app.state.clear_slot(self.slot_index)
+        self.app.pop_screen()
+
+    def action_confirm(self) -> None:
+        if self.confirm_button.disabled:
+            return
+        self.app.push_screen(ConfirmBookingModal(), self.handle_confirmation)
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "confirm":
+            self.action_confirm()
+        elif event.button.id == "clear":
+            self.action_clear()
+        elif event.button.id == "cancel":
+            self.action_cancel()
+
+    def on_screen_resume(self) -> None:
+        self.refresh_view()
+
+    def handle_confirmation(self, result: bool | None) -> None:
+        if result:
+            self.commit_booking()
+
+    def commit_booking(self) -> None:
+        promo = Promo(wrestler_id=self.draft.wrestler_id or "")
+        self.app.state.set_slot(self.slot_index, promo)
+        self.app.pop_screen()
+
+    def _booked_ids(self) -> set[str]:
+        booked: set[str] = set()
+        for index, slot in enumerate(self.app.state.show_card):
+            if slot is None or index == self.slot_index:
+                continue
+            if isinstance(slot, Match):
+                booked.add(slot.wrestler_a_id)
+                booked.add(slot.wrestler_b_id)
+            else:
+                booked.add(slot.wrestler_id)
+        if self.draft.wrestler_id:
+            booked.add(self.draft.wrestler_id)
         return booked
 
 
@@ -762,31 +972,34 @@ class WrestlerSelectionScreen(Screen):
     def __init__(
         self,
         slot_index: int,
-        label: str,
+        title: str,
         current_other_id: Optional[str],
         booked_ids: set[str],
         on_select: Callable[[str], None],
+        allow_low_stamina: bool = False,
     ) -> None:
         """Create a wrestler selection screen for a slot and side."""
 
         super().__init__()
         self.slot_index = slot_index
-        self.label = label
+        self.title = title
         self.current_other_id = current_other_id
         self.booked_ids = booked_ids
         self.on_select = on_select
+        self.allow_low_stamina = allow_low_stamina
         self.message = Static("")
 
     def compose(self) -> ComposeResult:
         """Build the wrestler selection layout."""
 
-        yield Static(f"Select Wrestler (Match {self.slot_index + 1} · {self.label})")
+        yield Static(self.title)
         self.table = EdgeAwareDataTable(
             on_edge_prev=self.action_focus_prev,
             on_edge_next=self.action_focus_next,
         )
         self.table.add_column("Name", key="name")
         self.table.add_column("Sta", key="sta")
+        self.table.add_column("Mic", key="mic")
         self.table.add_column("Pop", key="pop")
         for wrestler in self.app.state.roster.values():
             booked = self.app.state.is_wrestler_booked(
@@ -799,6 +1012,7 @@ class WrestlerSelectionScreen(Screen):
             self.table.add_row(
                 build_name_cell(wrestler.name, wrestler.alignment),
                 f"{wrestler.stamina:>3}",
+                f"{wrestler.mic_skill:>3}",
                 build_pop_cell(wrestler.popularity, wrestler.stamina, booked_marker),
                 key=wrestler.id,
             )
@@ -885,9 +1099,9 @@ class WrestlerSelectionScreen(Screen):
         if wrestler_id == self.current_other_id:
             return "Already selected in this match"
         if self.app.state.is_wrestler_booked(wrestler_id, exclude_slot=self.slot_index):
-            return "Already booked in another match"
+            return "Already booked in another slot"
         wrestler = self.app.state.roster[wrestler_id]
-        if wrestler.stamina <= constants.STAMINA_MIN_BOOKABLE:
+        if not self.allow_low_stamina and wrestler.stamina <= constants.STAMINA_MIN_BOOKABLE:
             return "Not enough stamina"
         return None
 
@@ -1055,7 +1269,7 @@ class ConfirmBookingModal(ModalScreen):
 
         with Vertical(classes="panel"):
             yield Static("Confirm booking?")
-            self.confirm_button = Button("Book Match", id="confirm")
+            self.confirm_button = Button("Confirm", id="confirm")
             self.cancel_button = Button("Cancel", id="cancel")
             yield self.confirm_button
             yield self.cancel_button
@@ -1177,13 +1391,24 @@ class ResultsScreen(Screen):
             self.show_rating.update("")
             return
         lines = []
-        for index, result in enumerate(show.results, start=1):
-            winner = self.app.state.roster[result.winner_id].name
-            loser = self.app.state.roster[result.loser_id].name
-            lines.append(f"Match {index}")
-            lines.append(f" {winner} def. {loser}")
-            lines.append(f" {format_stars(result.rating)}")
-            lines.append("")
+        for index, (slot, result) in enumerate(
+            zip(show.scheduled_slots, show.results), start=0
+        ):
+            if isinstance(slot, Match):
+                label = slot_label(index, "match")
+                winner = self.app.state.roster[result.winner_id].name
+                loser = self.app.state.roster[result.loser_id].name
+                lines.append(label)
+                lines.append(f" {winner} def. {loser}")
+                lines.append(f" {format_stars(result.rating)}")
+                lines.append("")
+            else:
+                label = slot_label(index, "promo")
+                wrestler = self.app.state.roster[result.wrestler_id].name
+                lines.append(label)
+                lines.append(f" {wrestler}")
+                lines.append(f" {format_stars(result.rating)}")
+                lines.append("")
         self.results.update("\n".join(lines).strip())
         rating = show.show_rating or 0.0
         self.show_rating.update(f"Show Rating: {format_stars(rating)}")
@@ -1245,6 +1470,7 @@ class RosterScreen(Screen):
         )
         self.table.add_column("Name", key="name")
         self.table.add_column("Sta", key="sta")
+        self.table.add_column("Mic", key="mic")
         self.table.add_column("Pop", key="pop")
         yield self.table
         self.back_button = Button("Back", id="back")
@@ -1267,6 +1493,7 @@ class RosterScreen(Screen):
             self.table.add_row(
                 build_name_cell(wrestler.name, wrestler.alignment),
                 f"{wrestler.stamina:>3}",
+                f"{wrestler.mic_skill:>3}",
                 build_pop_cell(wrestler.popularity, wrestler.stamina),
                 key=wrestler.id,
             )

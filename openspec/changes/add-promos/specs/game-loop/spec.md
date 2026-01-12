@@ -1,8 +1,4 @@
-# game-loop Specification
-
-## Purpose
-TBD - created by archiving change add-wrestlegm-mvp. Update Purpose after archive.
-## Requirements
+## MODIFIED Requirements
 ### Requirement: Show-driven progression loop
 The system SHALL support a show-driven loop that books a 3-match, 2-promo card, simulates the show via a `SimulationEngine`, applies deltas via a `ShowApplier`, and advances to the next show.
 
@@ -30,4 +26,3 @@ The system SHALL apply match deltas, promo deltas, and between-show recovery thr
 #### Scenario: Apply show results through applier
 - **WHEN** a show finishes simulation
 - **THEN** the `ShowApplier` applies match deltas, promo deltas, recovery, and clamping rules
-

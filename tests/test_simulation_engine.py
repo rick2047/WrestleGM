@@ -8,6 +8,8 @@ from wrestlegm.models import (
     MatchResult,
     MatchTypeDefinition,
     MatchTypeModifiers,
+    Promo,
+    PromoResult,
     Show,
     StatDelta,
     WrestlerDefinition,
@@ -19,9 +21,30 @@ from wrestlegm.state import ShowApplier
 
 def build_roster() -> list[WrestlerDefinition]:
     return [
-        WrestlerDefinition(id="a", name="Alpha", alignment="Face", popularity=90, stamina=90),
-        WrestlerDefinition(id="b", name="Bravo", alignment="Heel", popularity=10, stamina=10),
-        WrestlerDefinition(id="c", name="Charlie", alignment="Face", popularity=50, stamina=50),
+        WrestlerDefinition(
+            id="a",
+            name="Alpha",
+            alignment="Face",
+            popularity=90,
+            stamina=90,
+            mic_skill=80,
+        ),
+        WrestlerDefinition(
+            id="b",
+            name="Bravo",
+            alignment="Heel",
+            popularity=10,
+            stamina=10,
+            mic_skill=40,
+        ),
+        WrestlerDefinition(
+            id="c",
+            name="Charlie",
+            alignment="Face",
+            popularity=50,
+            stamina=50,
+            mic_skill=60,
+        ),
     ]
 
 
@@ -46,6 +69,7 @@ def build_roster_state() -> dict[str, WrestlerState]:
             alignment=w.alignment,
             popularity=w.popularity,
             stamina=w.stamina,
+            mic_skill=w.mic_skill,
         )
         for w in build_roster()
     }
@@ -89,8 +113,8 @@ class TestDeterminism:
 
 class TestMatchSimulation:
     def test_outcome_probability_clamps(self) -> None:
-        wrestler_a = WrestlerState("a", "Alpha", "Face", popularity=100, stamina=100)
-        wrestler_b = WrestlerState("b", "Bravo", "Heel", popularity=0, stamina=0)
+        wrestler_a = WrestlerState("a", "Alpha", "Face", popularity=100, stamina=100, mic_skill=50)
+        wrestler_b = WrestlerState("b", "Bravo", "Heel", popularity=0, stamina=0, mic_skill=50)
         modifiers = MatchTypeModifiers(
             outcome_chaos=0.0,
             rating_bonus=0,
@@ -106,8 +130,8 @@ class TestMatchSimulation:
 
 
     def test_rating_bounds(self) -> None:
-        wrestler_a = WrestlerState("a", "Alpha", "Face", popularity=100, stamina=100)
-        wrestler_b = WrestlerState("b", "Bravo", "Heel", popularity=0, stamina=0)
+        wrestler_a = WrestlerState("a", "Alpha", "Face", popularity=100, stamina=100, mic_skill=50)
+        wrestler_b = WrestlerState("b", "Bravo", "Heel", popularity=0, stamina=0, mic_skill=50)
         modifiers = MatchTypeModifiers(
             outcome_chaos=0.0,
             rating_bonus=0,
@@ -124,8 +148,8 @@ class TestMatchSimulation:
         assert 0 <= debug.rating_100 <= 100
 
     def test_alignment_modifiers(self) -> None:
-        face = WrestlerState("a", "Alpha", "Face", popularity=50, stamina=50)
-        heel = WrestlerState("b", "Bravo", "Heel", popularity=50, stamina=50)
+        face = WrestlerState("a", "Alpha", "Face", popularity=50, stamina=50, mic_skill=50)
+        heel = WrestlerState("b", "Bravo", "Heel", popularity=50, stamina=50, mic_skill=50)
         modifiers = MatchTypeModifiers(
             outcome_chaos=0.0,
             rating_bonus=0,
@@ -158,6 +182,27 @@ class TestMatchSimulationStatDeltas:
         assert deltas["b"] == StatDelta(popularity=-2, stamina=-9)
 
 
+class TestPromoSimulation:
+    def test_promo_determinism(self) -> None:
+        roster_state = build_roster_state()
+        engine_one = SimulationEngine(seed=101)
+        engine_two = SimulationEngine(seed=101)
+
+        promo = Promo(wrestler_id="a")
+        result_one = engine_one.simulate_promo(promo, roster_state)
+        result_two = engine_two.simulate_promo(promo, roster_state)
+
+        assert result_one.rating == result_two.rating
+        assert result_one.stat_deltas == result_two.stat_deltas
+
+    def test_promo_delta_threshold(self) -> None:
+        engine = SimulationEngine(seed=202)
+        low = engine.simulate_promo_deltas(49)
+        high = engine.simulate_promo_deltas(50)
+        assert low == StatDelta(popularity=-5, stamina=constants.STAMINA_RECOVERY_PER_SHOW // 2)
+        assert high == StatDelta(popularity=5, stamina=constants.STAMINA_RECOVERY_PER_SHOW // 2)
+
+
 class TestShowSimulation:
     def test_show_rating_aggregation(self) -> None:
         results = [
@@ -167,6 +212,11 @@ class TestShowSimulation:
                 rating=4.0,
                 match_type_id="singles",
                 applied_modifiers=build_match_types()[0].modifiers,
+                stat_deltas={},
+            ),
+            PromoResult(
+                wrestler_id="a",
+                rating=1.0,
                 stat_deltas={},
             ),
             MatchResult(
@@ -179,7 +229,7 @@ class TestShowSimulation:
             ),
         ]
         engine = SimulationEngine(seed=5)
-        assert engine.aggregate_show_rating(results) == 3.0
+        assert engine.aggregate_show_rating(results) == 7.0 / 3.0
 
     def test_empty_show_rating(self) -> None:
         engine = SimulationEngine(seed=6)
@@ -189,9 +239,30 @@ class TestShowSimulation:
 class TestMutation:
     def test_clamp_and_recovery(self) -> None:
         roster = [
-            WrestlerDefinition(id="a", name="Alpha", alignment="Face", popularity=99, stamina=5),
-            WrestlerDefinition(id="b", name="Bravo", alignment="Heel", popularity=1, stamina=95),
-            WrestlerDefinition(id="c", name="Charlie", alignment="Face", popularity=50, stamina=90),
+            WrestlerDefinition(
+                id="a",
+                name="Alpha",
+                alignment="Face",
+                popularity=99,
+                stamina=5,
+                mic_skill=50,
+            ),
+            WrestlerDefinition(
+                id="b",
+                name="Bravo",
+                alignment="Heel",
+                popularity=1,
+                stamina=95,
+                mic_skill=50,
+            ),
+            WrestlerDefinition(
+                id="c",
+                name="Charlie",
+                alignment="Face",
+                popularity=50,
+                stamina=90,
+                mic_skill=50,
+            ),
         ]
         roster_state = {
             w.id: WrestlerState(
@@ -200,6 +271,7 @@ class TestMutation:
                 alignment=w.alignment,
                 popularity=w.popularity,
                 stamina=w.stamina,
+                mic_skill=w.mic_skill,
             )
             for w in roster
         }
@@ -218,7 +290,7 @@ class TestMutation:
         )
         show = Show(
             show_index=1,
-            scheduled_matches=[],
+            scheduled_slots=[],
             results=[result],
             show_rating=3.0,
         )
