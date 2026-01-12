@@ -51,11 +51,11 @@ Match size and match rules are separate concerns, but the current flow treats ma
 ┌──────────────────────────────────────┐
 │ Select Match Category                │
 ├──────────────────────────────────────┤
-│ ▸ Singles (2)                         │
+│ ▸ Singles                             │
 │                                      │
-│   Triple Threat (3)                  │
+│   Triple Threat                       │
 │                                      │
-│   Fatal 4-Way (4)                     │
+│   Fatal 4-Way                          │
 ├──────────────────────────────────────┤
 │ [ Select ]   [ Cancel ]              │
 └──────────────────────────────────────┘
