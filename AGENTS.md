@@ -23,8 +23,8 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 - Ask for explicit user approval before running git workflow actions (commit, push, PR create/edit).
 
 ## GitHub Access
-- Prefer the `gh` CLI for GitHub issues/PRs/comments instead of raw API calls.
-- Assume authentication is already configured; do not prompt for login/setup.
+- Use the GitHub MCP server for all GitHub issues/PRs/comments and related actions.
+- Do not use the `gh` CLI or raw API calls.
 
 ## OpenSpec CLI Location
 - Prefer running `openspec` from `PATH`.
