@@ -15,7 +15,7 @@ The MVP show loop currently supports three match slots and match-only simulation
 - Decision: Promo slots use a single wrestler and the shared wrestler selection screen.
   - Why: Keeps UI minimal and consistent with the PRD.
 - Decision: Promo quality uses a weighted mic/pop formula with fixed global variance.
-  - Proposed: `base_100 = mic * 0.7 + pop * 0.3`, variance range `PROMO_VARIANCE = 8` in 0–100 space.
+  - Proposed: `base_100 = mic_skill * 0.7 + pop * 0.3`, variance range `PROMO_VARIANCE = 8` in 0–100 space.
 - Decision: Promo popularity deltas are fixed based on quality threshold.
   - Proposed: quality < 50 → -5, quality ≥ 50 → +5.
 - Decision: Promo stamina recovery is half of the between-show recovery amount.

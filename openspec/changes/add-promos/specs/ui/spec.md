@@ -11,7 +11,7 @@ The system SHALL provide a promo booking screen that edits a single wrestler for
 - **THEN** a confirmation modal prompts for final confirmation before saving the slot
 
 ### Requirement: Shared wrestler selection for promos
-The system SHALL reuse the existing wrestler selection screen for promo booking and may change only the contextual title text.
+The system SHALL reuse the existing wrestler selection screen for promo booking and may change only the contextual title text and validation rules needed to allow low-stamina promo selection.
 
 #### Scenario: Promo wrestler selection layout
 - **WHEN** the user opens wrestler selection from promo booking
@@ -152,7 +152,7 @@ The system SHALL block committing invalid matches and running invalid shows acco
 
 #### Scenario: Prevent duplicate wrestler booking
 - **WHEN** a wrestler is already booked in another slot
-- **THEN** the UI prevents selecting them for a different slot
+- **THEN** the UI marks them with a 📅 indicator and prevents selection with a ⛔ message
 
 #### Scenario: Allow low-stamina promos
 - **WHEN** a wrestler has stamina below `STAMINA_MIN_BOOKABLE`
