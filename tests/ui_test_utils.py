@@ -61,18 +61,19 @@ def build_test_slots(state: GameState) -> list[Match | Promo]:
 
     wrestler_ids = list(state.roster.keys())
     match_type_id = next(iter(state.match_types))
+    match_type = state.match_types[match_type_id]
     slots: list[Match | Promo] = []
     cursor = 0
     for slot_type in constants.SHOW_SLOT_TYPES:
         if slot_type == "match":
+            wrestler_count = match_type.min_wrestlers
             slots.append(
                 Match(
-                    wrestler_a_id=wrestler_ids[cursor],
-                    wrestler_b_id=wrestler_ids[cursor + 1],
+                    wrestler_ids=wrestler_ids[cursor : cursor + wrestler_count],
                     match_type_id=match_type_id,
                 )
             )
-            cursor += 2
+            cursor += wrestler_count
         else:
             slots.append(Promo(wrestler_id=wrestler_ids[cursor]))
             cursor += 1
@@ -152,7 +153,7 @@ async def open_match_booking(pilot: Pilot, slot_index: int) -> None:
         await pilot.press("down")
         await pilot.pause(0.05)
     await pilot.press("enter")
-    await wait_for_screen(pilot, MatchBookingScreen)
+    await wait_for_screen(pilot, MatchTypeSelectionScreen)
 
 
 async def open_promo_booking(pilot: Pilot, slot_index: int) -> None:
@@ -189,17 +190,26 @@ async def select_match_type(pilot: Pilot, row_index: int = 0) -> None:
     """Select a match type by row index in the selection screen."""
 
     await wait_for_screen(pilot, MatchTypeSelectionScreen)
-    for _ in range(row_index):
-        await pilot.press("down")
-    await pilot.press("enter")
+    screen = pilot.app.screen
+    if isinstance(screen, MatchTypeSelectionScreen):
+        screen.list_view.index = row_index
+        screen.action_select()
+    else:
+        for _ in range(row_index):
+            await pilot.press("down")
+        await pilot.press("enter")
     await wait_for_screen(pilot, MatchBookingScreen)
 
 
 async def confirm_booking(pilot: Pilot) -> None:
     """Confirm the current match booking draft."""
 
-    await pilot.press("down")
-    await pilot.press("enter")
+    screen = pilot.app.screen
+    if hasattr(screen, "confirm_button"):
+        screen.confirm_button.press()
+    else:
+        await pilot.press("down")
+        await pilot.press("enter")
     await wait_for_screen(pilot, ConfirmBookingModal)
     await pilot.press("enter")
     await wait_for_screen(pilot, BookingHubScreen)

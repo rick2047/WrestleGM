@@ -3,6 +3,40 @@
     "id": "singles",
     "name": "Singles",
     "description": "Standard one-on-one contest.",
+    "min_wrestlers": 2,
+    "max_wrestlers": 2,
+    "modifiers": {
+      "outcome_chaos": 0.2,
+      "rating_bonus": 0,
+      "rating_variance": 6,
+      "stamina_cost_winner": 12,
+      "stamina_cost_loser": 14,
+      "popularity_delta_winner": 2,
+      "popularity_delta_loser": -1
+    }
+  },
+  {
+    "id": "triple-threat",
+    "name": "Triple Threat",
+    "description": "Three wrestlers, one winner.",
+    "min_wrestlers": 3,
+    "max_wrestlers": 3,
+    "modifiers": {
+      "outcome_chaos": 0.2,
+      "rating_bonus": 0,
+      "rating_variance": 6,
+      "stamina_cost_winner": 12,
+      "stamina_cost_loser": 14,
+      "popularity_delta_winner": 2,
+      "popularity_delta_loser": -1
+    }
+  },
+  {
+    "id": "fatal-4-way",
+    "name": "Fatal 4-Way",
+    "description": "Four wrestlers battle for a single fall.",
+    "min_wrestlers": 4,
+    "max_wrestlers": 4,
     "modifiers": {
       "outcome_chaos": 0.2,
       "rating_bonus": 0,
@@ -17,6 +51,8 @@
     "id": "hardcore",
     "name": "Hardcore",
     "description": "No rules. High risk. Brutal.",
+    "min_wrestlers": 2,
+    "max_wrestlers": 2,
     "modifiers": {
       "outcome_chaos": 0.4,
       "rating_bonus": 8,
@@ -31,6 +67,8 @@
     "id": "submission",
     "name": "Submission",
     "description": "Victory by tap-out only.",
+    "min_wrestlers": 2,
+    "max_wrestlers": 2,
     "modifiers": {
       "outcome_chaos": 0.1,
       "rating_bonus": 4,
@@ -45,6 +83,8 @@
     "id": "high-flying",
     "name": "High Flying",
     "description": "Fast-paced aerial showcase.",
+    "min_wrestlers": 2,
+    "max_wrestlers": 2,
     "modifiers": {
       "outcome_chaos": 0.3,
       "rating_bonus": 6,

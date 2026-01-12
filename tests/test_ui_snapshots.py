@@ -69,6 +69,7 @@ def test_snapshot_s5_match_booking_empty(snap_compare) -> None:
         await start_new_game(pilot)
         await open_booking_hub(pilot)
         await open_match_booking(pilot, 0)
+        await select_match_type(pilot, 0)
 
     assert snap_compare(app, terminal_size=VIEWPORT_SIZE, run_before=run_before)
 
@@ -83,6 +84,7 @@ def test_snapshot_s6_match_booking_filled(snap_compare) -> None:
         if isinstance(pilot.app.screen, BookingHubScreen):
             pilot.app.screen.refresh_view()
         await open_match_booking(pilot, 0)
+        await select_match_type(pilot, 0)
 
     assert snap_compare(app, terminal_size=VIEWPORT_SIZE, run_before=run_before)
 
@@ -94,6 +96,7 @@ def test_snapshot_s7_wrestler_selection_default(snap_compare) -> None:
         await start_new_game(pilot)
         await open_booking_hub(pilot)
         await open_match_booking(pilot, 0)
+        await select_match_type(pilot, 0)
         await pilot.press("enter")
         await wait_for_screen(pilot, WrestlerSelectionScreen)
 
@@ -107,7 +110,6 @@ def test_snapshot_s8_match_type_selection_default(snap_compare) -> None:
         await start_new_game(pilot)
         await open_booking_hub(pilot)
         await open_match_booking(pilot, 0)
-        await pilot.press("down", "down", "enter")
         await wait_for_screen(pilot, MatchTypeSelectionScreen)
 
     assert snap_compare(app, terminal_size=VIEWPORT_SIZE, run_before=run_before)
@@ -120,16 +122,17 @@ def test_snapshot_s9_match_booking_confirmation_modal(snap_compare) -> None:
         await start_new_game(pilot)
         await open_booking_hub(pilot)
         await open_match_booking(pilot, 0)
+        await select_match_type(pilot, 0)
         await pilot.press("enter")
         await select_wrestler(pilot, 0)
 
         await pilot.press("down", "enter")
         await select_wrestler(pilot, 1)
 
-        await pilot.press("down", "enter")
-        await select_match_type(pilot, 0)
-
-        await pilot.press("down", "enter")
+        screen = pilot.app.screen
+        if isinstance(screen, BookingHubScreen):
+            raise AssertionError("Expected MatchBookingScreen")
+        screen.confirm_button.press()
         await wait_for_screen(pilot, ConfirmBookingModal)
 
     assert snap_compare(app, terminal_size=VIEWPORT_SIZE, run_before=run_before)

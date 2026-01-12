@@ -25,13 +25,12 @@ from wrestlegm.models import (
 class OutcomeDebug:
     """Debug payload for outcome simulation."""
 
-    power_a: float
-    power_b: float
-    diff: float
-    p_base: float
+    powers: List[float]
+    p_base: List[float]
     outcome_chaos: float
-    p_final: float
+    p_final: List[float]
     r: float
+    winner_id: str
 
 
 @dataclass(frozen=True)
@@ -82,53 +81,80 @@ class SimulationEngine:
 
     def simulate_outcome(
         self,
-        wrestler_a: WrestlerState,
-        wrestler_b: WrestlerState,
+        wrestlers: List[WrestlerState],
         modifiers: MatchTypeModifiers,
-    ) -> tuple[str, str, OutcomeDebug]:
-        """Simulate the winner and loser for a match."""
+    ) -> tuple[str, List[str], OutcomeDebug]:
+        """Simulate the winner and non-winners for a match."""
 
-        power_a = (
-            wrestler_a.popularity * constants.P_WEIGHT
-            + wrestler_a.stamina * constants.S_WEIGHT
-        )
-        power_b = (
-            wrestler_b.popularity * constants.P_WEIGHT
-            + wrestler_b.stamina * constants.S_WEIGHT
-        )
-        diff = power_a - power_b
-        p_base = clamp(0.5 + diff / constants.D_SCALE, constants.P_MIN, constants.P_MAX)
-        p_final = lerp(p_base, 0.5, modifiers.outcome_chaos)
+        if not wrestlers:
+            raise ValueError("Cannot simulate outcome without wrestlers.")
+
+        powers = [
+            wrestler.popularity * constants.P_WEIGHT + wrestler.stamina * constants.S_WEIGHT
+            for wrestler in wrestlers
+        ]
+        total_power = sum(powers)
+        if total_power <= 0:
+            p_base = [1 / len(wrestlers)] * len(wrestlers)
+        else:
+            p_base = [power / total_power for power in powers]
+
+        uniform = 1 / len(wrestlers)
+        p_final = [lerp(p, uniform, modifiers.outcome_chaos) for p in p_base]
+        final_total = sum(p_final)
+        if final_total <= 0:
+            p_final = [uniform] * len(wrestlers)
+        else:
+            p_final = [p / final_total for p in p_final]
+
         r = self.rng.random()
-        winner_id = wrestler_a.id if r < p_final else wrestler_b.id
-        loser_id = wrestler_b.id if winner_id == wrestler_a.id else wrestler_a.id
+        cumulative = 0.0
+        winner_index = len(wrestlers) - 1
+        for index, probability in enumerate(p_final):
+            cumulative += probability
+            if r <= cumulative:
+                winner_index = index
+                break
+
+        winner_id = wrestlers[winner_index].id
+        non_winner_ids = [
+            wrestler.id for index, wrestler in enumerate(wrestlers) if index != winner_index
+        ]
         debug = OutcomeDebug(
-            power_a=power_a,
-            power_b=power_b,
-            diff=diff,
+            powers=powers,
             p_base=p_base,
             outcome_chaos=modifiers.outcome_chaos,
             p_final=p_final,
             r=r,
+            winner_id=winner_id,
         )
-        return winner_id, loser_id, debug
+        return winner_id, non_winner_ids, debug
 
     def simulate_rating(
         self,
-        wrestler_a: WrestlerState,
-        wrestler_b: WrestlerState,
+        wrestlers: List[WrestlerState],
         match_type: MatchTypeDefinition,
     ) -> tuple[float, RatingDebug]:
         """Simulate a match rating in stars."""
 
-        pop_avg = (wrestler_a.popularity + wrestler_b.popularity) / 2
-        sta_avg = (wrestler_a.stamina + wrestler_b.stamina) / 2
+        if not wrestlers:
+            raise ValueError("Cannot simulate rating without wrestlers.")
+
+        pop_avg = sum(w.popularity for w in wrestlers) / len(wrestlers)
+        sta_avg = sum(w.stamina for w in wrestlers) / len(wrestlers)
         base_100 = pop_avg * constants.POP_W + sta_avg * constants.STA_W
 
-        alignment_mod = 0.0
-        if wrestler_a.alignment != wrestler_b.alignment:
+        faces = sum(1 for w in wrestlers if w.alignment == "Face")
+        heels = len(wrestlers) - faces
+        if heels == len(wrestlers):
+            alignment_mod = -2 * constants.ALIGN_BONUS
+        elif faces == len(wrestlers):
+            alignment_mod = 0.0
+        elif heels > faces:
             alignment_mod = constants.ALIGN_BONUS
-        elif wrestler_a.alignment == "Heel" and wrestler_b.alignment == "Heel":
+        elif heels == faces:
+            alignment_mod = 0.0
+        else:
             alignment_mod = -2 * constants.ALIGN_BONUS
 
         base_100 += alignment_mod
@@ -157,21 +183,23 @@ class SimulationEngine:
     def simulate_stat_deltas(
         self,
         winner_id: str,
-        loser_id: str,
+        non_winner_ids: List[str],
         modifiers: MatchTypeModifiers,
     ) -> Dict[str, StatDelta]:
         """Compute stat deltas for a match."""
 
-        return {
+        deltas = {
             winner_id: StatDelta(
                 popularity=modifiers.popularity_delta_winner,
                 stamina=-modifiers.stamina_cost_winner,
-            ),
-            loser_id: StatDelta(
+            )
+        }
+        for wrestler_id in non_winner_ids:
+            deltas[wrestler_id] = StatDelta(
                 popularity=modifiers.popularity_delta_loser,
                 stamina=-modifiers.stamina_cost_loser,
-            ),
-        }
+            )
+        return deltas
 
     def simulate_promo_rating(
         self,
@@ -209,21 +237,23 @@ class SimulationEngine:
     ) -> MatchResult:
         """Run the deterministic simulation pipeline for a match."""
 
-        wrestler_a = roster[match.wrestler_a_id]
-        wrestler_b = roster[match.wrestler_b_id]
         match_type = match_types[match.match_type_id]
+        wrestlers = [roster[wrestler_id] for wrestler_id in match.wrestler_ids]
 
-        winner_id, loser_id, _ = self.simulate_outcome(
-            wrestler_a,
-            wrestler_b,
+        winner_id, non_winner_ids, _ = self.simulate_outcome(
+            wrestlers,
             match_type.modifiers,
         )
-        rating, _ = self.simulate_rating(wrestler_a, wrestler_b, match_type)
-        deltas = self.simulate_stat_deltas(winner_id, loser_id, match_type.modifiers)
+        rating, _ = self.simulate_rating(wrestlers, match_type)
+        deltas = self.simulate_stat_deltas(
+            winner_id,
+            non_winner_ids,
+            match_type.modifiers,
+        )
 
         return MatchResult(
             winner_id=winner_id,
-            loser_id=loser_id,
+            non_winner_ids=non_winner_ids,
             rating=rating,
             match_type_id=match.match_type_id,
             applied_modifiers=match_type.modifiers,
