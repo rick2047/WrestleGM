@@ -25,10 +25,10 @@ The experience should feel:
 The MVP must allow a player to:
 
 - Run an **ongoing series of shows** (weekly, episodic, or abstract)
-- Book a card of matches for each show
-- Select match types that meaningfully affect outcomes
-- Simulate matches and complete an entire show
-- Receive an **overall show rating** derived from match quality
+- Book matches and promos for each show
+- Select match types that meaningfully affect match outcomes
+- Simulate matches and promos to complete an entire show
+- Receive an **overall show rating** derived from slot quality
 - Advance from show to show and **observe stat evolution over time**
 - Make booking decisions based on fatigue, popularity, and long-term impact
 
@@ -84,9 +84,9 @@ These rules define how pull requests are validated in CI.
 2. Land on the Game Hub (session home)
 3. Open the current show overview / booking hub
 4. Build or review the show card
-5. Book matches (wrestlers + match types)
-6. Run the show (simulate matches sequentially)
-7. Review match results and **overall show rating**
+5. Book matches and promos (wrestlers + match types for matches)
+6. Run the show (simulate slots sequentially)
+7. Review results and **overall show rating**
 8. Return to the Game Hub and advance to the next show
 
 The game loop is **show-driven**, not match-driven.
@@ -106,6 +106,7 @@ Fields:
 - `alignment: Face | Heel`
 - `popularity: int (0–100)`
 - `stamina: int (0–100)`
+- `mic_skill: int (0–100)`
 
 Future-safe (not required for MVP):
 
@@ -149,22 +150,32 @@ Fields:
 
 ---
 
-### 4.4 Show
+### 4.4 Promo
+
+Represents a booked promo within a show.
+
+Fields:
+
+- `wrestler_id`
+
+---
+
+### 4.5 Show
 
 Represents a single event in the game timeline.
 
 Fields:
 
 - `show_index`
-- `scheduled_matches: [Match]`
-- `results: [MatchResult]`
+- `scheduled_slots: [Match | Promo]`
+- `results: [MatchResult | PromoResult]`
 - `show_rating`
 
 A show is the **atomic unit of progression**.
 
 ---
 
-### 4.5 MatchResult
+### 4.6 MatchResult
 
 Immutable result of simulation.
 
@@ -179,21 +190,33 @@ Fields:
 
 ---
 
+### 4.7 PromoResult
+
+Immutable result of promo simulation.
+
+Fields:
+
+- `wrestler_id`
+- `rating`
+- `stat_deltas`
+
+---
+
 ## 5. Simulation System
 
-The simulation layer is deterministic, side-effect free, and composed of **three core simulations** plus one aggregation step. The following rules apply to *every match* in a show.
+The simulation layer is deterministic, side-effect free, and composed of match and promo simulations plus one aggregation step. The following rules apply to *every slot* in a show.
 
 ---
 
 ### 5.1 Simulation Pipeline (Authoritative)
 
-For each match, the engine executes the following pipeline:
+For each slot, the engine executes the following pipeline:
 
-1. **Outcome Simulation** → determines winner / loser
-2. **Rating Simulation** → determines match quality (stars)
+1. **Match Outcome Simulation** → determines winner / loser (matches only)
+2. **Rating Simulation** → determines slot quality (stars)
 3. **Stat Delta Simulation** → determines progression deltas (no mutation)
 
-After *all* matches in a show complete:
+After *all* slots in a show complete:
 
 4. **Show Rating Aggregation** → derives overall show rating
 5. **State Application** → applies all stat deltas at show end
@@ -352,7 +375,51 @@ Then:
 
 ---
 
-### 5.5 Stat Delta Simulation (Progression Impact)
+### 5.5 Promo Rating Simulation (How Good It Was)
+
+**Purpose** Assign a promo quality rating in **0.0–5.0 stars** based on mic skill and popularity.
+
+**Inputs**
+
+- Wrestler: `mic_skill`, `popularity`
+- Tunable constants: `PROMO_VARIANCE`
+- Seeded RNG
+
+**Step A — Compute deterministic base in 0–100**
+
+- `base_100 = mic_skill * 0.7 + popularity * 0.3`
+
+**Step B — Apply rating variance**
+
+- `swing = rng.randint(-PROMO_VARIANCE, +PROMO_VARIANCE)`
+- `rating_100 = base_100 + swing`
+
+**Step C — Clamp 0–100**
+
+- `rating_100 = clamp(rating_100, 0, 100)`
+
+**Step D — Convert to 0–5 stars**
+
+- `rating_stars = round((rating_100 / 100) * 5, 1)`
+
+---
+
+### 5.6 Promo Stat Delta Simulation (Progression Impact)
+
+**Purpose** Produce progression deltas for promo performers.
+
+**Popularity deltas**
+
+- If `rating_100 < 50` → `Δpop = -5`
+- If `rating_100 ≥ 50` → `Δpop = +5`
+
+**Stamina deltas**
+
+- `Δsta = floor(STAMINA_RECOVERY_PER_SHOW / 2)`
+
+---
+
+### 5.7 Match Stat Delta Simulation (Progression Impact)
 
 **Purpose** Produce progression deltas for winner and loser. This system produces deltas only and never mutates roster state.
 
@@ -392,15 +459,15 @@ Notes:
 
 ---
 
-### 5.6 Show Rating Aggregation
+### 5.8 Show Rating Aggregation
 
-**Purpose** Compute an overall show quality rating derived from match ratings.
+**Purpose** Compute an overall show quality rating derived from slot ratings.
 
 **Rules (MVP)**
 
-- Each match produces `match_rating_stars`.
-- Show rating is the arithmetic mean of all match ratings:
-  - `show_rating = average(match_rating_stars[])`
+- Each slot produces a star rating.
+- Show rating is the arithmetic mean of all slot ratings:
+  - `show_rating = average(slot_ratings[])`
 
 Constraints:
 
@@ -410,7 +477,7 @@ Constraints:
 
 ---
 
-### 5.7 State Application at Show End
+### 5.9 State Application at Show End
 
 **Purpose** Apply all deltas once a show completes. This is the only moment the roster changes.
 
@@ -429,15 +496,17 @@ Ordering:
 
 ---
 
-### 5.8 Required Tests for Simulation
+### 5.10 Required Tests for Simulation
 
 Minimum required tests:
 
 - Determinism: same inputs + seed → identical outputs
 - Outcome sanity: probabilities clamp to bounds
 - Rating bounds: always 0.0–5.0 stars
+- Promo determinism: same inputs + seed → identical promo ratings and deltas
+- Promo deltas: threshold produces -5/+5 and stamina recovery
 - Delta correctness: winner/loser deltas match match-type config
-- Show rating: equals mean of match ratings
+- Show rating: equals mean of slot ratings
 - Clamp tests: stats never exceed 0–100 after application
 
 ---
@@ -454,12 +523,12 @@ A **Show** is the atomic unit of progression in WrestleGM.
 
 A show:
 
-- Consists of a finite list of matches (the card)
+- Consists of a finite list of match and promo slots (the card)
 - Is fully booked before simulation starts
-- Is simulated match-by-match in a fixed order
+- Is simulated slot-by-slot in a fixed order
 - Produces:
-  - Match results
-  - Match ratings
+  - Match and promo results
+  - Match and promo ratings
   - A single overall show rating
 - Applies all stat changes only at show end
 
@@ -473,8 +542,8 @@ For MVP, show size is intentionally fixed.
 
 **Rules**
 
-- Each show consists of **exactly 3 matches**
-- The order of matches matters only for presentation, not simulation
+- Each show consists of **exactly 3 matches and 2 promos**
+- The order of slots matters only for presentation, not simulation
 - No weighting (e.g. main event bonus) is applied in MVP
 
 Rationale:
@@ -490,14 +559,17 @@ Rationale:
 A show card contains ordered slots:
 
 - Slot 1: Match
-- Slot 2: Match
+- Slot 2: Promo
 - Slot 3: Match
+- Slot 4: Promo
+- Slot 5: Match
 
 Each slot must be fully specified before the show can run:
 
 - Wrestler A
 - Wrestler B
 - Match Type
+- Promo Wrestler (for promo slots)
 
 A show cannot be simulated unless **all slots are valid**.
 
@@ -507,11 +579,11 @@ A show cannot be simulated unless **all slots are valid**.
 
 **Per-show constraints**
 
-- A wrestler may appear in **only one match per show**
+- A wrestler may appear in **only one slot per show** (match or promo)
 
 **Validation rules**
 
-- Once a wrestler is selected in a match, they are unavailable for other slots
+- Once a wrestler is selected in any slot, they are unavailable for other slots
 - Attempting to select an unavailable wrestler must be blocked in UI
 
 Rationale:
@@ -527,7 +599,8 @@ For MVP, availability is binary and derived directly from stamina.
 
 **Rules**
 
-- Wrestlers with stamina ≤ `STAMINA_MIN_BOOKABLE` cannot be booked
+- Wrestlers with stamina ≤ `STAMINA_MIN_BOOKABLE` cannot be booked in matches
+- Low-stamina wrestlers are allowed in promo slots
 - Default recommendation: `STAMINA_MIN_BOOKABLE = 10`
 
 Notes:
@@ -545,7 +618,7 @@ A show progresses through the following states:
 1. **Planning**
 
    - Player books the card
-   - Matches can be edited
+   - Slots can be edited
 
 2. **Locked**
 
@@ -574,7 +647,7 @@ These states must be explicit in code.
 
 ### 6.7 Ordering Guarantees
 
-- Matches are simulated in card order
+- Slots are simulated in card order
 - Simulation order does **not** affect outcomes or ratings in MVP
 - All stat deltas are applied together at show end
 
@@ -584,9 +657,10 @@ These states must be explicit in code.
 
 Before a show can be run:
 
-- Card has exactly 3 matches
-- No duplicate wrestlers across matches
-- All wrestlers meet stamina requirements
+- Card has exactly 3 matches and 2 promos
+- Each promo has a wrestler assigned
+- No duplicate wrestlers across slots
+- All match-booked wrestlers meet stamina requirements
 - All match slots have a valid match type
 
 The UI must prevent invalid shows from being run.
@@ -617,7 +691,7 @@ Recovery is **participation-based**.
 
 **Rules**
 
-- Wrestlers who **worked a match on the previous show recover no stamina**
+- Wrestlers who **appeared in any match or promo on the previous show recover no stamina**
 - Wrestlers who **did not appear on the show recover stamina**
 
 This makes rest a meaningful booking decision.
@@ -636,7 +710,7 @@ This makes rest a meaningful booking decision.
 
 **Application**
 
-- Recovery applies only to wrestlers who did not wrestle on the show
+- Recovery applies only to wrestlers who did not appear in any match or promo on the show
 - Stamina is clamped to `0–100` after recovery
 
 ---
@@ -735,7 +809,8 @@ Alignment is shown by prefixing the wrestler name with an emoji (Face 😃, Heel
 
 - Validation is **binary** at the moment of committing an action
 - The system blocks only impossible states
-- Low stamina is treated as **unbookable** and is blocked
+- Low stamina is treated as **unbookable for matches** and is blocked
+- Low stamina is allowed for promo booking
 - No warnings or advice are shown beyond visual indicators and short inline errors
 - Temporary booking state persists until explicitly cancelled
 
@@ -772,12 +847,13 @@ The MVP consists of the following screens:
 2. Game Hub
 3. Show Overview / Booking Hub
 4. Match Booking (single-slot editor)
-5. Wrestler Selection
-6. Match Type Selection
-7. Match Confirmation
-8. Simulating Show
-9. Show Results
-10. Roster Overview
+5. Promo Booking (single-slot editor)
+6. Wrestler Selection
+7. Match Type Selection
+8. Match Confirmation
+9. Simulating Show
+10. Show Results
+11. Roster Overview
 
 ---
 
@@ -846,27 +922,27 @@ The Booking Hub is a **slot-level overview screen**. It shows the current show c
 **Components**
 
 - Show header (show number)
-- List of 3 match slots
+- List of 5 slots in fixed order (Match 1, Promo 1, Match 2, Promo 2, Match 3)
 - Footer actions:
   - Run Show
   - Back (return to Game Hub)
 
 **Slot states**
 
-- Empty: slot has no match assigned
-- Booked: slot contains a fully valid match (A, B, Type)
+- Empty: slot has no assignment
+- Booked: slot contains a fully valid match (A, B, Type) or promo (Wrestler)
 
 Slots are binary; partial matches do not exist on the show.
 
 **Focus model**
 
-- `↑ / ↓` moves between match slots
-- `Enter` opens Match Booking for the focused slot
+- `↑ / ↓` moves between slots
+- `Enter` opens the booking screen for the focused slot
 
 **Validation rules**
 
 - Run Show is enabled only when the show card has no validation errors
-- Booking Hub never accepts invalid or partial matches
+- Booking Hub never accepts invalid or partial slots
 
 ---
 
@@ -906,11 +982,34 @@ No invalid match can ever be written to the show.
 
 ---
 
-### 8.10 Wrestler Selection Screen
+### 8.10 Promo Booking Screen
+
+This screen edits a single promo slot and uses the shared wrestler selection screen.
+
+**Purpose**
+
+- Define a complete promo for a single slot
+
+**Editable fields**
+
+- Wrestler
+
+**Behavior**
+
+- Wrestler field opens the wrestler selection screen on Enter
+- Confirm is enabled only when the wrestler is set
+- Esc or Cancel discards all changes and returns to Booking Hub
+- Clear Slot removes the promo and returns to Booking Hub
+- Clear Slot is disabled if the slot is empty
+- Low-stamina wrestlers are selectable for promos
+
+---
+
+### 8.11 Wrestler Selection Screen
 
 **Components**
 
-- Wrestler table with Name/Sta/Pop columns
+- Wrestler table with Name/Sta/Mic/Pop columns
 - Inline message row for blocking errors
 - Footer actions:
   - Select
@@ -919,7 +1018,7 @@ No invalid match can ever be written to the show.
 **Behavior**
 
 - Name cells prefix alignment emoji (Face 😃, Heel 😈) and truncate names longer than 18 characters to 15 + `...`
-- Stamina and popularity cells show numbers only
+- Stamina, mic skill, and popularity cells show numbers only
 - Popularity cells append 🥱 for low stamina and 📅 for booked wrestlers
 - Wrestlers already booked in other slots show a 📅 marker
 - Wrestlers selected in the current draft also show a 📅 marker
@@ -929,11 +1028,11 @@ No invalid match can ever be written to the show.
 
 - Cannot select the other side of the current match
 - Cannot select already-booked wrestlers
-- Cannot select wrestlers below `STAMINA_MIN_BOOKABLE`
+- Wrestlers below `STAMINA_MIN_BOOKABLE` are blocked for matches but allowed for promos
 
 ---
 
-### 8.11 Match Type Selection Screen
+### 8.12 Match Type Selection Screen
 
 **Components**
 
@@ -951,7 +1050,7 @@ No invalid match can ever be written to the show.
 
 ---
 
-### 8.12 Match Booking Confirmation (Modal)
+### 8.13 Match Booking Confirmation (Modal)
 
 Match booking uses a **modal confirmation dialog**, not a separate screen.
 
@@ -972,14 +1071,14 @@ Match booking uses a **modal confirmation dialog**, not a separate screen.
 
 **Actions**
 
-- `Book Match` – commits the match to the slot and returns to Booking Hub
-- `Cancel` / `Esc` – closes the modal and returns to Match Booking
+- `Confirm` – commits the booking and returns to Booking Hub
+- `Cancel` / `Esc` – closes the modal and returns to Booking
 
 No match details, stats, or repetition are shown in the modal; full context is already visible underneath.
 
 ---
 
-### 8.13 Simulating Show Screen
+### 8.14 Simulating Show Screen
 
 **Components**
 
@@ -994,13 +1093,13 @@ No match details, stats, or repetition are shown in the modal; full context is a
 
 ---
 
-### 8.14 Show Results Screen
+### 8.15 Show Results Screen
 
 **Components**
 
-- Match results list:
-  - Winner vs Loser
-  - Match rating (stars only, half-star precision)
+- Slot results list:
+  - Matches: Winner vs Loser + match rating (stars only, half-star precision)
+  - Promos: Wrestler name + promo rating (stars only)
 - Overall show rating (stars only)
 - Footer actions:
   - Continue (return to Game Hub)
@@ -1012,11 +1111,11 @@ No match details, stats, or repetition are shown in the modal; full context is a
 
 ---
 
-### 8.15 Roster Overview
+### 8.16 Roster Overview
 
 **Components**
 
-- Wrestler table with Name/Sta/Pop columns
+- Wrestler table with Name/Sta/Mic/Pop columns
 - Footer action:
   - Back
 
@@ -1024,13 +1123,13 @@ No match details, stats, or repetition are shown in the modal; full context is a
 
 - Read-only
 - Name cells prefix alignment emoji (Face 😃, Heel 😈) and truncate names longer than 18 characters to 15 + `...`
-- Stamina and popularity cells show numbers only
+- Stamina, mic skill, and popularity cells show numbers only
 - Popularity cells append 🥱 for low stamina
 - List rows are rebuilt on resume to reflect updated show results (no reuse of mounted list item IDs)
 
 ---
 
-### 8.16 Widget Mapping (Textual)
+### 8.17 Widget Mapping (Textual)
 
 | Screen               | Primary Widgets             |
 | -------------------- | --------------------------- |
@@ -1038,6 +1137,7 @@ No match details, stats, or repetition are shown in the modal; full context is a
 | Game Hub             | ListView, Static, Footer    |
 | Booking Hub          | ListView, Static, Button    |
 | Match Booking        | ListView, Static, Button    |
+| Promo Booking        | ListView, Static, Button    |
 | Wrestler Selection   | DataTable, Static, Button   |
 | Match Type Selection | ListView, Static, Button    |
 | Confirmation         | ModalScreen, Static, Button |
@@ -1047,7 +1147,7 @@ No match details, stats, or repetition are shown in the modal; full context is a
 
 ---
 
-### 8.17 Microcopy & Tone Rules
+### 8.18 Microcopy & Tone Rules
 
 - Neutral, observational language
 - No judgment or advice
@@ -1057,7 +1157,7 @@ No match details, stats, or repetition are shown in the modal; full context is a
 
 ---
 
-### 8.18 UX Guarantees
+### 8.19 UX Guarantees
 
 - Keyboard-only interaction
 - Deterministic behavior
@@ -1066,13 +1166,13 @@ No match details, stats, or repetition are shown in the modal; full context is a
 
 ---
 
-### 8.19 ASCII Screen Mockups (Authoritative)
+### 8.20 ASCII Screen Mockups (Authoritative)
 
 The following ASCII mockups define the **intended visual layout** for all MVP screens after the slot-based booking redesign.
 
 ---
 
-#### 8.19.1 Main Menu
+#### 8.20.1 Main Menu
 
 ```text
 ┌──────────────────────────────────────┐
@@ -1090,7 +1190,7 @@ The following ASCII mockups define the **intended visual layout** for all MVP sc
 
 ---
 
-#### 8.19.2 Game Hub
+#### 8.20.2 Game Hub
 
 ```text
 ┌──────────────────────────────────────┐
@@ -1110,7 +1210,7 @@ The following ASCII mockups define the **intended visual layout** for all MVP sc
 
 ---
 
-#### 8.19.3 Booking Hub (Slot-Level)
+#### 8.20.3 Booking Hub (Slot-Level)
 
 ```text
 ┌──────────────────────────────────────┐
@@ -1121,9 +1221,15 @@ The following ASCII mockups define the **intended visual layout** for all MVP sc
 │   Kenny Omega vs Eddie Kingston      │
 │   Type: Singles                      │
 │                                      │
+│   Promo 1                            │
+│   Jon Moxley                         │
+│                                      │
 │   Match 2                            │
 │   Jon Moxley vs Claudio Castagnoli   │
 │   Type: Hardcore                     │
+│                                      │
+│   Promo 2                            │
+│   [ Empty ]                          │
 │                                      │
 │   Match 3                            │
 │   [ Empty ]                          │
@@ -1136,7 +1242,7 @@ The following ASCII mockups define the **intended visual layout** for all MVP sc
 
 ---
 
-#### 8.19.4 Match Booking (Empty Slot)
+#### 8.20.4 Match Booking (Empty Slot)
 
 ```text
 ┌──────────────────────────────────────┐
@@ -1160,7 +1266,7 @@ The following ASCII mockups define the **intended visual layout** for all MVP sc
 
 ---
 
-#### 8.19.5 Match Booking (Filled Slot)
+#### 8.20.5 Match Booking (Filled Slot)
 
 ```text
 ┌──────────────────────────────────────┐
@@ -1185,15 +1291,34 @@ The following ASCII mockups define the **intended visual layout** for all MVP sc
 
 ---
 
-#### 8.19.6 Wrestler Selection
+#### 8.20.6 Promo Booking (Filled Slot)
+
+```text
+┌──────────────────────────────────────┐
+│ Book Promo 1                         │
+│ Jon Moxley                           │
+├──────────────────────────────────────┤
+│ ▸ Wrestler                           │
+│   Jon Moxley                         │
+│                                      │
+├──────────────────────────────────────┤
+│ [ Confirm ]                          │
+│ [ Clear Slot ]                       │
+│ [ Cancel ]                           │
+└──────────────────────────────────────┘
+```
+
+---
+
+#### 8.20.7 Wrestler Selection
 
 Select Wrestler (Match 3 · A)
 
-| Name                 | Sta | Pop     |
-| -------------------- | --- | ------- |
-| 😃 Kenny Omega       |  28 |  92 🥱 📅 |
-| 😈 Jon Moxley        |  12 |  88 🥱   |
-| 😃 Eddie Kingston    |  64 |  74     |
+| Name                 | Sta | Mic | Pop     |
+| -------------------- | --- | --- | ------- |
+| 😃 Kenny Omega       |  28 |  88 |  92 🥱 📅 |
+| 😈 Jon Moxley        |  12 |  86 |  88 🥱   |
+| 😃 Eddie Kingston    |  64 |  70 |  74     |
 
 ⛔ Already booked in Match 2
 
@@ -1201,7 +1326,7 @@ Select Wrestler (Match 3 · A)
 
 ---
 
-#### 8.19.7 Match Type Selection
+#### 8.20.8 Match Type Selection
 
 ```text
 ┌──────────────────────────────────────┐
@@ -1222,55 +1347,67 @@ Select Wrestler (Match 3 · A)
 
 ---
 
-#### 8.19.8 Match Booking Confirmation (Modal)
+#### 8.20.9 Match Booking Confirmation (Modal)
 
 ```text
               ┌──────────────────────┐
               │ Confirm booking?     │
               ├──────────────────────┤
-              │ [ Book Match ]       │
+              │ [ Confirm ]          │
               │ [ Cancel ]           │
               └──────────────────────┘
 ```
 
 ---
 
-#### 8.19.9 Show Results
+#### 8.20.10 Show Results
 
 ```text
-┌──────────────────────────────────────┐
-│ Show Results                         │
-├──────────────────────────────────────┤
-│ Match 1                              │
-│  Kenny Omega def. Eddie Kingston     │
-│  ★★★★☆                               │
-│                                      │
-│ Match 2                              │
-│  Claudio Castagnoli def. Jon Moxley  │
-│  ★★★½☆                               │
-│                                      │
-│ Match 3                              │
-│  Darby Allin def. Sammy Guevara      │
-│  ★★☆☆☆                               │
-├──────────────────────────────────────┤
-│ Show Rating: ★★★½☆                   │
-├──────────────────────────────────────┤
-│ [ Continue ]                         │
-└──────────────────────────────────────┘
+┌────────────────────────── SHOW RESULTS ──────────────────────────┐
+│ WrestleGM                                                        │
+│ Show #12 · RAW                                                   │
+├──────────────────────────────────────────────────────────────────┤
+│ Match 1                                                         │
+│ Kenny Omega def. Eddie Kingston                                 │
+│ Type: Singles                                                   │
+│                                                              ★★★ │
+│                                                                  │
+│ Promo 1                                                         │
+│ Jon Moxley                                                      │
+│                                                              ★★  │
+│                                                                  │
+│ Match 2                                                         │
+│ Jon Moxley def. Claudio Castagnoli                               │
+│ Type: Hardcore                                                  │
+│                                                              ★★★★│
+│                                                                  │
+│ Promo 2                                                         │
+│ Maria Blaze                                                     │
+│                                                              ★★  │
+│                                                                  │
+│ Match 3                                                         │
+│ Alpha def. Beta                                                 │
+│ Type: Tag                                                       │
+│                                                              ★★★ │
+├──────────────────────────────────────────────────────────────────┤
+│ Show Rating: ★★★☆                                               │
+│                                                                  │
+│ [ Continue ]                                                    │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-#### 8.19.10 Roster Overview
+#### 8.20.11 Roster Overview
 
 Roster Overview
 
-| Name                   | Sta | Pop  |
-| ---------------------- | --- | ---- |
-| 😃 Kenny Omega         |  28 |  89  |
-| 😈 Jon Moxley          |  12 |  82 🥱 |
-| 😃 Eddie Kingston      |  64 |  74  |
-| 😃 Claudio Castagnoli  |  71 |  77  |
+| Name                   | Sta | Mic | Pop  |
+| ---------------------- | --- | --- | ---- |
+| 😃 Kenny Omega         |  28 |  88 |  89  |
+| 😈 Jon Moxley          |  12 |  86 |  82 🥱 |
+| 😃 Eddie Kingston      |  64 |  70 |  74  |
+| 😃 Claudio Castagnoli  |  71 |  75 |  77  |
 
 [ Back ]
 
