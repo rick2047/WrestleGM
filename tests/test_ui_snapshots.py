@@ -134,6 +134,10 @@ def test_snapshot_s9_match_booking_confirmation_modal(snap_compare) -> None:
             raise AssertionError("Expected MatchBookingScreen")
         screen.confirm_button.press()
         await wait_for_screen(pilot, ConfirmBookingModal)
+        modal = pilot.app.screen
+        if isinstance(modal, ConfirmBookingModal):
+            modal.confirm_button.focus()
+            await pilot.pause(0.05)
 
     assert snap_compare(app, terminal_size=VIEWPORT_SIZE, run_before=run_before)
 
