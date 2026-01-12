@@ -30,7 +30,7 @@ Match size and match rules are separate concerns, but the current flow treats ma
 │   Jon Moxley                         │
 │                                      │
 │   Match 2                            │
-│   😈 Jon Moxley vs 😃 Claudio         │
+│   😈 Jon Moxley vs 😃 Claudio vs 😃 Kenny │
 │   Triple Threat · Submission         │
 │                                      │
 │   Promo 2                            │
@@ -92,12 +92,12 @@ Match size and match rules are separate concerns, but the current flow treats ma
 │ Show #12 · RAW                                                   │
 ├──────────────────────────────────────────────────────────────────┤
 │ Match 1                                                         │
-│ Kenny Omega def. Eddie Kingston                                 │
+│ 😃 Kenny Omega def. 😈 Eddie Kingston                            │
 │ Singles · Hardcore                                              │
 │                                                              ★★★ │
 │                                                                  │
 │ Match 2                                                         │
-│ Jon Moxley def. Claudio, Kenny                                  │
+│ 😈 Jon Moxley def. 😃 Claudio, 😃 Kenny                           │
 │ Triple Threat · Submission                                      │
 │                                                              ★★★★│
 │                                                                  │

@@ -26,9 +26,9 @@ The system SHALL edit matches in a dedicated booking screen, require confirmatio
 - **WHEN** the match booking screen renders for a category
 - **THEN** the match type dropdown lists only match types allowed for that category
 
-#### Scenario: Changing match type mid-booking
-- **WHEN** the user changes match type from the match booking screen
-- **THEN** the match keeps the earliest booked wrestlers up to the category size
+#### Scenario: Changing match category mid-booking
+- **WHEN** the user re-opens category selection for a booked match and chooses a new category
+- **THEN** the match keeps the earliest booked wrestlers up to the new category size
 - **AND THEN** any excess wrestlers are silently cleared
 
 #### Scenario: Booked wrestler indicator
