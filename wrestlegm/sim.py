@@ -146,7 +146,14 @@ class SimulationEngine:
 
         faces = sum(1 for w in wrestlers if w.alignment == "Face")
         heels = len(wrestlers) - faces
-        if heels == len(wrestlers):
+        if len(wrestlers) == 2:
+            if faces == 1 and heels == 1:
+                alignment_mod = constants.ALIGN_BONUS
+            elif heels == 2:
+                alignment_mod = -2 * constants.ALIGN_BONUS
+            else:
+                alignment_mod = 0.0
+        elif heels == len(wrestlers):
             alignment_mod = -2 * constants.ALIGN_BONUS
         elif faces == len(wrestlers):
             alignment_mod = 0.0

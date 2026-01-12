@@ -198,7 +198,7 @@ class TestMatchSimulation:
         match_type = MatchTypeDefinition("test", "Test", "", modifiers)
         engine = SimulationEngine(seed=3)
         _, debug = engine.simulate_rating([face, heel], match_type)
-        assert debug.alignment_mod == 0.0
+        assert debug.alignment_mod == constants.ALIGN_BONUS
 
     def test_alignment_modifiers_multi_man(self) -> None:
         face = WrestlerState("a", "Alpha", "Face", popularity=50, stamina=50, mic_skill=50)
