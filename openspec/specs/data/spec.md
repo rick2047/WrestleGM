@@ -4,7 +4,7 @@
 TBD - created by archiving change add-wrestlegm-mvp. Update Purpose after archive.
 ## Requirements
 ### Requirement: Data-driven wrestler definitions
-The system SHALL load wrestler definitions from `data/wrestlers.json` with fields `id`, `name`, `alignment`, `popularity`, and `stamina`.
+The system SHALL load wrestler definitions from `data/wrestlers.json` with fields `id`, `name`, `alignment`, `popularity`, `stamina`, and `mic_skill`.
 
 #### Scenario: Load roster on startup
 - **WHEN** the app starts
