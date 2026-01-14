@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import random
-from typing import Dict, Iterable, List
+from typing import Callable, Dict, Iterable, List
 
 from wrestlegm import constants
 from wrestlegm.models import (
@@ -58,6 +58,15 @@ class PromoRatingDebug:
     rating_stars: float
 
 
+@dataclass(frozen=True)
+class RivalryRatingContext:
+    """Context for rivalry-based rating adjustments."""
+
+    active_pairs: int = 0
+    blowoff_pairs: int = 0
+    has_cooldown: bool = False
+
+
 def clamp(value: float, minimum: float, maximum: float) -> float:
     """Clamp a value to a range."""
 
@@ -68,6 +77,16 @@ def lerp(start: float, end: float, amount: float) -> float:
     """Linearly interpolate between two values."""
 
     return start + (end - start) * amount
+
+
+def apply_rivalry_adjustments(rating: float, context: RivalryRatingContext) -> float:
+    """Apply rivalry bonuses and cooldown penalties to a star rating."""
+
+    rating += context.active_pairs * constants.RIVALRY_BONUS
+    rating += context.blowoff_pairs * constants.BLOWOFF_BONUS
+    if context.has_cooldown:
+        rating -= constants.COOLDOWN_PENALTY
+    return clamp(rating, 0.0, 5.0)
 
 
 class SimulationEngine:
@@ -162,7 +181,7 @@ class SimulationEngine:
         elif heels == faces:
             alignment_mod = 0.0
         else:
-            alignment_mod = -2 * constants.ALIGN_BONUS
+            alignment_mod = -constants.ALIGN_BONUS
 
         base_100 += alignment_mod
         base_100 += match_type.modifiers.rating_bonus
@@ -241,6 +260,7 @@ class SimulationEngine:
         match: Match,
         roster: Dict[str, WrestlerState],
         match_types: Dict[str, MatchTypeDefinition],
+        rivalry_context: RivalryRatingContext | None = None,
     ) -> MatchResult:
         """Run the deterministic simulation pipeline for a match."""
 
@@ -252,6 +272,8 @@ class SimulationEngine:
             match_type.modifiers,
         )
         rating, _ = self.simulate_rating(wrestlers, match_type)
+        if rivalry_context is not None:
+            rating = apply_rivalry_adjustments(rating, rivalry_context)
         deltas = self.simulate_stat_deltas(
             winner_id,
             non_winner_ids,
@@ -290,13 +312,17 @@ class SimulationEngine:
         slots: Iterable[ShowSlot],
         roster: Dict[str, WrestlerState],
         match_types: Dict[str, MatchTypeDefinition],
+        rivalry_context_provider: Callable[[Match], RivalryRatingContext] | None = None,
     ) -> List[ShowResult]:
         """Simulate all slots in a show in card order."""
 
         results: List[ShowResult] = []
         for slot in slots:
             if isinstance(slot, Match):
-                results.append(self.simulate_match(slot, roster, match_types))
+                context = None
+                if rivalry_context_provider is not None:
+                    context = rivalry_context_provider(slot)
+                results.append(self.simulate_match(slot, roster, match_types, context))
             else:
                 results.append(self.simulate_promo(slot, roster))
         return results

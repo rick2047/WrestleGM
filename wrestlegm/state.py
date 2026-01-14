@@ -8,8 +8,10 @@ from wrestlegm import constants
 from wrestlegm.models import (
     Match,
     MatchTypeDefinition,
+    CooldownState,
     Promo,
     PromoResult,
+    RivalryState,
     Show,
     ShowResult,
     ShowSlot,
@@ -17,7 +19,30 @@ from wrestlegm.models import (
     WrestlerDefinition,
     WrestlerState,
 )
-from wrestlegm.sim import SimulationEngine
+from wrestlegm.sim import RivalryRatingContext, SimulationEngine
+
+PairKey = tuple[str, str]
+
+
+def normalize_pair(wrestler_a_id: str, wrestler_b_id: str) -> PairKey:
+    """Return a normalized pair key for two wrestler IDs."""
+
+    return (
+        (wrestler_a_id, wrestler_b_id)
+        if wrestler_a_id <= wrestler_b_id
+        else (wrestler_b_id, wrestler_a_id)
+    )
+
+
+def ordered_pairs(wrestler_ids: Iterable[str]) -> list[tuple[str, str]]:
+    """Return ordered unique pairs based on the wrestler list order."""
+
+    ids = list(wrestler_ids)
+    pairs: list[tuple[str, str]] = []
+    for index, wrestler_id in enumerate(ids):
+        for other_id in ids[index + 1 :]:
+            pairs.append((wrestler_id, other_id))
+    return pairs
 
 
 class GameState:
@@ -45,6 +70,8 @@ class GameState:
         self.match_types: Dict[str, MatchTypeDefinition] = {
             match_type.id: match_type for match_type in match_types
         }
+        self.rivalry_states: Dict[PairKey, RivalryState] = {}
+        self.cooldown_states: Dict[PairKey, CooldownState] = {}
         self.show_index = 1
         self.show_card: List[Optional[ShowSlot]] = [None] * constants.SHOW_SLOT_COUNT
         self.last_show: Show | None = None
@@ -178,10 +205,16 @@ class GameState:
 
         slots: List[ShowSlot] = [slot for slot in self.show_card if slot is not None]
         show = Show(show_index=self.show_index, scheduled_slots=slots, results=[])
-        results = self.engine.simulate_show(slots, self.roster, self.match_types)
+        results = self.engine.simulate_show(
+            slots,
+            self.roster,
+            self.match_types,
+            rivalry_context_provider=self._rivalry_context_for_match,
+        )
         show.results = results
         show.show_rating = self.engine.aggregate_show_rating(results)
         self.applier.apply(show, self.roster)
+        self._advance_rivalries(show)
         self.last_show = show
         self.show_index += 1
         self.show_card = [None] * constants.SHOW_SLOT_COUNT
@@ -191,6 +224,136 @@ class GameState:
         """Apply all stat deltas and recovery for a completed show."""
 
         self.applier.apply(show, self.roster)
+        self._advance_rivalries(show)
+
+    def rivalry_value_for_pair(self, wrestler_a_id: str, wrestler_b_id: str) -> int:
+        """Return the current rivalry value for a pair, or 0 if none."""
+
+        key = normalize_pair(wrestler_a_id, wrestler_b_id)
+        state = self.rivalry_states.get(key)
+        return state.rivalry_value if state else 0
+
+    def cooldown_remaining_for_pair(self, wrestler_a_id: str, wrestler_b_id: str) -> int:
+        """Return remaining cooldown shows for a pair, or 0 if none."""
+
+        key = normalize_pair(wrestler_a_id, wrestler_b_id)
+        state = self.cooldown_states.get(key)
+        return state.remaining_shows if state else 0
+
+    def rivalry_emojis_for_match(self, wrestler_ids: Iterable[str]) -> str:
+        """Return rivalry/cooldown emojis for the ordered wrestler pairs."""
+
+        ids = [wrestler_id for wrestler_id in wrestler_ids if wrestler_id]
+        if len(ids) < 2:
+            return ""
+        emojis: list[str] = []
+        for wrestler_a_id, wrestler_b_id in ordered_pairs(ids):
+            key = normalize_pair(wrestler_a_id, wrestler_b_id)
+            cooldown = self.cooldown_states.get(key)
+            if cooldown:
+                emoji = self._cooldown_emoji(cooldown.remaining_shows)
+                if emoji:
+                    emojis.append(emoji)
+                continue
+            rivalry = self.rivalry_states.get(key)
+            if rivalry and rivalry.rivalry_value > 0:
+                emoji = self._rivalry_emoji(rivalry.rivalry_value)
+                if emoji:
+                    emojis.append(emoji)
+        return "".join(emojis)
+
+    def _rivalry_context_for_match(self, match: Match) -> RivalryRatingContext:
+        """Return rivalry rating context for a match based on current state."""
+
+        active_pairs = 0
+        blowoff_pairs = 0
+        has_cooldown = False
+        for wrestler_a_id, wrestler_b_id in ordered_pairs(match.wrestler_ids):
+            key = normalize_pair(wrestler_a_id, wrestler_b_id)
+            if key in self.cooldown_states:
+                has_cooldown = True
+                continue
+            rivalry = self.rivalry_states.get(key)
+            if rivalry is None or rivalry.rivalry_value <= 0:
+                continue
+            if rivalry.rivalry_value >= constants.RIVALRY_LEVEL_CAP:
+                blowoff_pairs += 1
+            else:
+                active_pairs += 1
+        return RivalryRatingContext(
+            active_pairs=active_pairs,
+            blowoff_pairs=blowoff_pairs,
+            has_cooldown=has_cooldown,
+        )
+
+    def _advance_rivalries(self, show: Show) -> None:
+        """Advance rivalry and cooldown state at show end."""
+
+        cooldown_keys = set(self.cooldown_states.keys())
+        blowoff_keys: set[PairKey] = set()
+
+        for slot in show.scheduled_slots:
+            if not isinstance(slot, Match):
+                continue
+            for wrestler_a_id, wrestler_b_id in ordered_pairs(slot.wrestler_ids):
+                key = normalize_pair(wrestler_a_id, wrestler_b_id)
+                if key in cooldown_keys:
+                    self.rivalry_states.pop(key, None)
+                    continue
+                rivalry = self.rivalry_states.get(key)
+                current_value = rivalry.rivalry_value if rivalry else 0
+                if current_value >= constants.RIVALRY_LEVEL_CAP:
+                    blowoff_keys.add(key)
+                    continue
+                new_value = min(constants.RIVALRY_LEVEL_CAP, current_value + 1)
+                self.rivalry_states[key] = RivalryState(
+                    wrestler_a_id=key[0],
+                    wrestler_b_id=key[1],
+                    rivalry_value=new_value,
+                )
+
+        if self.cooldown_states:
+            updated: Dict[PairKey, CooldownState] = {}
+            for key, cooldown in self.cooldown_states.items():
+                remaining = cooldown.remaining_shows - 1
+                if remaining > 0:
+                    updated[key] = CooldownState(
+                        wrestler_a_id=key[0],
+                        wrestler_b_id=key[1],
+                        remaining_shows=remaining,
+                    )
+            self.cooldown_states = updated
+
+        for key in blowoff_keys:
+            self.rivalry_states.pop(key, None)
+            self.cooldown_states[key] = CooldownState(
+                wrestler_a_id=key[0],
+                wrestler_b_id=key[1],
+                remaining_shows=constants.COOLDOWN_SHOWS,
+            )
+
+    def _rivalry_emoji(self, rivalry_value: int) -> str:
+        """Return the emoji for a rivalry value."""
+
+        level = min(constants.RIVALRY_LEVEL_CAP, rivalry_value)
+        emojis = {
+            1: "⚡",
+            2: "🔥",
+            3: "⚔️",
+            4: "💥",
+        }
+        return emojis.get(level, "")
+
+    def _cooldown_emoji(self, remaining_shows: int) -> str:
+        """Return the emoji for cooldown remaining shows."""
+
+        if remaining_shows >= 5:
+            return "🧊"
+        if remaining_shows >= 3:
+            return "❄️"
+        if remaining_shows >= 1:
+            return "💧"
+        return ""
 
 
 class ShowApplier:
