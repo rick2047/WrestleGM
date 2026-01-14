@@ -7,6 +7,7 @@ import logging
 from typing import Callable, Optional
 
 from textual.app import App, ComposeResult
+from textual import events
 from textual.containers import Horizontal, Vertical
 from textual.screen import ModalScreen, Screen
 from textual.css.query import NoMatches
@@ -113,6 +114,18 @@ LOGGER = logging.getLogger(__name__)
 
 class SafeSelect(Select):
     """Select widget that defers option setup until overlay is mounted."""
+
+    def on_key(self, event: events.Key) -> None:
+        if not self.expanded and event.key in ("up", "down"):
+            event.stop()
+            event.prevent_default()
+            screen = self.app.screen
+            if event.key == "up" and hasattr(screen, "action_focus_prev"):
+                screen.action_focus_prev()
+            elif event.key == "down" and hasattr(screen, "action_focus_next"):
+                screen.action_focus_next()
+            return
+        super().on_key(event)
 
     def _setup_options_renderables(self) -> None:
         try:
