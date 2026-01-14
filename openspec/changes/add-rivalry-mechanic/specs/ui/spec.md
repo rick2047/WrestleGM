@@ -1,15 +1,4 @@
 ## ADDED Requirements
-### UI Mockups
-#### Booking Hub (match name line)
-```text
-Match 2  ⚔️🔥
-```
-
-#### Match Booking (match name line)
-```text
-Book Match 2  💥🧊
-```
-
 ### Requirement: Rivalry and cooldown emoji display
 The system SHALL display rivalry and cooldown emojis on the match name line in the Booking Hub and Match Booking screens using the specified emoji mappings, and SHALL update the emoji list live as wrestlers are added or removed.
 

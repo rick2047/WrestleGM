@@ -8,6 +8,17 @@ WrestleGM needs narrative continuity across shows so repeated matchups build sta
 - Apply rivalry and cooldown effects to match ratings (bonuses and penalties).
 - Surface rivalry/cooldown state as emojis on match name lines in booking UI.
 
+## UI Mockups
+### Booking Hub (match name line)
+```text
+Match 2  ⚔️🔥
+```
+
+### Match Booking (match name line)
+```text
+Book Match 2  💥🧊
+```
+
 ## Impact
 - Affected specs: rivalry (new), simulation, ui
 - Affected code: wrestlegm/models.py, wrestlegm/state.py, wrestlegm/sim.py, wrestlegm/ui.py, tests/
