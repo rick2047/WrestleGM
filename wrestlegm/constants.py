@@ -17,10 +17,3 @@ SHOW_MATCH_COUNT = 3
 PROMO_VARIANCE = 8
 SHOW_SLOT_TYPES = ("match", "promo", "match", "promo", "match")
 SHOW_SLOT_COUNT = len(SHOW_SLOT_TYPES)
-
-MATCH_CATEGORIES = {
-    "singles": {"id": "singles", "name": "Singles", "size": 2},
-    "triple-threat": {"id": "triple-threat", "name": "Triple Threat", "size": 3},
-    "fatal-4-way": {"id": "fatal-4-way", "name": "Fatal 4-Way", "size": 4},
-}
-MATCH_CATEGORY_ORDER = ("singles", "triple-threat", "fatal-4-way")

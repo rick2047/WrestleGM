@@ -9,7 +9,7 @@ from tests.ui_test_utils import (
     open_match_booking,
     open_roster,
     seed_show_card,
-    select_match_category,
+    select_match_type,
     select_wrestler,
     start_new_game,
     wait_for_screen,
@@ -17,7 +17,7 @@ from tests.ui_test_utils import (
 from wrestlegm.ui import (
     BookingHubScreen,
     ConfirmBookingModal,
-    MatchCategorySelectionScreen,
+    MatchTypeSelectionScreen,
     ResultsScreen,
     WrestlerSelectionScreen,
 )
@@ -69,7 +69,7 @@ def test_snapshot_s5_match_booking_empty(snap_compare) -> None:
         await start_new_game(pilot)
         await open_booking_hub(pilot)
         await open_match_booking(pilot, 0)
-        await select_match_category(pilot, 0)
+        await select_match_type(pilot, 0)
 
     assert snap_compare(app, terminal_size=VIEWPORT_SIZE, run_before=run_before)
 
@@ -84,7 +84,7 @@ def test_snapshot_s6_match_booking_filled(snap_compare) -> None:
         if isinstance(pilot.app.screen, BookingHubScreen):
             pilot.app.screen.refresh_view()
         await open_match_booking(pilot, 0)
-        await select_match_category(pilot, 0)
+        await select_match_type(pilot, 0)
 
     assert snap_compare(app, terminal_size=VIEWPORT_SIZE, run_before=run_before)
 
@@ -96,21 +96,21 @@ def test_snapshot_s7_wrestler_selection_default(snap_compare) -> None:
         await start_new_game(pilot)
         await open_booking_hub(pilot)
         await open_match_booking(pilot, 0)
-        await select_match_category(pilot, 0)
+        await select_match_type(pilot, 0)
         await pilot.press("enter")
         await wait_for_screen(pilot, WrestlerSelectionScreen)
 
     assert snap_compare(app, terminal_size=VIEWPORT_SIZE, run_before=run_before)
 
 
-def test_snapshot_s8_match_category_selection_default(snap_compare) -> None:
+def test_snapshot_s8_match_type_selection_default(snap_compare) -> None:
     app = TestWrestleGMApp()
 
     async def run_before(pilot):
         await start_new_game(pilot)
         await open_booking_hub(pilot)
         await open_match_booking(pilot, 0)
-        await wait_for_screen(pilot, MatchCategorySelectionScreen)
+        await wait_for_screen(pilot, MatchTypeSelectionScreen)
 
     assert snap_compare(app, terminal_size=VIEWPORT_SIZE, run_before=run_before)
 
@@ -122,7 +122,7 @@ def test_snapshot_s9_match_booking_confirmation_modal(snap_compare) -> None:
         await start_new_game(pilot)
         await open_booking_hub(pilot)
         await open_match_booking(pilot, 0)
-        await select_match_category(pilot, 0)
+        await select_match_type(pilot, 0)
         await pilot.press("enter")
         await select_wrestler(pilot, 0)
 

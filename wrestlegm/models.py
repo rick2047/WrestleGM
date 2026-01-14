@@ -53,16 +53,8 @@ class MatchTypeDefinition:
     name: str
     description: str
     modifiers: MatchTypeModifiers
-    allowed_categories: List[str] | None = None
-
-
-@dataclass(frozen=True)
-class MatchCategoryDefinition:
-    """Static match category definition for wrestler count."""
-
-    id: str
-    name: str
-    size: int
+    min_wrestlers: int = 2
+    max_wrestlers: int = 2
 
 
 @dataclass(frozen=True)
@@ -70,7 +62,6 @@ class Match:
     """Booked match within a show."""
 
     wrestler_ids: List[str]
-    match_category_id: str
     match_type_id: str
 
 
@@ -96,7 +87,6 @@ class MatchResult:
     winner_id: str
     non_winner_ids: List[str]
     rating: float
-    match_category_id: str
     match_type_id: str
     applied_modifiers: MatchTypeModifiers
     stat_deltas: Dict[str, StatDelta]
