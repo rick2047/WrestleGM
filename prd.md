@@ -986,6 +986,7 @@ This screen is the **only place where a match can be edited or created**. It own
 - Re-selecting a different category for a booked match keeps the earliest wrestlers up to the new size and clears any extras
 - Wrestler rows open the wrestler selection screen on Enter
 - Match type is changed via an inline dropdown
+- Enter opens the stipulation dropdown when it is focused
 - Confirm is enabled only when all required wrestler slots and stipulation are valid
 - Esc or Cancel discards all changes and returns to Match Category Selection
 - Clear Slot removes the match and returns to Booking Hub
