@@ -40,30 +40,36 @@ The system SHALL use keyboard-only navigation and display a persistent footer th
 - **THEN** no navigation occurs
 
 ### Requirement: Booking hub behavior
-The system SHALL show five slots in fixed order (Match 1, Promo 1, Match 2, Promo 2, Match 3), allow slot selection, and enable Run Show only when all slots are booked.
+The system SHALL show five slots in fixed order (Match 1, Promo 1, Match 2, Promo 2, Match 3), allow slot selection, show match participant names with alignment emoji, show `Category · Stipulation` for match slots, and enable Run Show only when all slots are booked.
 
 #### Scenario: Run Show enablement
 - **WHEN** any slot is empty
 - **THEN** Run Show is disabled
 
+#### Scenario: Show category and type for matches
+- **WHEN** the booking hub renders a booked match
+- **THEN** it shows a `Category · Stipulation` line under the participant list
+
 ### Requirement: Match booking flow
-The system SHALL edit matches in a dedicated booking screen and require confirmation before committing. The booking screen SHALL select a match type before wrestler selection, render one wrestler row per required slot (2–4), allow re-selecting match type from the booking screen, default the match type to the first entry when booking an empty slot, mark already-booked wrestlers with a 📅 indicator in the selection list, show popularity and stamina, display alignment via emoji (Face 😃, Heel 😈), render the selection list as a table with Name/Stamina/Popularity columns, include a header row naming the name/stamina/popularity columns, format rows as `{emoji} {name:<18} {sta:>3} {pop:>3}{fatigue}{booked_marker}`, and use 🥱 consistently for low-stamina indicators.
+The system SHALL edit matches in a dedicated booking screen, require confirmation before committing, and split match category selection (size) from stipulation selection (rules). The booking screen SHALL open after a category is chosen, render one wrestler row per required slot based on category, filter stipulations to those allowed for the selected category, allow changing stipulation via an inline dropdown, default the stipulation to the first available option when booking an empty slot, mark already-booked wrestlers with a 📅 indicator in the selection list, show popularity and stamina, display alignment via emoji (Face 😃, Heel 😈), render the selection list as a table with Name/Stamina/Popularity columns, include a header row naming the name/stamina/popularity columns, format rows as `{emoji} {name:<18} {sta:>3} {pop:>3}{fatigue}{booked_marker}`, and use 🥱 consistently for low-stamina indicators.
 
-#### Scenario: Default match type on booking
-- **WHEN** the user opens match booking for an empty slot
-- **THEN** the first available match type is pre-selected
-- **AND THEN** the match booking screen renders the required number of wrestler rows for that match type
-
-#### Scenario: Match type selection before booking
+#### Scenario: Category selection before booking
 - **WHEN** the user selects a match slot on the booking hub
-- **THEN** a match type selection screen is shown
-- **AND THEN** choosing a match type opens the match booking screen
+- **THEN** a match category selection screen is shown
+- **AND THEN** choosing a category opens the match booking screen with the required number of wrestler rows
 
-#### Scenario: Changing match type mid-booking
-- **WHEN** the user changes match type from the match booking screen
-- **THEN** the match keeps the earliest booked wrestlers up to the new match size
+#### Scenario: Default stipulation on booking
+- **WHEN** the user opens match booking for an empty slot
+- **THEN** the first available stipulation for the selected category is pre-selected
+
+#### Scenario: Stipulation dropdown filtering
+- **WHEN** the match booking screen renders for a category
+- **THEN** the stipulation dropdown lists only stipulations allowed for that category
+
+#### Scenario: Changing match category mid-booking
+- **WHEN** the user re-opens category selection for a booked match and chooses a new category
+- **THEN** the match keeps the earliest booked wrestlers up to the new category size
 - **AND THEN** any excess wrestlers are silently cleared
-- **AND THEN** the booking screen renders the new required number of wrestler rows
 
 #### Scenario: Booked wrestler indicator
 - **WHEN** the user opens the wrestler selection list
@@ -100,11 +106,12 @@ The system SHALL block committing invalid matches and running invalid shows acco
 - **THEN** the UI still allows selecting them for a promo slot
 
 ### Requirement: Results presentation
-The system SHALL present match and promo results and the overall show rating using star ratings only.
+The system SHALL present match and promo results and the overall show rating using star ratings only, and SHALL include `Category · Stipulation` for match results.
 
 #### Scenario: Show results after simulation
 - **WHEN** the show completes
 - **THEN** results list match winners and non-winners with star ratings, plus the overall show rating
+- **AND THEN** match results include a `Category · Stipulation` line under the participants
 
 ### Requirement: Arrow-key navigation consistency
 The system SHALL provide cyclical arrow-key navigation across all screens with focusable lists or action buttons.

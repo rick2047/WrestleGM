@@ -19,7 +19,7 @@ from wrestlegm.ui import (
     GameHubScreen,
     MainMenuScreen,
     MatchBookingScreen,
-    MatchTypeSelectionScreen,
+    MatchCategorySelectionScreen,
     PromoBookingScreen,
     ResultsScreen,
     RosterScreen,
@@ -61,15 +61,16 @@ def build_test_slots(state: GameState) -> list[Match | Promo]:
 
     wrestler_ids = list(state.roster.keys())
     match_type_id = next(iter(state.match_types))
-    match_type = state.match_types[match_type_id]
+    match_category_id = "singles"
     slots: list[Match | Promo] = []
     cursor = 0
     for slot_type in constants.SHOW_SLOT_TYPES:
         if slot_type == "match":
-            wrestler_count = match_type.min_wrestlers
+            wrestler_count = constants.MATCH_CATEGORIES[match_category_id]["size"]
             slots.append(
                 Match(
                     wrestler_ids=wrestler_ids[cursor : cursor + wrestler_count],
+                    match_category_id=match_category_id,
                     match_type_id=match_type_id,
                 )
             )
@@ -153,7 +154,7 @@ async def open_match_booking(pilot: Pilot, slot_index: int) -> None:
         await pilot.press("down")
         await pilot.pause(0.05)
     await pilot.press("enter")
-    await wait_for_screen(pilot, MatchTypeSelectionScreen)
+    await wait_for_screen(pilot, MatchCategorySelectionScreen)
 
 
 async def open_promo_booking(pilot: Pilot, slot_index: int) -> None:
@@ -186,12 +187,12 @@ async def select_wrestler(pilot: Pilot, row_index: int) -> None:
     await wait_for_screen(pilot, (MatchBookingScreen, PromoBookingScreen))
 
 
-async def select_match_type(pilot: Pilot, row_index: int = 0) -> None:
-    """Select a match type by row index in the selection screen."""
+async def select_match_category(pilot: Pilot, row_index: int = 0) -> None:
+    """Select a match category by row index in the selection screen."""
 
-    await wait_for_screen(pilot, MatchTypeSelectionScreen)
+    await wait_for_screen(pilot, MatchCategorySelectionScreen)
     screen = pilot.app.screen
-    if isinstance(screen, MatchTypeSelectionScreen):
+    if isinstance(screen, MatchCategorySelectionScreen):
         screen.list_view.index = row_index
         screen.action_select()
     else:

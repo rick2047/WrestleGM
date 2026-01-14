@@ -7,7 +7,7 @@ from wrestlegm.models import Match, MatchTypeDefinition, MatchTypeModifiers, Wre
 from wrestlegm.state import GameState
 
 
-def build_match_type(min_wrestlers: int, max_wrestlers: int) -> MatchTypeDefinition:
+def build_match_type(allowed_categories: list[str] | None = None) -> MatchTypeDefinition:
     modifiers = MatchTypeModifiers(
         outcome_chaos=0.2,
         rating_bonus=0,
@@ -22,8 +22,7 @@ def build_match_type(min_wrestlers: int, max_wrestlers: int) -> MatchTypeDefinit
         name="Multi",
         description="",
         modifiers=modifiers,
-        min_wrestlers=min_wrestlers,
-        max_wrestlers=max_wrestlers,
+        allowed_categories=allowed_categories,
     )
 
 
@@ -36,14 +35,22 @@ def build_roster() -> list[WrestlerDefinition]:
 
 
 def test_validate_match_size_mismatch() -> None:
-    state = GameState(build_roster(), [build_match_type(3, 3)])
-    match = Match(wrestler_ids=["a", "b"], match_type_id="multi")
+    state = GameState(build_roster(), [build_match_type()])
+    match = Match(
+        wrestler_ids=["a", "b", "c"],
+        match_category_id="singles",
+        match_type_id="multi",
+    )
     assert "invalid_wrestler_count" in state.validate_match(match, slot_index=0)
 
 
 def test_validate_match_duplicate_wrestlers() -> None:
-    state = GameState(build_roster(), [build_match_type(2, 2)])
-    match = Match(wrestler_ids=["a", "a"], match_type_id="multi")
+    state = GameState(build_roster(), [build_match_type()])
+    match = Match(
+        wrestler_ids=["a", "a"],
+        match_category_id="singles",
+        match_type_id="multi",
+    )
     assert "duplicate_wrestler" in state.validate_match(match, slot_index=0)
 
 
@@ -57,6 +64,20 @@ def test_validate_match_low_stamina_blocked() -> None:
         stamina=constants.STAMINA_MIN_BOOKABLE,
         mic_skill=40,
     )
-    state = GameState(roster, [build_match_type(2, 2)])
-    match = Match(wrestler_ids=["a", "b"], match_type_id="multi")
+    state = GameState(roster, [build_match_type()])
+    match = Match(
+        wrestler_ids=["a", "b"],
+        match_category_id="singles",
+        match_type_id="multi",
+    )
     assert "not_enough_stamina" in state.validate_match(match, slot_index=0)
+
+
+def test_validate_match_type_category_restriction() -> None:
+    state = GameState(build_roster(), [build_match_type(["singles"])])
+    match = Match(
+        wrestler_ids=["a", "b", "c"],
+        match_category_id="triple-threat",
+        match_type_id="multi",
+    )
+    assert "invalid_match_type_category" in state.validate_match(match, slot_index=0)
