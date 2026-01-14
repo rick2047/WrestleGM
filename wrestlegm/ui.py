@@ -125,7 +125,12 @@ class SafeSelect(Select):
             elif event.key == "down" and hasattr(screen, "action_focus_next"):
                 screen.action_focus_next()
             return
-        super().on_key(event)
+        if not self.expanded and event.key == "enter":
+            event.stop()
+            event.prevent_default()
+            self.expanded = True
+            return
+        # Let other keys bubble so the Select overlay can handle them when open.
 
     def _setup_options_renderables(self) -> None:
         try:
