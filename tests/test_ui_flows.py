@@ -91,7 +91,7 @@ def test_core_flow_new_game_booking_results_roster() -> None:
     run_async(run_flow())
 
 
-def test_match_type_change_trims_rows() -> None:
+def test_match_category_change_trims_rows() -> None:
     """Ensure match category changes keep earliest wrestlers and trim extras."""
 
     async def run_flow() -> None:

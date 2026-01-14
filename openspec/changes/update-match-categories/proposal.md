@@ -1,17 +1,17 @@
-# Change: Split match category from match type
+# Change: Split match category from stipulation
 
 ## Why
-Match size and match rules are separate concerns, but the current flow treats match type as both. This blocks combos like “Triple Threat Hardcore” and makes the booking flow less flexible.
+Match size and match rules are separate concerns, but the current flow treats stipulation as both. This blocks combos like “Triple Threat Hardcore” and makes the booking flow less flexible.
 
 ## What Changes
 - Introduce a match category selection step (Singles, Triple Threat, Fatal 4-Way) that defines wrestler count.
-- Keep match types (Hardcore, Submission, etc.) as rule modifiers selectable via a dropdown inside match booking.
-- Allow match types to restrict availability to specific categories (e.g., Ambulance is Singles-only).
-- Display both category and match type in Booking Hub and Show Results.
+- Keep stipulations (Hardcore, Submission, etc.) as rule modifiers selectable via a dropdown inside match booking.
+- Allow stipulations to restrict availability to specific categories (e.g., Ambulance is Singles-only).
+- Display both category and stipulation in Booking Hub and Show Results.
 
 ## Impact
 - Affected specs: `specs/ui/spec.md`, `specs/game-loop/spec.md`, `specs/data/spec.md`, `specs/simulation/spec.md`
-- Affected code: booking flow screens, match validation, match data model, match type data, UI snapshots/flows
+- Affected code: booking flow screens, match validation, match data model, stipulation data, UI snapshots/flows
 
 ## UI Mockups
 
@@ -74,7 +74,7 @@ Match size and match rules are separate concerns, but the current flow treats ma
 │                                      │
 │   😃 Claudio Castagnoli              │
 │                                      │
-│   Match Type                          │
+│   Stipulation                         │
 │   [ Submission ▾ ]                   │
 │                                      │
 ├──────────────────────────────────────┤

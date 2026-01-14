@@ -1,5 +1,19 @@
 [
   {
+    "id": "standard",
+    "name": "Standard",
+    "description": "No special stipulation.",
+    "modifiers": {
+      "outcome_chaos": 0.2,
+      "rating_bonus": 0,
+      "rating_variance": 6,
+      "stamina_cost_winner": 12,
+      "stamina_cost_loser": 14,
+      "popularity_delta_winner": 2,
+      "popularity_delta_loser": -1
+    }
+  },
+  {
     "id": "hardcore",
     "name": "Hardcore",
     "description": "No rules. High risk. Brutal.",

@@ -108,13 +108,14 @@ Key bindings:
 Components:
 - `Static` header and detail line.
 - `ListView` fields: Wrestler slots (based on category).
-- `Select` dropdown: Match Type.
+- `Select` dropdown: Stipulation.
 - `Button` group: Confirm, Clear Slot, Cancel.
 - `Footer` for bindings.
 
 Behavior:
 - Confirm requires all fields and no validation errors.
 - Clear Slot removes the match from the slot.
+- Cancel returns to match category selection.
 - Validation logic runs through `GameState` to prevent duplicates or invalid
   stamina bookings.
 

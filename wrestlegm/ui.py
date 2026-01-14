@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import logging
 from typing import Callable, Optional
 
 from textual.app import App, ComposeResult
@@ -107,6 +108,9 @@ class FilteredListView(EdgeAwareListView):
                 return
 
 
+LOGGER = logging.getLogger(__name__)
+
+
 class SafeSelect(Select):
     """Select widget that defers option setup until overlay is mounted."""
 
@@ -114,18 +118,21 @@ class SafeSelect(Select):
         try:
             super()._setup_options_renderables()
         except NoMatches:
+            LOGGER.debug("SafeSelect overlay not mounted; deferring options render.")
             pass
 
     def _watch_value(self, value) -> None:
         try:
             super()._watch_value(value)
         except NoMatches:
+            LOGGER.debug("SafeSelect overlay not mounted; deferring value update.")
             self._value = value
 
     def _on_mount(self, event) -> None:
         try:
             super()._on_mount(event)
         except NoMatches:
+            LOGGER.debug("SafeSelect overlay not mounted; scheduling init.")
             self.call_later(self._safe_init)
 
     def _safe_init(self) -> None:
@@ -133,6 +140,7 @@ class SafeSelect(Select):
             self._setup_options_renderables()
             self._init_selected_option(self._value)
         except NoMatches:
+            LOGGER.debug("SafeSelect overlay not mounted; skipping init.")
             pass
 
 class EdgeAwareDataTable(DataTable):
@@ -695,7 +703,7 @@ class MatchBookingScreen(Screen):
         )
         yield self.fields
 
-        self.match_type_label = Static("Match Type")
+        self.match_type_label = Static("Stipulation")
         yield self.match_type_label
         self.match_type_select = SafeSelect(
             self._match_type_options_for_category(self.initial_category_id),
@@ -887,8 +895,18 @@ class MatchBookingScreen(Screen):
 
     def action_cancel(self) -> None:
         """Discard changes and return to the booking hub."""
-
+        slot_index = self.slot_index
+        initial_category_id = self.draft.match_category_id or self.initial_category_id
         self.app.pop_screen()
+        self.app.push_screen(
+            MatchCategorySelectionScreen(
+                slot_index=slot_index,
+                initial_category_id=initial_category_id,
+                on_select=lambda category_id: self.app.push_screen(
+                    MatchBookingScreen(slot_index, category_id)
+                ),
+            )
+        )
 
     def action_focus_next(self) -> None:
         """Move focus to the next booking control."""

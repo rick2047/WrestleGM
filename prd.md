@@ -26,7 +26,7 @@ The MVP must allow a player to:
 
 - Run an **ongoing series of shows** (weekly, episodic, or abstract)
 - Book matches and promos for each show
-- Select match categories and match types that meaningfully affect match outcomes
+- Select match categories and stipulations that meaningfully affect match outcomes
 - Simulate matches and promos to complete an entire show
 - Receive an **overall show rating** derived from slot quality
 - Advance from show to show and **observe stat evolution over time**
@@ -48,7 +48,7 @@ Outcomes:
 
 - **Show-first design**: All progression is evaluated at show boundaries
 - **Textual-first UI**: Widgets and CSS are the source of consistency
-- **Data-driven domain**: Wrestlers and match types (rules) come from data files
+- **Data-driven domain**: Wrestlers and stipulations (rules) come from data files
 - **Deterministic simulation**: Same inputs + seed = same results
 - **Keyboard-only navigation**: No mouse assumptions
 - **Explicit systems**: Outcomes are explainable via numbers, not hidden scripts
@@ -87,7 +87,7 @@ These rules define how pull requests are validated in CI.
 2. Land on the Game Hub (session home)
 3. Open the current show overview / booking hub
 4. Build or review the show card
-5. Book matches and promos (wrestlers + category + match type for matches)
+5. Book matches and promos (wrestlers + category + stipulation for matches)
 6. Run the show (simulate slots sequentially)
 7. Review results and **overall show rating**
 8. Return to the Game Hub and advance to the next show
@@ -119,7 +119,7 @@ Future-safe (not required for MVP):
 
 ---
 
-### 4.2 MatchTypeDefinition
+### 4.2 StipulationDefinition
 
 Loaded from `data/match_types.json`.
 
@@ -138,7 +138,7 @@ Fields:
   - `popularity_delta_winner`
   - `popularity_delta_loser`
 
-Match types **must affect simulation**.
+Stipulations **must affect simulation**.
 
 ---
 
@@ -162,7 +162,7 @@ Fields:
 
 - `wrestler_ids: list[string]`
 - `match_category_id`
-- `match_type_id`
+- `stipulation_id`
 
 ---
 
@@ -201,7 +201,7 @@ Fields:
 - `non_winner_ids: list[string]`
 - `rating`
 - `match_category_id`
-- `match_type_id`
+- `stipulation_id`
 - `applied_modifiers`
 - `stat_deltas`
 
@@ -256,7 +256,7 @@ Implementation ownership:
 
 **Reproducibility rule**
 
-- Given identical inputs (roster stats, match type config, show card, and seed), the simulation must always return identical outputs (winners, match ratings, deltas, show rating).
+- Given identical inputs (roster stats, stipulation config, show card, and seed), the simulation must always return identical outputs (winners, match ratings, deltas, show rating).
 
 **No hidden inputs**
 
@@ -351,6 +351,7 @@ Priority guarantee:
 
 - 1v1 special case: Face vs Heel → `alignment_mod = +ALIGN_BONUS`, Heel vs Heel → `alignment_mod = -2 * ALIGN_BONUS`, Face vs Face → `alignment_mod = 0`
 - Multi-man case (3+): All heels → `alignment_mod = -2 * ALIGN_BONUS`, All faces → `alignment_mod = 0`, Heels > faces → `alignment_mod = +ALIGN_BONUS`, Heels = faces → `alignment_mod = 0`, Faces > heels → `alignment_mod = -2 * ALIGN_BONUS`
+  - Design note: the Faces > heels penalty is intentionally stronger to discourage face-heavy multi-man matches.
 
 Then:
 
@@ -460,7 +461,7 @@ Notes:
 
 Notes:
 
-- Stamina cost is fixed per match type.
+- Stamina cost is fixed per stipulation.
 - Match rating does **not** scale stamina costs in MVP.
 
 **Outputs**
@@ -581,7 +582,7 @@ Each slot must be fully specified before the show can run:
 
 - 2–4 wrestlers per match (based on match category)
 - Match Category
-- Match Type (rules)
+- Stipulation (rules)
 - Promo Wrestler (for promo slots)
 
 A show cannot be simulated unless **all slots are valid**.
@@ -674,7 +675,7 @@ Before a show can be run:
 - Each promo has a wrestler assigned
 - No duplicate wrestlers across slots
 - All match-booked wrestlers meet stamina requirements
-- All match slots have a valid match category and match type
+- All match slots have a valid match category and stipulation
 - All match slots use the required wrestler count for their match category
 - Match types are permitted for the selected category
 
@@ -945,7 +946,7 @@ The Booking Hub is a **slot-level overview screen**. It shows the current show c
 **Slot states**
 
 - Empty: slot has no assignment
-- Booked: slot contains a fully valid match (2–4 wrestlers + category + match type) or promo (wrestler)
+- Booked: slot contains a fully valid match (2–4 wrestlers + category + stipulation) or promo (wrestler)
 
 Slots are binary; partial matches do not exist on the show.
 
@@ -957,7 +958,7 @@ Slots are binary; partial matches do not exist on the show.
 **Match display rules**
 
 - Match slots show a single line with alignment emojis and names separated by `vs`
-- A second line shows `Category · Type`
+- A second line shows `Category · Stipulation`
 
 **Validation rules**
 
@@ -977,7 +978,7 @@ This screen is the **only place where a match can be edited or created**. It own
 **Editable fields**
 
 - Wrestler slots (2–4 based on match category)
-- Match Type (dropdown, filtered by category)
+- Stipulation (dropdown, filtered by category)
 
 **Behavior**
 
@@ -985,20 +986,20 @@ This screen is the **only place where a match can be edited or created**. It own
 - Re-selecting a different category for a booked match keeps the earliest wrestlers up to the new size and clears any extras
 - Wrestler rows open the wrestler selection screen on Enter
 - Match type is changed via an inline dropdown
-- Confirm is enabled only when all required wrestler slots and match type are valid
-- Esc or Cancel discards all changes and returns to Booking Hub
+- Confirm is enabled only when all required wrestler slots and stipulation are valid
+- Esc or Cancel discards all changes and returns to Match Category Selection
 - Clear Slot removes the match and returns to Booking Hub
 - Clear Slot is disabled if the slot is empty
-- If the slot is empty, the match type defaults to the first available match type for the selected category
-- The match type dropdown lists only match types allowed for the selected category
+- If the slot is empty, the stipulation defaults to the first available stipulation for the selected category
+- The stipulation dropdown lists only stipulations allowed for the selected category
 
 **Validation rules (authoritative)**
 
 - All required wrestler slots must be set
 - No wrestler may appear more than once within the match
 - Wrestlers already booked in other slots cannot be selected
-- Match Category and Match Type must be set
-- Match Type must be allowed for the selected category
+- Match Category and Stipulation must be set
+- Stipulation must be allowed for the selected category
 - Wrestlers below `STAMINA_MIN_BOOKABLE` cannot be selected
 - Low stamina is indicated with 🥱 where displayed
 
@@ -1275,7 +1276,7 @@ The following ASCII mockups define the **intended visual layout** for all MVP sc
 │                                      │
 │   [ Empty ]                          │
 │                                      │
-│   Match Type                         │
+│   Stipulation                        │
 │   [ Hardcore ▾ ]                     │
 │                                      │
 ├──────────────────────────────────────┤
@@ -1298,7 +1299,7 @@ The following ASCII mockups define the **intended visual layout** for all MVP sc
 │                                      │
 │   😈 Eddie Kingston                  │
 │                                      │
-│   Match Type                         │
+│   Stipulation                        │
 │   Submission                         │
 │                                      │
 ├──────────────────────────────────────┤
