@@ -336,15 +336,13 @@ class GameState:
         """Return the emoji for a rivalry value."""
 
         level = min(constants.RIVALRY_LEVEL_CAP, rivalry_value)
-        if level <= 0:
-            return ""
-        if level == 1:
-            return "⚡"
-        if level == 2:
-            return "🔥"
-        if level == 3:
-            return "⚔️"
-        return "💥"
+        emojis = {
+            1: "⚡",
+            2: "🔥",
+            3: "⚔️",
+            4: "💥",
+        }
+        return emojis.get(level, "")
 
     def _cooldown_emoji(self, remaining_shows: int) -> str:
         """Return the emoji for cooldown remaining shows."""
