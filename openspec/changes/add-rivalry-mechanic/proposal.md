@@ -11,3 +11,4 @@ WrestleGM needs narrative continuity across shows so repeated matchups build sta
 ## Impact
 - Affected specs: rivalry (new), simulation, ui
 - Affected code: wrestlegm/models.py, wrestlegm/state.py, wrestlegm/sim.py, wrestlegm/ui.py, tests/
+- Data model: add pairwise rivalry and cooldown state storage
