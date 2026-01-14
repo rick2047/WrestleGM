@@ -5,7 +5,7 @@ The system SHALL compute match ratings in 0–100 space with alignment and match
 #### Scenario: Rating computation with rivalry and cooldown
 - **WHEN** a match rating is simulated for `N` wrestlers
 - **THEN** `base_100 = pop_avg * POP_W + sta_avg * STA_W` using averages across all wrestlers
-- **AND THEN** alignment modifiers apply based on face/heel counts (all heels: `-2 * ALIGN_BONUS`, all faces: `0`, heels > faces: `+ALIGN_BONUS`, heels == faces: `0`, faces > heels: `-2 * ALIGN_BONUS`)
+- **AND THEN** alignment modifiers apply based on face/heel counts (all heels: `-2 * ALIGN_BONUS`, all faces: `0`, heels > faces: `+ALIGN_BONUS`, heels == faces: `0`, faces > heels: `-ALIGN_BONUS`)
 - **AND THEN** `rating_bonus` is added
 - **AND THEN** one RNG draw applies `swing` in `[-rating_variance, +rating_variance]`
 - **AND THEN** `rating_100` is clamped to 0–100 and converted to stars via `round((rating_100/100)*5, 1)`

@@ -7,7 +7,7 @@ Rivalries introduce persistent, pairwise state that affects match ratings and sh
 
 ## Decisions
 - Pair identity uses a normalized key of the two wrestler IDs (sorted) to ensure deterministic lookups.
-- Rivalry progression is 100% when a pair appears in a match and is not in cooldown; each appearance increments `rivalry_value` by 1 and sets `rivalry_level = min(4, rivalry_value)`.
+- Rivalry progression is 100% when a pair appears in a match and is not in cooldown; each appearance increments `rivalry_value` by 1. The rivalry level is derived as `rivalry_level = min(4, rivalry_value)`.
 - A match is a blowoff when the pair is already at Level 4 at match time; blowoff resolves at show end and starts a 6-show cooldown.
 - Rating bonuses are applied per active rivalry pair (+0.25 stars each). Blowoff pairs apply double bonus (+0.5 stars per pair). Bonuses stack linearly.
 - Cooldown applies a -1.0 star penalty once per match if any cooldown pair exists in the match. Bonuses and penalty may both apply.
