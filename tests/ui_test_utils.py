@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from pathlib import Path
-from typing import Awaitable
+from typing import Awaitable, Callable
 
 from textual.app import App
 from textual.pilot import Pilot
@@ -107,6 +107,22 @@ async def wait_for_screen(
             return
         await pilot.pause(0.05)
     raise AssertionError(f"Expected screen {screen_type} did not appear.")
+
+
+async def wait_for_condition(
+    pilot: Pilot,
+    predicate: Callable[[], bool],
+    *,
+    attempts: int = 40,
+    delay: float = 0.05,
+) -> None:
+    """Wait for a predicate to become true."""
+
+    for _ in range(attempts):
+        if predicate():
+            return
+        await pilot.pause(delay)
+    raise AssertionError("Expected condition was not met.")
 
 
 async def start_new_game(pilot: Pilot) -> None:
