@@ -130,6 +130,7 @@ class SafeSelect(Select):
             event.prevent_default()
             self.expanded = True
             return
+        # Let other keys bubble so the Select overlay can handle them when open.
 
     def _setup_options_renderables(self) -> None:
         try:

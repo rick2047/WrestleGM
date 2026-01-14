@@ -148,5 +148,13 @@ def test_stipulation_dropdown_opens_on_enter() -> None:
 
             screen = app.screen
             assert screen.match_type_select.expanded is True
+            initial_value = screen.match_type_select.value
+            await pilot.press("down")
+            await pilot.press("enter")
+            await pilot.pause(0.05)
+
+            screen = app.screen
+            assert screen.match_type_select.expanded is False
+            assert screen.match_type_select.value != initial_value
 
     run_async(run_flow())
