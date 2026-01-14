@@ -82,6 +82,24 @@ class Promo:
 
 
 @dataclass(frozen=True)
+class RivalryState:
+    """Pairwise rivalry state between two wrestlers."""
+
+    wrestler_a_id: str
+    wrestler_b_id: str
+    rivalry_value: int
+
+
+@dataclass(frozen=True)
+class CooldownState:
+    """Pairwise cooldown state between two wrestlers."""
+
+    wrestler_a_id: str
+    wrestler_b_id: str
+    remaining_shows: int
+
+
+@dataclass(frozen=True)
 class StatDelta:
     """Per-wrestler stat change from a match."""
 

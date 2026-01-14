@@ -562,8 +562,10 @@ class BookingHubScreen(Screen):
             match_type = self.app.state.match_types.get(slot.match_type_id)
             match_type_name = match_type.name if match_type else "Unknown"
             category_name = match_category_label(slot.match_category_id)
+            emojis = self.app.state.rivalry_emojis_for_match(slot.wrestler_ids)
+            label_text = f"{label}  {emojis}" if emojis else label
             return (
-                f"{label}\n{build_match_participants(wrestlers)}\n"
+                f"{label_text}\n{build_match_participants(wrestlers)}\n"
                 f"{category_name} · {match_type_name}"
             )
         wrestler = self.app.state.roster[slot.wrestler_id]
@@ -757,7 +759,11 @@ class MatchBookingScreen(Screen):
     def refresh_view(self) -> None:
         """Update field labels, buttons, and match summary."""
 
-        self.header.update(f"Book {slot_label(self.slot_index, 'match')}")
+        base_label = f"Book {slot_label(self.slot_index, 'match')}"
+        selected_ids = [wrestler_id for wrestler_id in self.draft.wrestler_ids if wrestler_id]
+        emojis = self.app.state.rivalry_emojis_for_match(selected_ids)
+        header_text = f"{base_label}  {emojis}" if emojis else base_label
+        self.header.update(header_text)
         self.detail.update(self.category_label())
 
         required_count = self.required_wrestler_count()

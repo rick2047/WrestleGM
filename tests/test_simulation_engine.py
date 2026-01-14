@@ -15,7 +15,7 @@ from wrestlegm.models import (
     WrestlerDefinition,
     WrestlerState,
 )
-from wrestlegm.sim import SimulationEngine
+from wrestlegm.sim import RivalryRatingContext, SimulationEngine
 from wrestlegm.state import ShowApplier
 
 
@@ -217,7 +217,33 @@ class TestMatchSimulation:
         _, debug_heels_majority = engine.simulate_rating([heel, heel, face], match_type)
         assert debug_heels_majority.alignment_mod == constants.ALIGN_BONUS
         _, debug_faces_majority = engine.simulate_rating([face, face, heel], match_type)
-        assert debug_faces_majority.alignment_mod == -2 * constants.ALIGN_BONUS
+        assert debug_faces_majority.alignment_mod == -constants.ALIGN_BONUS
+
+    def test_rivalry_rating_adjustments(self) -> None:
+        roster_state = build_roster_state()
+        match_types = build_match_types()
+        match_type_map = {m.id: m for m in match_types}
+        match = Match(wrestler_ids=["a", "b"], match_category_id="singles", match_type_id="singles")
+
+        base_engine = SimulationEngine(seed=42)
+        base_result = base_engine.simulate_match(match, roster_state, match_type_map)
+
+        context = RivalryRatingContext(active_pairs=1, blowoff_pairs=1, has_cooldown=True)
+        adjusted_engine = SimulationEngine(seed=42)
+        adjusted_result = adjusted_engine.simulate_match(
+            match,
+            roster_state,
+            match_type_map,
+            rivalry_context=context,
+        )
+
+        expected = base_result.rating
+        expected += constants.RIVALRY_BONUS
+        expected += constants.BLOWOFF_BONUS
+        expected -= constants.COOLDOWN_PENALTY
+        expected = max(0.0, min(5.0, expected))
+
+        assert adjusted_result.rating == expected
 
 
 class TestMatchSimulationStatDeltas:
