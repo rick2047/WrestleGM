@@ -19,7 +19,6 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 
 ## Workflow Rules
 - Each new spec MUST start from a new git branch and include opening a PR.
-- Update the PR description whenever new commits are added to that branch.
 - Ask for explicit user approval before running git workflow actions (commit, push, PR create/edit).
 - Always merge PRs using a merge commit (no squash merges).
 
