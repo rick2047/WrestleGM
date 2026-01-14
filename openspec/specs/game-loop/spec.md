@@ -11,10 +11,10 @@ The system SHALL support a show-driven loop that books a 3-match, 2-promo card, 
 - **THEN** the system simulates all match and promo slots, applies deltas, and increments the show index
 
 ### Requirement: Show validation rules
-The system SHALL prevent running a show unless it has exactly three valid matches, two promos each with a wrestler assigned, no duplicate wrestlers across any slot, all match-booked wrestlers meet stamina requirements, and each match includes exactly the number of wrestlers required by its selected match type.
+The system SHALL prevent running a show unless it has exactly three valid matches, two promos each with a wrestler assigned, no duplicate wrestlers across any slot, all match-booked wrestlers meet stamina requirements, each match includes exactly the number of wrestlers required by its selected match category, and each stipulation is allowed for its selected category.
 
 #### Scenario: Block invalid show run
-- **WHEN** the card is incomplete, contains duplicate wrestlers, has a match wrestler below stamina requirements, or a match does not meet its required wrestler count
+- **WHEN** the card is incomplete, contains duplicate wrestlers, has a match wrestler below stamina requirements, a match does not meet its required category size, or a stipulation is incompatible with its category
 - **THEN** the system blocks simulation
 
 ### Requirement: Between-show recovery

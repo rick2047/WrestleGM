@@ -33,8 +33,7 @@ def load_match_types(path: Path | None = None) -> List[MatchTypeDefinition]:
                 name=entry["name"],
                 description=entry["description"],
                 modifiers=modifiers,
-                min_wrestlers=entry.get("min_wrestlers", 2),
-                max_wrestlers=entry.get("max_wrestlers", 2),
+                allowed_categories=entry.get("allowed_categories"),
             )
         )
     return match_types

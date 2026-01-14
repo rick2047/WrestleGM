@@ -26,7 +26,7 @@ The MVP must allow a player to:
 
 - Run an **ongoing series of shows** (weekly, episodic, or abstract)
 - Book matches and promos for each show
-- Select match types that meaningfully affect match outcomes
+- Select match categories and stipulations that meaningfully affect match outcomes
 - Simulate matches and promos to complete an entire show
 - Receive an **overall show rating** derived from slot quality
 - Advance from show to show and **observe stat evolution over time**
@@ -48,7 +48,7 @@ Outcomes:
 
 - **Show-first design**: All progression is evaluated at show boundaries
 - **Textual-first UI**: Widgets and CSS are the source of consistency
-- **Data-driven domain**: Wrestlers, match types, and rules come from data files
+- **Data-driven domain**: Wrestlers and stipulations (rules) come from data files
 - **Deterministic simulation**: Same inputs + seed = same results
 - **Keyboard-only navigation**: No mouse assumptions
 - **Explicit systems**: Outcomes are explainable via numbers, not hidden scripts
@@ -66,6 +66,9 @@ These rules define how pull requests are validated in CI.
   - ❌ failed
   - 🛑 error
   - ⚠️ skipped
+- UI flow tests run before UI snapshot tests.
+- UI snapshot tests run in a separate job after simulation and UI flow tests pass.
+- Snapshot diff artifacts are uploaded when UI snapshot tests fail.
 - Workflow permissions are minimal: read repository contents, write PR comments.
 - PR test workflow runs only when changes touch:
   - `tests/**`
@@ -84,7 +87,7 @@ These rules define how pull requests are validated in CI.
 2. Land on the Game Hub (session home)
 3. Open the current show overview / booking hub
 4. Build or review the show card
-5. Book matches and promos (wrestlers + match types for matches)
+5. Book matches and promos (wrestlers + category + stipulation for matches)
 6. Run the show (simulate slots sequentially)
 7. Review results and **overall show rating**
 8. Return to the Game Hub and advance to the next show
@@ -116,7 +119,7 @@ Future-safe (not required for MVP):
 
 ---
 
-### 4.2 MatchTypeDefinition
+### 4.2 StipulationDefinition
 
 Loaded from `data/match_types.json`.
 
@@ -125,6 +128,7 @@ Fields:
 - `id: string`
 - `name: string`
 - `description: string`
+- `allowed_categories: list[string] | null`
 - `modifiers`:
   - `outcome_chaos`
   - `rating_bonus`
@@ -134,23 +138,35 @@ Fields:
   - `popularity_delta_winner`
   - `popularity_delta_loser`
 
-Match types **must affect simulation**.
+Stipulations **must affect simulation**.
 
 ---
 
-### 4.3 Match
+### 4.3 MatchCategoryDefinition
+
+Static match category registry.
+
+Fields:
+
+- `id: string`
+- `name: string`
+- `size: int`
+
+---
+
+### 4.4 Match
 
 Represents a booked match within a show.
 
 Fields:
 
-- `wrestler_a_id`
-- `wrestler_b_id`
-- `match_type_id`
+- `wrestler_ids: list[string]`
+- `match_category_id`
+- `stipulation_id`
 
 ---
 
-### 4.4 Promo
+### 4.5 Promo
 
 Represents a booked promo within a show.
 
@@ -160,7 +176,7 @@ Fields:
 
 ---
 
-### 4.5 Show
+### 4.6 Show
 
 Represents a single event in the game timeline.
 
@@ -175,22 +191,23 @@ A show is the **atomic unit of progression**.
 
 ---
 
-### 4.6 MatchResult
+### 4.7 MatchResult
 
 Immutable result of simulation.
 
 Fields:
 
 - `winner_id`
-- `loser_id`
+- `non_winner_ids: list[string]`
 - `rating`
-- `match_type_id`
+- `match_category_id`
+- `stipulation_id`
 - `applied_modifiers`
 - `stat_deltas`
 
 ---
 
-### 4.7 PromoResult
+### 4.8 PromoResult
 
 Immutable result of promo simulation.
 
@@ -212,7 +229,7 @@ The simulation layer is deterministic, side-effect free, and composed of match a
 
 For each slot, the engine executes the following pipeline:
 
-1. **Match Outcome Simulation** → determines winner / loser (matches only)
+1. **Match Outcome Simulation** → determines winner / non-winners (matches only)
 2. **Rating Simulation** → determines slot quality (stars)
 3. **Stat Delta Simulation** → determines progression deltas (no mutation)
 
@@ -239,7 +256,7 @@ Implementation ownership:
 
 **Reproducibility rule**
 
-- Given identical inputs (roster stats, match type config, show card, and seed), the simulation must always return identical outputs (winners, match ratings, deltas, show rating).
+- Given identical inputs (roster stats, stipulation config, show card, and seed), the simulation must always return identical outputs (winners, match ratings, deltas, show rating).
 
 **No hidden inputs**
 
@@ -255,59 +272,54 @@ Implementation ownership:
 
 ### 5.3 Outcome Simulation (Who Wins)
 
-**Purpose** Determine the winner and loser for a match based on deterministic “power” and match-type “chaos”.
+**Purpose** Determine the winner and non-winners for a match based on deterministic “power” and match-type “chaos”.
 
 **Inputs**
 
-- Wrestler A: `popularity`, `stamina`
-- Wrestler B: `popularity`, `stamina`
+- Wrestlers: `popularity`, `stamina` (2–4 total)
 - Match type: `outcome_chaos` (float 0.0–1.0)
-- Tunable constants: `P_WEIGHT`, `S_WEIGHT`, `D_SCALE`, `P_MIN`, `P_MAX`
+- Tunable constants: `P_WEIGHT`, `S_WEIGHT`
 - Seeded RNG
 
 **Step A — Deterministic power** Power is calculated without randomness:
 
-- `power = popularity * P_WEIGHT + stamina * S_WEIGHT`
+- `power_i = popularity_i * P_WEIGHT + stamina_i * S_WEIGHT`
 
 Constraints:
 
 - Popularity and stamina are expected to be in `0–100`.
 - `P_WEIGHT + S_WEIGHT = 1.0` is recommended.
 
-**Step B — Power difference to base win probability**
+**Step B — Power to base win probability**
 
-- `diff = power_A - power_B`
-- `p_base = 0.5 + (diff / D_SCALE)`
-- `p_base = clamp(p_base, P_MIN, P_MAX)`
+- `p_base_i = power_i / sum(power_i)`
+- If total power is `0`, treat all `p_base_i` as uniform.
 
-Interpretation:
+**Step C — Apply match-type chaos (variance-only design)** Match types affect outcome only by pulling each probability toward uniform:
 
-- `D_SCALE` controls how quickly power advantage becomes a strong favorite.
-- `P_MIN/P_MAX` prevent absolute certainty.
-
-**Step C — Apply match-type chaos (variance-only design)** Match types affect outcome only by pulling probability toward 50/50:
-
-- `p_final = lerp(p_base, 0.5, outcome_chaos)`
+- `uniform = 1 / N`
+- `p_final_i = lerp(p_base_i, uniform, outcome_chaos)`
+- Normalize `p_final_i` so the total equals `1.0`
 
 Where:
 
 - `outcome_chaos = 0.0` → purely power-based
-- `outcome_chaos = 1.0` → always 50/50
+- `outcome_chaos = 1.0` → uniform odds across all wrestlers
 
 **Step D — Sample winner**
 
 - draw `r = rng.random()` in `[0,1)`
-- if `r < p_final` → A wins else B wins
+- select the first wrestler where cumulative `p_final_i` exceeds `r`
 
 **Outputs**
 
-- `winner_id`, `loser_id`
+- `winner_id`, `non_winner_ids`
 
 **Recommended debug payload (for testing & balancing)**
 
-- `power_A`, `power_B`, `diff`
-- `p_base`, `outcome_chaos`, `p_final`
-- `r` (sample)
+- `powers[]`
+- `p_base[]`, `outcome_chaos`, `p_final[]`
+- `r` (sample), `winner_id`
 
 ---
 
@@ -317,7 +329,7 @@ Where:
 
 **Inputs**
 
-- Wrestler A & B: `popularity`, `stamina`, `alignment`
+- Wrestlers: `popularity`, `stamina`, `alignment` (2–4 total)
 - Match type: `rating_bonus`, `rating_variance`
 - Tunable constants: `POP_W`, `STA_W`, `ALIGN_BONUS`
 - Seeded RNG
@@ -326,8 +338,8 @@ Where:
 
 **Step A — Compute deterministic base in 0–100**
 
-- `pop_avg = (popA + popB) / 2`
-- `sta_avg = (staA + staB) / 2`
+- `pop_avg = average(pop_i)`
+- `sta_avg = average(sta_i)`
 - `base_100 = pop_avg * POP_W + sta_avg * STA_W`
 
 Priority guarantee:
@@ -337,9 +349,9 @@ Priority guarantee:
 
 **Step B — Alignment modifier (wrestling psychology)** Alignment affects rating only:
 
-- Face vs Heel → `alignment_mod = +ALIGN_BONUS`
-- Heel vs Heel → `alignment_mod = -2 * ALIGN_BONUS`
-- Face vs Face → `alignment_mod = 0`
+- 1v1 special case: Face vs Heel → `alignment_mod = +ALIGN_BONUS`, Heel vs Heel → `alignment_mod = -2 * ALIGN_BONUS`, Face vs Face → `alignment_mod = 0`
+- Multi-man case (3+): All heels → `alignment_mod = -2 * ALIGN_BONUS`, All faces → `alignment_mod = 0`, Heels > faces → `alignment_mod = +ALIGN_BONUS`, Heels = faces → `alignment_mod = 0`, Faces > heels → `alignment_mod = -2 * ALIGN_BONUS`
+  - Design note: the Faces > heels penalty is intentionally stronger to discourage face-heavy multi-man matches.
 
 Then:
 
@@ -421,11 +433,11 @@ Then:
 
 ### 5.7 Match Stat Delta Simulation (Progression Impact)
 
-**Purpose** Produce progression deltas for winner and loser. This system produces deltas only and never mutates roster state.
+**Purpose** Produce progression deltas for winner and non-winners. This system produces deltas only and never mutates roster state.
 
 **Inputs**
 
-- Match outcome: `winner_id`, `loser_id`
+- Match outcome: `winner_id`, `non_winner_ids`
 - Match type modifiers:
   - `popularity_delta_winner`
   - `popularity_delta_loser`
@@ -435,7 +447,7 @@ Then:
 **Popularity deltas (data-driven)**
 
 - `Δpop_winner = popularity_delta_winner`
-- `Δpop_loser = popularity_delta_loser`
+- `Δpop_non_winner = popularity_delta_loser`
 
 Notes:
 
@@ -445,17 +457,17 @@ Notes:
 **Stamina deltas (fixed for MVP)**
 
 - `Δsta_winner = -stamina_cost_winner`
-- `Δsta_loser = -stamina_cost_loser`
+- `Δsta_non_winner = -stamina_cost_loser`
 
 Notes:
 
-- Stamina cost is fixed per match type.
+- Stamina cost is fixed per stipulation.
 - Match rating does **not** scale stamina costs in MVP.
 
 **Outputs**
 
 - `stat_deltas[winner_id] = {popularity: Δpop_winner, stamina: Δsta_winner}`
-- `stat_deltas[loser_id]  = {popularity: Δpop_loser,  stamina: Δsta_loser}`
+- Each `non_winner_id` receives `{popularity: Δpop_non_winner, stamina: Δsta_non_winner}`
 
 ---
 
@@ -501,11 +513,13 @@ Ordering:
 Minimum required tests:
 
 - Determinism: same inputs + seed → identical outputs
-- Outcome sanity: probabilities clamp to bounds
+- Outcome sanity: probabilities normalize and sum to 1.0
 - Rating bounds: always 0.0–5.0 stars
+- Multi-man determinism: identical multi-man inputs + seed → identical winner and non-winners
+- Alignment cases: 1v1 special-case modifiers and multi-man face/heel mixes
 - Promo determinism: same inputs + seed → identical promo ratings and deltas
 - Promo deltas: threshold produces -5/+5 and stamina recovery
-- Delta correctness: winner/loser deltas match match-type config
+- Delta correctness: winner/non-winner deltas match match-type config
 - Show rating: equals mean of slot ratings
 - Clamp tests: stats never exceed 0–100 after application
 
@@ -566,9 +580,9 @@ A show card contains ordered slots:
 
 Each slot must be fully specified before the show can run:
 
-- Wrestler A
-- Wrestler B
-- Match Type
+- 2–4 wrestlers per match (based on match category)
+- Match Category
+- Stipulation (rules)
 - Promo Wrestler (for promo slots)
 
 A show cannot be simulated unless **all slots are valid**.
@@ -661,7 +675,9 @@ Before a show can be run:
 - Each promo has a wrestler assigned
 - No duplicate wrestlers across slots
 - All match-booked wrestlers meet stamina requirements
-- All match slots have a valid match type
+- All match slots have a valid match category and stipulation
+- All match slots use the required wrestler count for their match category
+- Match types are permitted for the selected category
 
 The UI must prevent invalid shows from being run.
 
@@ -783,7 +799,7 @@ This section defines the **full MVP UX** for WrestleGM, including screens, navig
 **Session persistence rule**
 
 - Temporary state inside a screen (e.g. Match Booking) **persists across subscreens**
-- Entering Wrestler Selection or Match Type Selection does not reset in-progress selections
+- Entering Wrestler Selection or Match Category Selection does not reset in-progress selections
 - Temporary state is discarded only when the user explicitly cancels the parent screen
 
 ---
@@ -849,7 +865,7 @@ The MVP consists of the following screens:
 4. Match Booking (single-slot editor)
 5. Promo Booking (single-slot editor)
 6. Wrestler Selection
-7. Match Type Selection
+7. Match Category Selection
 8. Match Confirmation
 9. Simulating Show
 10. Show Results
@@ -930,14 +946,19 @@ The Booking Hub is a **slot-level overview screen**. It shows the current show c
 **Slot states**
 
 - Empty: slot has no assignment
-- Booked: slot contains a fully valid match (A, B, Type) or promo (Wrestler)
+- Booked: slot contains a fully valid match (2–4 wrestlers + category + stipulation) or promo (wrestler)
 
 Slots are binary; partial matches do not exist on the show.
 
 **Focus model**
 
 - `↑ / ↓` moves between slots
-- `Enter` opens the booking screen for the focused slot
+- `Enter` opens the match category selector for match slots and the booking screen for promo slots
+
+**Match display rules**
+
+- Match slots show a single line with alignment emojis and names separated by `vs`
+- A second line shows `Category · Stipulation`
 
 **Validation rules**
 
@@ -956,25 +977,29 @@ This screen is the **only place where a match can be edited or created**. It own
 
 **Editable fields**
 
-- Wrestler A
-- Wrestler B
-- Match Type
+- Wrestler slots (2–4 based on match category)
+- Stipulation (dropdown, filtered by category)
 
 **Behavior**
 
-- Fields open their respective selection screens on Enter
-- Confirm is enabled only when all three fields are valid
-- Esc or Cancel discards all changes and returns to Booking Hub
+- The Match Booking screen opens after a match category is selected
+- Re-selecting a different category for a booked match keeps the earliest wrestlers up to the new size and clears any extras
+- Wrestler rows open the wrestler selection screen on Enter
+- Match type is changed via an inline dropdown
+- Confirm is enabled only when all required wrestler slots and stipulation are valid
+- Esc or Cancel discards all changes and returns to Match Category Selection
 - Clear Slot removes the match and returns to Booking Hub
 - Clear Slot is disabled if the slot is empty
-- If the slot is empty, the match type defaults to the first available match type
+- If the slot is empty, the stipulation defaults to the first available stipulation for the selected category
+- The stipulation dropdown lists only stipulations allowed for the selected category
 
 **Validation rules (authoritative)**
 
-- Wrestler A and Wrestler B must both be set
-- Wrestler A ≠ Wrestler B
+- All required wrestler slots must be set
+- No wrestler may appear more than once within the match
 - Wrestlers already booked in other slots cannot be selected
-- Match Type must be set
+- Match Category and Stipulation must be set
+- Stipulation must be allowed for the selected category
 - Wrestlers below `STAMINA_MIN_BOOKABLE` cannot be selected
 - Low stamina is indicated with 🥱 where displayed
 
@@ -1032,21 +1057,19 @@ This screen edits a single promo slot and uses the shared wrestler selection scr
 
 ---
 
-### 8.12 Match Type Selection Screen
+### 8.12 Match Category Selection Screen
 
 **Components**
 
-- Match type list
-- Description panel
+- Match category list
 - Footer actions:
   - Select
   - Cancel
 
 **Behavior**
 
-- All match types are selectable
-- Highlighting a match type updates the description panel
-- No modifiers or numbers are shown
+- Lists the fixed match categories (Singles, Triple Threat, Fatal 4-Way)
+- Selecting a category opens Match Booking with the required number of wrestler slots
 
 ---
 
@@ -1098,7 +1121,7 @@ No match details, stats, or repetition are shown in the modal; full context is a
 **Components**
 
 - Slot results list:
-  - Matches: Winner vs Loser + match rating (stars only, half-star precision)
+  - Matches: Winner def. non-winners + match rating (stars only, half-star precision)
   - Promos: Wrestler name + promo rating (stars only)
 - Overall show rating (stars only)
 - Footer actions:
@@ -1136,10 +1159,10 @@ No match details, stats, or repetition are shown in the modal; full context is a
 | Main Menu            | ListView, Static, Footer    |
 | Game Hub             | ListView, Static, Footer    |
 | Booking Hub          | ListView, Static, Button    |
-| Match Booking        | ListView, Static, Button    |
+| Match Booking        | ListView, Select, Static, Button |
 | Promo Booking        | ListView, Static, Button    |
 | Wrestler Selection   | DataTable, Static, Button   |
-| Match Type Selection | ListView, Static, Button    |
+| Match Category Selection | ListView, Static, Button    |
 | Confirmation         | ModalScreen, Static, Button |
 | Simulating           | Static, Footer              |
 | Results              | Static, Button, Footer      |
@@ -1218,15 +1241,15 @@ The following ASCII mockups define the **intended visual layout** for all MVP sc
 │ Show #12                             │
 ├──────────────────────────────────────┤
 │ ▸ Match 1                            │
-│   Kenny Omega vs Eddie Kingston      │
-│   Type: Singles                      │
+│   😃 Kenny Omega vs 😈 Eddie Kingston │
+│   Singles · Hardcore                 │
 │                                      │
 │   Promo 1                            │
 │   Jon Moxley                         │
 │                                      │
 │   Match 2                            │
-│   Jon Moxley vs Claudio Castagnoli   │
-│   Type: Hardcore                     │
+│   😈 Jon Moxley vs 😃 Claudio vs 😃 Kenny │
+│   Triple Threat · Submission         │
 │                                      │
 │   Promo 2                            │
 │   [ Empty ]                          │
@@ -1247,15 +1270,14 @@ The following ASCII mockups define the **intended visual layout** for all MVP sc
 ```text
 ┌──────────────────────────────────────┐
 │ Book Match 3                         │
+│ Singles                              │
 ├──────────────────────────────────────┤
-│ ▸ Wrestler A                         │
+│ ▸ [ Empty ]                          │
+│                                      │
 │   [ Empty ]                          │
 │                                      │
-│   Wrestler B                         │
-│   [ Empty ]                          │
-│                                      │
-│   Match Type                         │
-│   Singles                            │
+│   Stipulation                        │
+│   [ Hardcore ▾ ]                     │
 │                                      │
 ├──────────────────────────────────────┤
 │ [ Confirm ] (disabled)               │
@@ -1271,16 +1293,14 @@ The following ASCII mockups define the **intended visual layout** for all MVP sc
 ```text
 ┌──────────────────────────────────────┐
 │ Book Match 3                         │
-│ Kenny Omega vs Eddie Kingston        │
+│ Singles                              │
 ├──────────────────────────────────────┤
-│ ▸ Wrestler A                         │
-│   Kenny Omega            🥱          │
+│ ▸ 😃 Kenny Omega                     │
 │                                      │
-│   Wrestler B                         │
-│   Eddie Kingston                     │
+│   😈 Eddie Kingston                  │
 │                                      │
-│   Match Type                         │
-│   Singles                            │
+│   Stipulation                        │
+│   Submission                         │
 │                                      │
 ├──────────────────────────────────────┤
 │ [ Confirm ]                          │
@@ -1326,20 +1346,17 @@ Select Wrestler (Match 3 · A)
 
 ---
 
-#### 8.20.8 Match Type Selection
+#### 8.20.8 Match Category Selection
 
 ```text
 ┌──────────────────────────────────────┐
-│ Select Match Type                    │
+│ Select Match Category                │
 ├──────────────────────────────────────┤
 │ ▸ Singles                            │
-│   Standard one-on-one contest        │
 │                                      │
-│   Hardcore                           │
-│   No rules. High risk. Brutal.       │
+│   Triple Threat                      │
 │                                      │
-│   Submission                         │
-│   Victory by tap-out only            │
+│   Fatal 4-Way                         │
 ├──────────────────────────────────────┤
 │ [ Select ]   [ Cancel ]              │
 └──────────────────────────────────────┘
@@ -1368,8 +1385,8 @@ Select Wrestler (Match 3 · A)
 │ Show #12 · RAW                                                   │
 ├──────────────────────────────────────────────────────────────────┤
 │ Match 1                                                         │
-│ Kenny Omega def. Eddie Kingston                                 │
-│ Type: Singles                                                   │
+│ 😃 Kenny Omega def. 😈 Eddie Kingston                            │
+│ Singles · Hardcore                                               │
 │                                                              ★★★ │
 │                                                                  │
 │ Promo 1                                                         │
@@ -1377,8 +1394,8 @@ Select Wrestler (Match 3 · A)
 │                                                              ★★  │
 │                                                                  │
 │ Match 2                                                         │
-│ Jon Moxley def. Claudio Castagnoli                               │
-│ Type: Hardcore                                                  │
+│ 😈 Jon Moxley def. 😃 Claudio Castagnoli                          │
+│ Singles · Submission                                             │
 │                                                              ★★★★│
 │                                                                  │
 │ Promo 2                                                         │
@@ -1386,8 +1403,8 @@ Select Wrestler (Match 3 · A)
 │                                                              ★★  │
 │                                                                  │
 │ Match 3                                                         │
-│ Alpha def. Beta                                                 │
-│ Type: Tag                                                       │
+│ 😃 Alpha def. 😈 Beta, 😃 Gamma                                   │
+│ Triple Threat · High Flying                                      │
 │                                                              ★★★ │
 ├──────────────────────────────────────────────────────────────────┤
 │ Show Rating: ★★★☆                                               │
