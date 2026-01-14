@@ -22,7 +22,7 @@ from tests.ui_test_utils import (
     open_promo_booking,
     open_roster,
     run_async,
-    select_match_type,
+    select_match_category,
     select_wrestler,
     start_new_game,
     wait_for_screen,
@@ -61,7 +61,7 @@ def test_core_flow_new_game_booking_results_roster() -> None:
                     row_a = next(row_cursor)
                     row_b = next(row_cursor)
                     await open_match_booking(pilot, slot_index)
-                    await select_match_type(pilot, 0)
+                    await select_match_category(pilot, 0)
                     await pilot.press("enter")
                     await select_wrestler(pilot, row_a)
 
@@ -92,7 +92,7 @@ def test_core_flow_new_game_booking_results_roster() -> None:
 
 
 def test_match_type_change_trims_rows() -> None:
-    """Ensure match type changes keep earliest wrestlers and trim extras."""
+    """Ensure match category changes keep earliest wrestlers and trim extras."""
 
     async def run_flow() -> None:
         app = TestWrestleGMApp()
@@ -100,7 +100,7 @@ def test_match_type_change_trims_rows() -> None:
             await start_new_game(pilot)
             await open_booking_hub(pilot)
             await open_match_booking(pilot, 0)
-            await select_match_type(pilot, 1)
+            await select_match_category(pilot, 1)
 
             assert_screen(app, MatchBookingScreen)
             await pilot.press("enter")
@@ -116,10 +116,12 @@ def test_match_type_change_trims_rows() -> None:
             screen = app.screen
             assert len(screen.draft.wrestler_ids) == 3
 
-            await pilot.press("down", "enter")
-            await select_match_type(pilot, 0)
+            await confirm_booking(pilot)
+            await open_match_booking(pilot, 0)
+            await select_match_category(pilot, 0)
 
             assert_screen(app, MatchBookingScreen)
+            screen = app.screen
             assert len(screen.draft.wrestler_ids) == 2
 
     run_async(run_flow())

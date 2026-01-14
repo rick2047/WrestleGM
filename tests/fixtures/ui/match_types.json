@@ -1,66 +1,59 @@
 [
   {
-    "id": "singles",
-    "name": "Singles",
-    "description": "One-on-one showdown.",
-    "min_wrestlers": 2,
-    "max_wrestlers": 2,
-    "modifiers": {
-      "outcome_chaos": 0.2,
-      "rating_bonus": 5,
-      "rating_variance": 3,
-      "stamina_cost_winner": 10,
-      "stamina_cost_loser": 12,
-      "popularity_delta_winner": 2,
-      "popularity_delta_loser": -1
-    }
-  },
-  {
-    "id": "triple-threat",
-    "name": "Triple Threat",
-    "description": "Three wrestlers, one fall.",
-    "min_wrestlers": 3,
-    "max_wrestlers": 3,
-    "modifiers": {
-      "outcome_chaos": 0.2,
-      "rating_bonus": 5,
-      "rating_variance": 3,
-      "stamina_cost_winner": 10,
-      "stamina_cost_loser": 12,
-      "popularity_delta_winner": 2,
-      "popularity_delta_loser": -1
-    }
-  },
-  {
-    "id": "fatal-4-way",
-    "name": "Fatal 4-Way",
-    "description": "Four wrestlers, one fall.",
-    "min_wrestlers": 4,
-    "max_wrestlers": 4,
-    "modifiers": {
-      "outcome_chaos": 0.2,
-      "rating_bonus": 5,
-      "rating_variance": 3,
-      "stamina_cost_winner": 10,
-      "stamina_cost_loser": 12,
-      "popularity_delta_winner": 2,
-      "popularity_delta_loser": -1
-    }
-  },
-  {
     "id": "hardcore",
     "name": "Hardcore",
-    "description": "Weapons, brawls, and mayhem.",
-    "min_wrestlers": 2,
-    "max_wrestlers": 2,
+    "description": "No rules. High risk. Brutal.",
+    "modifiers": {
+      "outcome_chaos": 0.4,
+      "rating_bonus": 8,
+      "rating_variance": 12,
+      "stamina_cost_winner": 22,
+      "stamina_cost_loser": 25,
+      "popularity_delta_winner": 3,
+      "popularity_delta_loser": 0
+    }
+  },
+  {
+    "id": "submission",
+    "name": "Submission",
+    "description": "Victory by tap-out only.",
+    "modifiers": {
+      "outcome_chaos": 0.1,
+      "rating_bonus": 4,
+      "rating_variance": 5,
+      "stamina_cost_winner": 10,
+      "stamina_cost_loser": 12,
+      "popularity_delta_winner": 2,
+      "popularity_delta_loser": 1
+    }
+  },
+  {
+    "id": "high-flying",
+    "name": "High Flying",
+    "description": "Fast-paced aerial showcase.",
+    "modifiers": {
+      "outcome_chaos": 0.3,
+      "rating_bonus": 6,
+      "rating_variance": 10,
+      "stamina_cost_winner": 18,
+      "stamina_cost_loser": 20,
+      "popularity_delta_winner": 3,
+      "popularity_delta_loser": -1
+    }
+  },
+  {
+    "id": "ambulance",
+    "name": "Ambulance",
+    "description": "Win by leaving your opponent unable to continue.",
+    "allowed_categories": ["singles"],
     "modifiers": {
       "outcome_chaos": 0.35,
-      "rating_bonus": 8,
-      "rating_variance": 4,
-      "stamina_cost_winner": 14,
-      "stamina_cost_loser": 16,
-      "popularity_delta_winner": 3,
-      "popularity_delta_loser": -2
+      "rating_bonus": 7,
+      "rating_variance": 11,
+      "stamina_cost_winner": 24,
+      "stamina_cost_loser": 28,
+      "popularity_delta_winner": 4,
+      "popularity_delta_loser": -1
     }
   }
 ]

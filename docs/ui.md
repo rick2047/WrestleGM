@@ -7,7 +7,7 @@ than in screen classes.
 
 ## Flow Summary
 
-Main Menu -> Game Hub -> Booking Hub -> Match Booking -> Wrestler/Match Type
+Main Menu -> Game Hub -> Booking Hub -> Match Category -> Match Booking -> Wrestler
 Selection -> Confirmation Modal -> Simulating -> Results -> Game Hub.
 
 ## Navigation Model
@@ -107,7 +107,8 @@ Key bindings:
 
 Components:
 - `Static` header and detail line.
-- `ListView` fields: Wrestler A, Wrestler B, Match Type.
+- `ListView` fields: Wrestler slots (based on category).
+- `Select` dropdown: Match Type.
 - `Button` group: Confirm, Clear Slot, Cancel.
 - `Footer` for bindings.
 
@@ -154,9 +155,9 @@ State interactions:
 Focus behavior:
 - The wrestler list receives focus on mount.
 
-### MatchTypeSelectionScreen
+### MatchCategorySelectionScreen
 
-Purpose: pick a match type for a slot.
+Purpose: pick a match category for a slot.
 
 Key bindings:
 - `Enter`: select
@@ -164,20 +165,18 @@ Key bindings:
 
 Components:
 - `Static` header.
-- `ListView` of match type names.
-- `Static` description panel updated on highlight.
+- `ListView` of match category names.
 - `Button` group: Select, Cancel.
 - `Footer` for bindings.
 
 Behavior:
-- Highlighting updates the description panel.
-- Selection uses the callback to update the booking draft.
+- Selection uses the callback to open match booking.
 
 State interactions:
-- Lists match types from `GameState.match_types`.
+- Lists categories from the fixed category registry.
 
 Focus behavior:
-- The match type list receives focus on mount.
+- The category list receives focus on mount.
 
 ### ConfirmBookingModal
 
