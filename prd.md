@@ -48,7 +48,7 @@ Outcomes:
 
 - **Show-first design**: All progression is evaluated at show boundaries
 - **Textual-first UI**: Widgets and CSS are the source of consistency
-- **Data-driven domain**: Wrestlers and stipulations (rules) come from data files
+- **Data-driven domain**: Wrestlers and match types (stipulations) come from data files
 - **Deterministic simulation**: Same inputs + seed = same results
 - **Keyboard-only navigation**: No mouse assumptions
 - **Explicit systems**: Outcomes are explainable via numbers, not hidden scripts
@@ -119,7 +119,7 @@ Future-safe (not required for MVP):
 
 ---
 
-### 4.2 StipulationDefinition
+### 4.2 MatchTypeDefinition (Stipulation)
 
 Loaded from `data/match_types.json`.
 
@@ -135,10 +135,12 @@ Fields:
   - `rating_variance`
   - `stamina_cost_winner`
   - `stamina_cost_loser`
-  - `popularity_delta_winner`
-  - `popularity_delta_loser`
+- `popularity_delta_winner`
+- `popularity_delta_loser`
 
-Stipulations **must affect simulation**.
+MVP data includes Standard plus Ambulance, with Ambulance restricted to Singles. Other match types may be present.
+
+Match types (stipulations) **must affect simulation**.
 
 ---
 
@@ -162,7 +164,7 @@ Fields:
 
 - `wrestler_ids: list[string]`
 - `match_category_id`
-- `stipulation_id`
+- `match_type_id`
 
 ---
 
@@ -201,7 +203,7 @@ Fields:
 - `non_winner_ids: list[string]`
 - `rating`
 - `match_category_id`
-- `stipulation_id`
+- `match_type_id`
 - `applied_modifiers`
 - `stat_deltas`
 
@@ -216,6 +218,30 @@ Fields:
 - `wrestler_id`
 - `rating`
 - `stat_deltas`
+
+---
+
+### 4.9 RivalryState
+
+Tracks the active rivalry level for a wrestler pair.
+
+Fields:
+
+- `wrestler_a_id`
+- `wrestler_b_id`
+- `rivalry_value` (int, 0–4)
+
+---
+
+### 4.10 CooldownState
+
+Tracks cooldown remaining shows for a wrestler pair after a blowoff match.
+
+Fields:
+
+- `wrestler_a_id`
+- `wrestler_b_id`
+- `remaining_shows` (int, 0–6)
 
 ---
 
@@ -350,8 +376,7 @@ Priority guarantee:
 **Step B — Alignment modifier (wrestling psychology)** Alignment affects rating only:
 
 - 1v1 special case: Face vs Heel → `alignment_mod = +ALIGN_BONUS`, Heel vs Heel → `alignment_mod = -2 * ALIGN_BONUS`, Face vs Face → `alignment_mod = 0`
-- Multi-man case (3+): All heels → `alignment_mod = -2 * ALIGN_BONUS`, All faces → `alignment_mod = 0`, Heels > faces → `alignment_mod = +ALIGN_BONUS`, Heels = faces → `alignment_mod = 0`, Faces > heels → `alignment_mod = -2 * ALIGN_BONUS`
-  - Design note: the Faces > heels penalty is intentionally stronger to discourage face-heavy multi-man matches.
+- Multi-man case (3+): All heels → `alignment_mod = -2 * ALIGN_BONUS`, All faces → `alignment_mod = 0`, Heels > faces → `alignment_mod = +ALIGN_BONUS`, Heels = faces → `alignment_mod = 0`, Faces > heels → `alignment_mod = -ALIGN_BONUS`
 
 Then:
 
@@ -373,6 +398,13 @@ Then:
 **Step F — Convert to 0–5 stars**
 
 - `rating_stars = round((rating_100 / 100) * 5, 1)`
+
+**Step G — Rivalry & cooldown adjustments (star space)**
+
+- Each active rivalry pair adds `+0.25` stars
+- Each blowoff pair adds `+0.5` stars
+- If any cooldown pair exists in the match, apply `-1.0` stars once
+- Clamp final rating to `0.0–5.0`
 
 **Outputs**
 
@@ -683,6 +715,21 @@ The UI must prevent invalid shows from being run.
 
 ---
 
+### 6.9 Rivalry & Cooldown Progression
+
+Rivalries are tracked per unique wrestler pair and updated at show end.
+
+**Rules**
+
+- Pair identity is normalized (A–B == B–A) and a pair can be in only one state: none, active rivalry, or cooldown
+- Each match evaluates all unique wrestler pairs (N·(N-1)/2)
+- If a pair appears in a match and is not in cooldown, its rivalry value increases by 1 (cap 4)
+- A level 4 rivalry pair is treated as a blowoff; at show end it is cleared and replaced with a cooldown of 6 shows
+- Cooldown blocks rivalry progression and rivalry bonuses during matches
+- Cooldown decrements by 1 after each show; when it reaches 0, it is removed
+
+---
+
 ## 7. Between-Show Recovery Rules
 
 This section defines how wrestlers recover between shows. Recovery is applied **once per show transition** and depends on whether a wrestler worked on the previous show.
@@ -959,11 +1006,32 @@ Slots are binary; partial matches do not exist on the show.
 
 - Match slots show a single line with alignment emojis and names separated by `vs`
 - A second line shows `Category · Stipulation`
+- The match label line includes rivalry/cooldown emojis when present
 
 **Validation rules**
 
 - Run Show is enabled only when the show card has no validation errors
 - Booking Hub never accepts invalid or partial slots
+
+---
+
+### 8.8.1 Rivalry & Cooldown Indicators
+
+Rivalry and cooldown states are surfaced as emojis on match headers during booking.
+
+**Mapping**
+
+- Rivalry levels: 1 → ⚡, 2 → 🔥, 3 → ⚔️, 4 → 💥
+- Cooldown remaining shows: 6–5 → 🧊, 4–3 → ❄️, 2–1 → 💧
+
+**Ordering**
+
+- Emojis are ordered by the unique pair order derived from the current wrestler list
+
+**Display rules**
+
+- Booking Hub: emojis appear on the same line as the match slot label when present
+- Match Booking: emojis appear on the header line and update live as wrestlers change
 
 ---
 
@@ -986,6 +1054,7 @@ This screen is the **only place where a match can be edited or created**. It own
 - Re-selecting a different category for a booked match keeps the earliest wrestlers up to the new size and clears any extras
 - Wrestler rows open the wrestler selection screen on Enter
 - Match type is changed via an inline dropdown
+- The header line shows rivalry/cooldown emojis based on current selections and updates live
 - Enter opens the stipulation dropdown when it is focused
 - Confirm is enabled only when all required wrestler slots and stipulation are valid
 - Esc or Cancel discards all changes and returns to Match Category Selection
@@ -1122,7 +1191,7 @@ No match details, stats, or repetition are shown in the modal; full context is a
 **Components**
 
 - Slot results list:
-  - Matches: Winner def. non-winners + match rating (stars only, half-star precision)
+  - Matches: Winner def. non-winners + `Category · Stipulation` line + match rating (stars only, half-star precision)
   - Promos: Wrestler name + promo rating (stars only)
 - Overall show rating (stars only)
 - Footer actions:
@@ -1132,6 +1201,7 @@ No match details, stats, or repetition are shown in the modal; full context is a
 
 - Esc does nothing
 - Continue returns to the Game Hub
+- No rivalry/cooldown emojis are shown on results
 
 ---
 
