@@ -79,6 +79,13 @@ The system SHALL simulate each promo using a rating step and a stat delta step u
 - **WHEN** the same wrestler stats and seed are used
 - **THEN** promo ratings and deltas are identical across runs
 
+### Requirement: Show simulation order
+The system SHALL simulate show slots in card order and return results in the same order.
+
+#### Scenario: Preserve card order in results
+- **WHEN** a show card is simulated
+- **THEN** the results list follows the original slot order
+
 ### Requirement: Promo rating simulation formula and bounds
 The system SHALL compute promo ratings in 0–100 space from mic skill and popularity, apply variance using one RNG draw with `PROMO_VARIANCE = 8`, clamp, and convert to 0.0–5.0 stars using the shared conversion rules.
 
@@ -100,4 +107,3 @@ The system SHALL apply fixed popularity deltas based on promo quality and grant 
 #### Scenario: Promo stamina recovery
 - **WHEN** a wrestler appears in a promo slot
 - **THEN** the wrestler stamina delta is `floor(STAMINA_RECOVERY_PER_SHOW / 2)`
-

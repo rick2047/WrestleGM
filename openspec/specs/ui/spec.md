@@ -4,7 +4,7 @@
 TBD - created by archiving change add-wrestlegm-mvp. Update Purpose after archive.
 ## Requirements
 ### Requirement: Textual MVP screens
-The system SHALL provide the MVP screens defined in the PRD using Textual widgets and keyboard-only navigation. The roster screen SHALL read from the session roster stored in `GameState`, render the roster in a table with Name/Stamina/Popularity columns, include a header row naming the name/stamina/popularity columns, format rows as `{emoji} {name:<18} {sta:>3} {pop:>3}{fatigue}`, display alignment via emoji (Face 😃, Heel 😈), truncate names longer than 18 characters to 15 + `...`, and rebuild its list rows on resume without reusing mounted widget IDs.
+The system SHALL provide the MVP screens defined in the PRD using Textual widgets and keyboard-only navigation. The roster screen SHALL read from the session roster stored in `GameState`, render the roster in a table with Name/Stamina/Mic/Popularity columns, include a header row naming the name/stamina/mic/popularity columns, format rows as `{emoji} {name:<18} {sta:>3} {mic:>3} {pop:>3}{fatigue}`, display alignment via emoji (Face 😃, Heel 😈), truncate names longer than 18 characters to 15 + `...`, and rebuild its list rows on resume without reusing mounted widget IDs.
 
 #### Scenario: Navigate from main menu to game hub
 - **WHEN** the player selects New Game on the main menu
@@ -16,8 +16,8 @@ The system SHALL provide the MVP screens defined in the PRD using Textual widget
 
 #### Scenario: Roster header and row formatting
 - **WHEN** the roster screen renders
-- **THEN** a header row names the name, stamina, and popularity columns
-- **AND THEN** each roster row follows the format `{emoji} {name:<18} {sta:>3} {pop:>3}{fatigue}`
+- **THEN** a header row names the name, stamina, mic, and popularity columns
+- **AND THEN** each roster row follows the format `{emoji} {name:<18} {sta:>3} {mic:>3} {pop:>3}{fatigue}`
 - **AND THEN** wrestler names longer than 18 characters are truncated to 15 + `...`
 
 #### Scenario: Roster alignment emoji mapping
@@ -51,12 +51,16 @@ The system SHALL show five slots in fixed order (Match 1, Promo 1, Match 2, Prom
 - **THEN** it shows a `Category · Stipulation` line under the participant list
 
 ### Requirement: Match booking flow
-The system SHALL edit matches in a dedicated booking screen, require confirmation before committing, and split match category selection (size) from stipulation selection (rules). The booking screen SHALL open after a category is chosen, render one wrestler row per required slot based on category, filter stipulations to those allowed for the selected category, allow changing stipulation via an inline dropdown, default the stipulation to the first available option when booking an empty slot, mark already-booked wrestlers with a 📅 indicator in the selection list, show popularity and stamina, display alignment via emoji (Face 😃, Heel 😈), render the selection list as a table with Name/Stamina/Popularity columns, include a header row naming the name/stamina/popularity columns, format rows as `{emoji} {name:<18} {sta:>3} {pop:>3}{fatigue}{booked_marker}`, and use 🥱 consistently for low-stamina indicators.
+The system SHALL edit matches in a dedicated booking screen, require confirmation before committing, and split match category selection (size) from stipulation selection (rules). The booking screen SHALL open after a category is chosen, render one wrestler row per required slot based on category, filter stipulations to those allowed for the selected category, allow changing stipulation via an inline dropdown, default the stipulation to the first available option when booking an empty slot, mark already-booked wrestlers with a 📅 indicator in the selection list, show popularity and stamina, display alignment via emoji (Face 😃, Heel 😈), render the selection list as a table with Name/Stamina/Mic/Popularity columns, include a header row naming the name/stamina/mic/popularity columns, format rows as `{emoji} {name:<18} {sta:>3} {mic:>3} {pop:>3}{fatigue}{booked_marker}`, and use 🥱 consistently for low-stamina indicators.
 
 #### Scenario: Stipulation dropdown opens on Enter
 - **WHEN** the user focuses the stipulation dropdown in match booking
 - **AND WHEN** they press Enter
 - **THEN** the stipulation dropdown opens without error
+
+#### Scenario: Re-selecting a match category keeps early picks
+- **WHEN** the player re-selects a match category with fewer required slots
+- **THEN** the earliest selected wrestlers remain assigned and any extra slots are cleared
 
 ### Requirement: Booking validation in UI
 The system SHALL block committing invalid matches and running invalid shows according to the booking rules.
@@ -107,6 +111,10 @@ The system SHALL render a Main Menu that only offers New Game and Quit, and SHAL
 #### Scenario: Main menu options
 - **WHEN** the Main Menu is shown
 - **THEN** the only options are New Game and Quit
+
+#### Scenario: Quit from Main Menu
+- **WHEN** the player presses Q on the Main Menu
+- **THEN** the application quits
 
 #### Scenario: Enter session from Main Menu
 - **WHEN** the player selects New Game
@@ -165,6 +173,13 @@ The system SHALL return to the Game Hub after results and SHALL not provide rost
 - **WHEN** the player selects Continue on the results screen
 - **THEN** the Game Hub is shown
 
+### Requirement: Simulating screen behavior
+The system SHALL present a Simulating screen that runs `GameState.run_show()` on entry, accepts no input, and automatically advances to the Results screen after a short delay.
+
+#### Scenario: Simulate and advance
+- **WHEN** the Simulating screen is shown
+- **THEN** the show is run and the Results screen appears automatically
+
 ### Requirement: Promo booking flow
 The system SHALL provide a promo booking screen that edits a single wrestler for a promo slot and requires confirmation before committing.
 
@@ -190,13 +205,13 @@ The system SHALL display wrestler mic skill on the roster overview and wrestler 
 - **WHEN** the roster overview or wrestler selection screen renders
 - **THEN** the table includes a Mic column showing each wrestler's mic skill value
 
-### Requirement: Match type selection screen
-The system SHALL provide a match type selection screen when booking a match slot and use the selected match type to determine the required wrestler count in match booking.
+### Requirement: Match category selection screen
+The system SHALL provide a match category selection screen when booking a match slot and use the selected category to determine the required wrestler count in match booking.
 
-#### Scenario: Match type selection
+#### Scenario: Match category selection
 - **WHEN** the user selects a match slot on the booking hub
-- **THEN** the match type selection screen lists Singles, Triple Threat, and Fatal 4-Way
-- **AND THEN** selecting a match type opens match booking for that slot
+- **THEN** the match category selection screen lists Singles, Triple Threat, and Fatal 4-Way
+- **AND THEN** selecting a match category opens match booking for that slot
 
 ### Requirement: Rivalry and cooldown emoji display
 The system SHALL display rivalry and cooldown emojis on the match name line in the Booking Hub and Match Booking screens using the specified emoji mappings, and SHALL update the emoji list live as wrestlers are added or removed.
@@ -223,4 +238,3 @@ The system SHALL not display rivalry or cooldown emojis on the Show Results scre
 #### Scenario: Results omit rivalry emojis
 - **WHEN** the Show Results screen renders
 - **THEN** no rivalry or cooldown emojis are shown
-
