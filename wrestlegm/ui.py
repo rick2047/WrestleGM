@@ -704,7 +704,13 @@ class NameSaveSlotModal(ModalScreen):
             focus_order[0].focus()
             return
         index = focus_order.index(focused)
-        focus_order[(index + delta) % len(focus_order)].focus()
+        for _ in range(len(focus_order)):
+            index = (index + delta) % len(focus_order)
+            candidate = focus_order[index]
+            if getattr(candidate, "disabled", False):
+                continue
+            candidate.focus()
+            return
 
 
 class OverwriteSaveSlotModal(ModalScreen):
