@@ -21,6 +21,13 @@ Each save slot SHALL include `slot_index`, `name`, `exists`, and `last_saved_sho
 - **WHEN** the slot list is shown
 - **THEN** each slot includes its index, name if present, exists flag, and last saved show index if present
 
+### Requirement: Save slot metadata index
+The system SHALL maintain a lightweight slot index file at `dist/data/save/slots.json` that contains the metadata needed for the Save Slot Selection screen. The UI SHALL read slot metadata from this index rather than parsing full save payloads. The index SHALL be updated whenever a slot is saved or overwritten.
+
+#### Scenario: Slot index updated on save
+- **WHEN** a slot is saved or overwritten
+- **THEN** `dist/data/save/slots.json` is updated with the latest slot metadata
+
 ### Requirement: Save payload and versioning
 Save files SHALL be JSON, human-readable, and include a mandatory `version` field. MVP supports only `version = 1`; loading a higher version SHALL be blocked. Save payloads SHALL include the full game state required to resume planning the next show, including roster stats, current show index, current card state, and the RNG seed. If a `saved_at` field is present, it SHALL be metadata-only and MUST NOT influence simulation.
 

@@ -84,7 +84,7 @@ The system SHALL provide a Save Slot Selection screen that is shared by New Game
 - **THEN** the save is loaded and the Booking Hub is shown
 
 ### Requirement: Name save slot modal
-The system SHALL provide a Name Save Slot modal that captures the slot name on first save. The Confirm action SHALL be disabled until a non-empty name is provided. Cancel SHALL return to Save Slot Selection without creating a game.
+The system SHALL provide a Name Save Slot modal that captures the slot name on first save. The Confirm action SHALL be disabled until a non-empty name is provided. Cancel SHALL return to Save Slot Selection without creating a game. When invoked after an overwrite confirmation, the name field SHALL be pre-filled with the previous slot name.
 
 #### Scenario: Confirm requires a non-empty name
 - **WHEN** the name field is empty or whitespace-only
@@ -93,6 +93,10 @@ The system SHALL provide a Name Save Slot modal that captures the slot name on f
 #### Scenario: Cancel returns to slot selection
 - **WHEN** the player cancels naming a slot
 - **THEN** the Save Slot Selection screen is shown and no game is created
+
+#### Scenario: Overwrite pre-fills name
+- **WHEN** the Name Save Slot modal follows an overwrite confirmation
+- **THEN** the input field is pre-filled with the overwritten slot name
 
 ### Requirement: Overwrite save slot modal
 The system SHALL provide an Overwrite Save Slot modal when starting a new game on a filled slot. Confirm SHALL overwrite the existing slot and proceed to Name Save Slot. Cancel SHALL return to Save Slot Selection.
