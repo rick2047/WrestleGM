@@ -102,11 +102,11 @@ The system SHALL centralize RNG ownership and simulation methods in a `Simulatio
 - **THEN** the `SimulationEngine` is used to compute outcomes, ratings, and deltas
 
 ### Requirement: RNG seed stored in game state
-The system SHALL store and persist the simulation RNG seed in game state to support reproducibility.
+The system SHALL store the simulation RNG seed in game state to support reproducibility during a session.
 
 #### Scenario: Seed retention
 - **WHEN** a new game is started with a seed
-- **THEN** the seed is retained in state for future simulations
+- **THEN** the seed is retained in state for future simulations in the current session
 
 ### Requirement: Deterministic promo simulation pipeline
 The system SHALL simulate each promo using a rating step and a stat delta step using the same seeded RNG instance owned by a `SimulationEngine`.
