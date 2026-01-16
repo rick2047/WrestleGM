@@ -100,9 +100,9 @@ def test_load_game_flow() -> None:
         app = TestWrestleGMApp()
         seed_show_card(app.state)
         app.state.run_show()
-        app.state.current_slot_index = 1
-        app.state.pending_slot_name = "Test"
-        app.state.save_current_slot()
+        app.session.current_slot_index = 1
+        app.session.pending_slot_name = "Test"
+        app.session.save_current_slot(app.state)
 
         async with app.run_test(size=VIEWPORT_SIZE) as pilot:
             assert_screen(app, MainMenuScreen)
@@ -121,9 +121,9 @@ def test_new_game_overwrite_flow_prefills_name() -> None:
         app = TestWrestleGMApp()
         seed_show_card(app.state)
         app.state.run_show()
-        app.state.current_slot_index = 1
-        app.state.pending_slot_name = "My Save"
-        app.state.save_current_slot()
+        app.session.current_slot_index = 1
+        app.session.pending_slot_name = "My Save"
+        app.session.save_current_slot(app.state)
 
         async with app.run_test(size=VIEWPORT_SIZE) as pilot:
             assert_screen(app, MainMenuScreen)

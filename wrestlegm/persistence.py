@@ -127,8 +127,12 @@ def serialize_game_state(state: GameState) -> dict[str, Any]:
 
     return {
         "roster": [asdict(wrestler) for wrestler in state.roster.values()],
-        "rivalry_states": [asdict(rivalry) for rivalry in state.rivalry_states.values()],
-        "cooldown_states": [asdict(cooldown) for cooldown in state.cooldown_states.values()],
+        "rivalry_states": [
+            asdict(rivalry) for rivalry in state.rivalry_manager.rivalry_states.values()
+        ],
+        "cooldown_states": [
+            asdict(cooldown) for cooldown in state.rivalry_manager.cooldown_states.values()
+        ],
         "show_index": state.show_index,
         "show_card": [_serialize_slot(slot) for slot in state.show_card],
         "rng_seed": state.engine.seed,
@@ -174,7 +178,7 @@ def deserialize_game_state(state: GameState, payload: dict[str, Any]) -> None:
             rivalry_value=_coerce_int(entry.get("rivalry_value"), 0),
         )
         rivalry_states[normalize_pair(rivalry.wrestler_a_id, rivalry.wrestler_b_id)] = rivalry
-    state.rivalry_states = rivalry_states
+    state.rivalry_manager.rivalry_states = rivalry_states
 
     cooldown_states: dict[tuple[str, str], CooldownState] = {}
     for entry in _iter_payload_list(payload, "cooldown_states"):
@@ -193,7 +197,7 @@ def deserialize_game_state(state: GameState, payload: dict[str, Any]) -> None:
             remaining_shows=_coerce_int(entry.get("remaining_shows"), 0),
         )
         cooldown_states[normalize_pair(cooldown.wrestler_a_id, cooldown.wrestler_b_id)] = cooldown
-    state.cooldown_states = cooldown_states
+    state.rivalry_manager.cooldown_states = cooldown_states
 
     show_index = payload.get("show_index", 1)
     state.show_index = show_index if isinstance(show_index, int) else 1

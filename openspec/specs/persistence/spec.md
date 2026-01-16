@@ -93,15 +93,15 @@ The system SHALL not provide manual save actions, mid-show saves, or save-on-qui
 - **THEN** no save is written
 
 ### Requirement: Persistence ownership boundaries
-Persistence orchestration SHALL be owned by `GameState`, which exposes save/load and new-game operations to the UI layer. Simulation and show application layers SHALL not perform file I/O, and `ShowApplier` SHALL not perform file I/O.
+Persistence orchestration SHALL be owned by a `SessionManager`, which exposes save/load and new-game operations to the UI layer. `GameState` SHALL represent in-memory state only and SHALL NOT perform file I/O. Simulation and show application layers SHALL not perform file I/O, and `ShowApplier` SHALL not perform file I/O.
 
 #### Scenario: No persistence in show applier
 - **WHEN** show deltas are applied
 - **THEN** no save or load file I/O occurs in the applier
 
-#### Scenario: UI delegates persistence to game state
+#### Scenario: UI delegates persistence to session manager
 - **WHEN** the UI needs to save, load, or start a new game
-- **THEN** it invokes `GameState` persistence operations rather than handling file I/O directly
+- **THEN** it invokes `SessionManager` persistence operations rather than handling file I/O directly
 
 ### Requirement: RNG determinism across save/load
 Save/load SHALL not introduce RNG draws and SHALL reuse the saved RNG seed verbatim.

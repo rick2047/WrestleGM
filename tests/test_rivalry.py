@@ -12,7 +12,8 @@ from wrestlegm.models import (
     CooldownState,
     WrestlerDefinition,
 )
-from wrestlegm.state import GameState, normalize_pair
+from wrestlegm.models import normalize_pair
+from wrestlegm.state import GameState
 
 
 def build_match_type() -> MatchTypeDefinition:
@@ -98,9 +99,11 @@ def test_rivalry_emojis_for_match_ordering() -> None:
     key_ac = normalize_pair("a", "c")
     key_bc = normalize_pair("b", "c")
 
-    state.rivalry_states[key_ab] = RivalryState("a", "b", rivalry_value=1)
-    state.cooldown_states[key_ac] = CooldownState("a", "c", remaining_shows=6)
-    state.rivalry_states[key_bc] = RivalryState("b", "c", rivalry_value=4)
+    state.rivalry_manager.rivalry_states[key_ab] = RivalryState("a", "b", rivalry_value=1)
+    state.rivalry_manager.cooldown_states[key_ac] = CooldownState(
+        "a", "c", remaining_shows=6
+    )
+    state.rivalry_manager.rivalry_states[key_bc] = RivalryState("b", "c", rivalry_value=4)
 
     emojis = state.rivalry_emojis_for_match(["a", "b", "c"])
     assert emojis == "⚡🧊💥"

@@ -205,8 +205,8 @@ class EdgeAwareDataTable(DataTable):
 from wrestlegm import constants
 from wrestlegm.data import load_match_types, load_wrestlers
 from wrestlegm.models import Match, MatchTypeDefinition, Promo, PromoResult, WrestlerState
-from wrestlegm.state import GameState
 from wrestlegm import persistence
+from wrestlegm.session import SessionManager
 
 
 FATIGUE_ICON = "🥱"
@@ -377,6 +377,7 @@ class WrestleGMApp(App):
         super().__init__()
         self._wrestlers = load_wrestlers()
         self._match_types = load_match_types()
+        self.session = SessionManager(self._wrestlers, self._match_types)
         self.state = GameState(self._wrestlers, self._match_types)
 
     def on_mount(self) -> None:
@@ -387,14 +388,14 @@ class WrestleGMApp(App):
     def new_game(self, slot_index: int, slot_name: str) -> None:
         """Start a fresh session and show the booking hub."""
 
-        self.state.new_game(slot_index, slot_name)
+        self.state = self.session.new_game(slot_index, slot_name)
         self.switch_screen(BookingHubScreen())
 
     def load_game(self, slot_index: int) -> None:
         """Load a saved session and show the game hub."""
 
         try:
-            self.state.load_slot(slot_index)
+            self.state = self.session.load_game(slot_index)
         except ValueError as exc:
             message = "Unable to load save."
             if str(exc) == "unsupported_save_version":
@@ -499,7 +500,7 @@ class SaveSlotSelectionScreen(Screen):
     def refresh_view(self) -> None:
         """Reload slot metadata and rebuild the list."""
 
-        self.slots = self.app.state.list_slots()
+        self.slots = self.app.session.list_slots()
         if hasattr(self.menu, "clear"):
             self.menu.clear()
         else:
@@ -585,7 +586,7 @@ class SaveSlotSelectionScreen(Screen):
         if name is None:
             return
         if overwrite:
-            self.app.state.clear_save_slot(slot_index)
+            self.app.session.clear_save_slot(slot_index)
         self.app.new_game(slot_index, name)
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
@@ -2099,7 +2100,7 @@ class ResultsScreen(Screen):
     def action_continue(self) -> None:
         """Return to the game hub."""
         # Fail fast if the save state is invalid; inputs are validated upstream.
-        self.app.state.save_current_slot()
+        self.app.session.save_current_slot(self.app.state)
         self.app.switch_screen(GameHubScreen())
 
     def action_focus_next(self) -> None:
