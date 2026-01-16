@@ -1,7 +1,7 @@
 ## MODIFIED Requirements
 
 ### Requirement: Rating simulation formula and bounds
-The system SHALL compute match ratings in 0–100 space, apply a list of rating modifiers, apply variance using one RNG draw, convert to stars, and clamp to 0.0–5.0 stars.
+The system SHALL compute match ratings in 0–100 space, apply a list of rating modifiers (with any star-based bonuses converted to 0–100 using 1 star = 20 points), apply variance using one RNG draw, convert to stars, and clamp to 0.0–5.0 stars.
 
 #### Scenario: Rating computation with modifiers
 - **WHEN** a match rating is simulated for `N` wrestlers
@@ -24,9 +24,9 @@ The system SHALL provide a `RatingModifier` interface that allows for the creati
 
 #### Scenario: Rivalry modifier
 - **WHEN** a match is simulated with a `RivalryModifier`
-- **THEN** each active rivalry pair adds a configurable bonus to the rating
-- **AND THEN** each blowoff pair adds a configurable bonus to the rating
+- **THEN** each active rivalry pair adds a configurable bonus (defined in stars and converted to 0–100 by multiplying by 20)
+- **AND THEN** each blowoff pair adds a configurable bonus (defined in stars and converted to 0–100 by multiplying by 20)
 
 #### Scenario: Cooldown modifier
 - **WHEN** a match is simulated with a `CooldownModifier`
-- **THEN** if any cooldown pair exists in the match, a configurable penalty is applied to the rating
+- **THEN** if any cooldown pair exists in the match, a configurable penalty (defined in stars and converted to 0–100 by multiplying by 20) is applied to the rating
