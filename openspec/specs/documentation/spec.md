@@ -4,11 +4,11 @@
 TBD - created by archiving change add-docs-site. Update Purpose after archive.
 ## Requirements
 ### Requirement: Documentation site structure
-The documentation site SHALL provide dedicated pages for architecture, simulation, UI flows, and implementation reference.
+The documentation site SHALL provide dedicated pages for architecture, simulation, UI flows, and implementation reference, plus an API reference generated from docstrings.
 
 #### Scenario: Navigate core documentation
 - **WHEN** the user opens the documentation site
-- **THEN** they can access pages for architecture, simulation, UI, and implementation reference via the navigation
+- **THEN** they can access pages for architecture, simulation, UI, implementation reference, and API reference via the navigation
 
 ### Requirement: API reference from docstrings
 The documentation site SHALL include an API reference generated from Python docstrings for the `wrestlegm` package.
@@ -53,6 +53,14 @@ The documentation SHALL describe the current simulation architecture, including 
 - **WHEN** a reader views the documentation index
 - **THEN** it lists `uv` commands for running the app, tests, and docs
 
+#### Scenario: Documentation build commands
+- **WHEN** a reader views documentation build instructions
+- **THEN** they see `uv run mkdocs serve` and `uv run mkdocs build`
+
+#### Scenario: App and test commands
+- **WHEN** a reader views run/test instructions
+- **THEN** they see `uv run main.py` and `uv run pytest`
+
 ### Requirement: UI testing documentation
 The system SHALL document the UI testing strategy in the `docs/` site, including flow tests, snapshot tests, and how to update baselines.
 
@@ -60,3 +68,10 @@ The system SHALL document the UI testing strategy in the `docs/` site, including
 - **WHEN** a contributor reads the docs
 - **THEN** they can find the UI testing strategy and snapshot update steps in `docs/`
 
+#### Scenario: Snapshot update command documented
+- **WHEN** a contributor reads the UI testing docs
+- **THEN** they see the command to update snapshots
+
+#### Scenario: Snapshot baseline location documented
+- **WHEN** a contributor reads the UI testing docs
+- **THEN** they see where snapshot baselines are stored
