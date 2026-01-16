@@ -578,8 +578,8 @@ The system SHALL match the following ASCII mockups for the MVP screens.
 ```
 Select Wrestler (Match 3 · A)
 
-| Name                 | Sta | Mic | Pop     |
-| -------------------- | --- | --- | ------- |
+| Name                 | Sta | Mic | Pop |
+| -------------------- | --- | --- | ---:|
 | 😃 Kenny Omega       |  28 |  88 |  92 🥱 📅 |
 | 😈 Jon Moxley        |  12 |  86 |  88 🥱   |
 | 😃 Eddie Kingston    |  64 |  70 |  74     |
@@ -598,7 +598,7 @@ Select Wrestler (Match 3 · A)
 │                                      │
 │   Triple Threat                      │
 │                                      │
-│   Fatal 4-Way                         │
+│   Fatal 4-Way                        │
 ├──────────────────────────────────────┤
 │ [ Select ]   [ Cancel ]              │
 └──────────────────────────────────────┘
@@ -653,8 +653,8 @@ Select Wrestler (Match 3 · A)
 ```
 Roster Overview
 
-| Name                   | Sta | Mic | Pop  |
-| ---------------------- | --- | --- | ---- |
+| Name                   | Sta | Mic | Pop |
+| ---------------------- | --- | --- | ---:|
 | 😃 Kenny Omega         |  28 |  88 |  89  |
 | 😈 Jon Moxley          |  12 |  86 |  82 🥱 |
 | 😃 Eddie Kingston      |  64 |  70 |  74  |

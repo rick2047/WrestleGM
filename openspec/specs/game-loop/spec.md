@@ -86,7 +86,7 @@ The system SHALL prevent a wrestler from appearing in more than one slot on the 
 - **THEN** the show is invalid
 
 ### Requirement: Match booking stamina threshold
-The system SHALL use `STAMINA_MIN_BOOKABLE = 10` as the minimum stamina required to book a wrestler in a match.
+The system SHALL require wrestlers to have stamina greater than `STAMINA_MIN_BOOKABLE = 10` to be booked in a match.
 
 #### Scenario: Enforce minimum stamina for matches
 - **WHEN** a wrestler has stamina of 10 or below

@@ -36,7 +36,7 @@ The system SHALL compute match ratings in 0–100 space with alignment and match
 - **WHEN** a match rating is simulated for `N` wrestlers
 - **THEN** `base_100 = pop_avg * POP_W + sta_avg * STA_W` using averages across all wrestlers
 - **AND THEN** alignment modifiers apply for 1v1 (face vs heel: `+ALIGN_BONUS`, heel vs heel: `-2 * ALIGN_BONUS`, face vs face: `0`)
-- **AND THEN** multi-man alignment modifiers apply (all heels: `-2 * ALIGN_BONUS`, all faces: `0`, heels > faces: `+ALIGN_BONUS`, heels == faces: `0`, faces > heels: `-ALIGN_BONUS`)
+- **AND THEN** for matches with `N >= 3`, multi-man alignment modifiers apply (all heels: `-2 * ALIGN_BONUS`, all faces: `0`, heels > faces: `+ALIGN_BONUS`, heels == faces: `0`, faces > heels: `-ALIGN_BONUS`)
 - **AND THEN** `rating_bonus` is added
 - **AND THEN** one RNG draw applies `swing` in `[-rating_variance, +rating_variance]`
 - **AND THEN** `rating_100` is clamped to 0–100 and converted to stars via `round((rating_100/100)*5, 1)`
