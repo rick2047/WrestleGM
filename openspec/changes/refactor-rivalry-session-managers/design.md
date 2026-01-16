@@ -35,4 +35,4 @@
 4. Update tests for rivalry and persistence to target the new structures.
 
 ## Open Questions
-- Should `SessionManager` expose a `current_game` attribute or return `GameState` instances from load/new-game calls, leaving UI to store the active state?
+- None. `SessionManager` returns `GameState` instances from load/new-game calls, and the UI owns the active state reference.

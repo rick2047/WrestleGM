@@ -14,6 +14,7 @@ from wrestlegm import constants
 from wrestlegm.data import load_match_types, load_wrestlers
 from wrestlegm.models import Match, Promo
 from wrestlegm.state import GameState
+from wrestlegm.session import SessionManager
 from wrestlegm.ui import (
     BookingHubScreen,
     ConfirmBookingModal,
@@ -45,17 +46,18 @@ class TestWrestleGMApp(WrestleGMApp):
         self._save_dir = tempfile.TemporaryDirectory()
         self._wrestlers = load_wrestlers(FIXTURE_DIR / "wrestlers.json")
         self._match_types = load_match_types(FIXTURE_DIR / "match_types.json")
-        self.state = GameState(
+        self.session = SessionManager(
             self._wrestlers,
             self._match_types,
             seed=SEED,
             save_dir=Path(self._save_dir.name),
         )
+        self.state = GameState(self._wrestlers, self._match_types, seed=SEED)
 
     def new_game(self, slot_index: int, slot_name: str) -> None:
         """Start a fresh test session with the fixed seed."""
 
-        self.state.new_game(slot_index, slot_name)
+        self.state = self.session.new_game(slot_index, slot_name)
         self.switch_screen(BookingHubScreen())
 
 

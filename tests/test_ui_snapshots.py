@@ -15,8 +15,7 @@ from tests.ui_test_utils import (
     wait_for_screen,
 )
 from wrestlegm import constants
-from wrestlegm.models import CooldownState, RivalryState
-from wrestlegm.state import normalize_pair
+from wrestlegm.models import CooldownState, RivalryState, normalize_pair
 from wrestlegm.ui import (
     BookingHubScreen,
     ConfirmBookingModal,
@@ -184,7 +183,7 @@ def test_snapshot_s12_booking_hub_rivalry_emojis(snap_compare) -> None:
         await open_booking_hub(pilot)
         seed_show_card(pilot.app.state)
         key = normalize_pair("alpha", "bravo")
-        pilot.app.state.rivalry_states[key] = RivalryState(
+        pilot.app.state.rivalry_manager.rivalry_states[key] = RivalryState(
             wrestler_a_id=key[0],
             wrestler_b_id=key[1],
             rivalry_value=2,
@@ -204,7 +203,7 @@ def test_snapshot_s13_booking_hub_cooldown_emojis(snap_compare) -> None:
         await open_booking_hub(pilot)
         seed_show_card(pilot.app.state)
         key = normalize_pair("alpha", "bravo")
-        pilot.app.state.cooldown_states[key] = CooldownState(
+        pilot.app.state.rivalry_manager.cooldown_states[key] = CooldownState(
             wrestler_a_id=key[0],
             wrestler_b_id=key[1],
             remaining_shows=constants.COOLDOWN_SHOWS,
@@ -222,7 +221,7 @@ def test_snapshot_s14_match_booking_rivalry_emojis(snap_compare) -> None:
     async def run_before(pilot):
         await start_new_game(pilot)
         key = normalize_pair("alpha", "bravo")
-        pilot.app.state.rivalry_states[key] = RivalryState(
+        pilot.app.state.rivalry_manager.rivalry_states[key] = RivalryState(
             wrestler_a_id=key[0],
             wrestler_b_id=key[1],
             rivalry_value=4,
@@ -254,9 +253,9 @@ def test_snapshot_s16_save_slot_selection_mixed(snap_compare) -> None:
     async def run_before(pilot):
         seed_show_card(pilot.app.state)
         pilot.app.state.run_show()
-        pilot.app.state.current_slot_index = 1
-        pilot.app.state.pending_slot_name = "Indie Run"
-        pilot.app.state.save_current_slot()
+        pilot.app.session.current_slot_index = 1
+        pilot.app.session.pending_slot_name = "Indie Run"
+        pilot.app.session.save_current_slot(pilot.app.state)
         await pilot.press("down", "enter")
         await wait_for_screen(pilot, SaveSlotSelectionScreen)
 
@@ -281,9 +280,9 @@ def test_snapshot_s18_overwrite_save_slot_modal(snap_compare) -> None:
     async def run_before(pilot):
         seed_show_card(pilot.app.state)
         pilot.app.state.run_show()
-        pilot.app.state.current_slot_index = 1
-        pilot.app.state.pending_slot_name = "My Save"
-        pilot.app.state.save_current_slot()
+        pilot.app.session.current_slot_index = 1
+        pilot.app.session.pending_slot_name = "My Save"
+        pilot.app.session.save_current_slot(pilot.app.state)
         await pilot.press("enter")
         await wait_for_screen(pilot, SaveSlotSelectionScreen)
         await pilot.press("enter")

@@ -2,39 +2,23 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Dict, Iterable, List, Optional
+from typing import Dict, Iterable, List
 
 from wrestlegm import constants
 from wrestlegm.models import (
     Match,
     MatchTypeDefinition,
-    CooldownState,
-    PairKey,
     Promo,
     PromoResult,
-    RivalryState,
     Show,
     ShowResult,
     ShowSlot,
     StatDelta,
     WrestlerDefinition,
     WrestlerState,
-    normalize_pair,
 )
-from wrestlegm.sim import RivalryRatingContext, SimulationEngine
-from wrestlegm import persistence
-
-
-def ordered_pairs(wrestler_ids: Iterable[str]) -> list[tuple[str, str]]:
-    """Return ordered unique pairs based on the wrestler list order."""
-
-    ids = list(wrestler_ids)
-    pairs: list[tuple[str, str]] = []
-    for index, wrestler_id in enumerate(ids):
-        for other_id in ids[index + 1 :]:
-            pairs.append((wrestler_id, other_id))
-    return pairs
+from wrestlegm.sim import SimulationEngine
+from wrestlegm.rivalries import RivalryManager
 
 
 class GameState:
@@ -45,14 +29,10 @@ class GameState:
         wrestlers: Iterable[WrestlerDefinition],
         match_types: Iterable[MatchTypeDefinition],
         seed: int = 1337,
-        save_dir: Path | None = None,
     ) -> None:
         self._wrestler_defs = list(wrestlers)
         self._match_type_defs = list(match_types)
         self._default_seed = seed
-        self._save_dir = save_dir
-        self.current_slot_index: int | None = None
-        self.pending_slot_name: str | None = None
         self._reset_game_state(self._wrestler_defs, self._match_type_defs, seed)
 
     def _reset_game_state(
@@ -77,76 +57,10 @@ class GameState:
             for wrestler in wrestlers
         }
         self.match_types = {match_type.id: match_type for match_type in match_types}
-        self.rivalry_states = {}
-        self.cooldown_states = {}
+        self.rivalry_manager = RivalryManager()
         self.show_index = 1
         self.show_card = [None] * constants.SHOW_SLOT_COUNT
         self.last_show = None
-
-    def new_game(self, slot_index: int, slot_name: str) -> None:
-        """Start a new session and assign the active slot."""
-
-        self._reset_game_state(
-            self._wrestler_defs,
-            self._match_type_defs,
-            self._default_seed,
-        )
-        self.current_slot_index = slot_index
-        self.pending_slot_name = slot_name
-
-    def list_slots(self) -> list[persistence.SaveSlotInfo]:
-        """Return slot metadata for selection screens."""
-
-        return persistence.load_slot_index(self._save_dir)
-
-    def save_current_slot(self) -> None:
-        """Persist the current slot if one is active."""
-
-        if self.current_slot_index is None:
-            return
-        slots = persistence.load_slot_index(self._save_dir)
-        slot_info = next(
-            (slot for slot in slots if slot.slot_index == self.current_slot_index),
-            None,
-        )
-        slot_name = None
-        if slot_info and slot_info.exists:
-            slot_name = slot_info.name
-        if slot_name is None:
-            slot_name = self.pending_slot_name
-        if slot_name is None:
-            raise ValueError("save_slot_name_required")
-        persistence.save_game_state(self, self.current_slot_index, slot_name, self._save_dir)
-        self.pending_slot_name = None
-
-    def load_slot(self, slot_index: int) -> None:
-        """Load a saved slot into the current game state."""
-
-        slots = persistence.load_slot_index(self._save_dir)
-        slot_info = next((slot for slot in slots if slot.slot_index == slot_index), None)
-        if slot_info is None or not slot_info.exists:
-            raise ValueError("empty_slot")
-        try:
-            payload = persistence.load_save_payload(slot_index, self._save_dir)
-        except FileNotFoundError as exc:
-            raise ValueError("missing_save_file") from exc
-        version = payload.get("version", 0)
-        if version != persistence.SAVE_VERSION:
-            raise ValueError("unsupported_save_version")
-        state_payload = payload.get("state", {})
-        self._reset_game_state(
-            self._wrestler_defs,
-            self._match_type_defs,
-            state_payload.get("rng_seed", self._default_seed),
-        )
-        persistence.deserialize_game_state(self, state_payload)
-        self.current_slot_index = slot_index
-        self.pending_slot_name = None
-
-    def clear_save_slot(self, slot_index: int) -> None:
-        """Clear a persisted save slot and its metadata."""
-
-        persistence.clear_save_slot(slot_index, self._save_dir)
 
     def clear_slot(self, slot_index: int) -> None:
         """Clear a show slot."""
@@ -281,12 +195,12 @@ class GameState:
             slots,
             self.roster,
             self.match_types,
-            rivalry_context_provider=self._rivalry_context_for_match,
+            rivalry_context_provider=self.rivalry_manager.rivalry_context_for_match,
         )
         show.results = results
         show.show_rating = self.engine.aggregate_show_rating(results)
         self.applier.apply(show, self.roster)
-        self._advance_rivalries(show)
+        self.rivalry_manager.advance(show)
         self.last_show = show
         self.show_index += 1
         self.show_card = [None] * constants.SHOW_SLOT_COUNT
@@ -296,136 +210,22 @@ class GameState:
         """Apply all stat deltas and recovery for a completed show."""
 
         self.applier.apply(show, self.roster)
-        self._advance_rivalries(show)
+        self.rivalry_manager.advance(show)
 
     def rivalry_value_for_pair(self, wrestler_a_id: str, wrestler_b_id: str) -> int:
         """Return the current rivalry value for a pair, or 0 if none."""
 
-        key = normalize_pair(wrestler_a_id, wrestler_b_id)
-        state = self.rivalry_states.get(key)
-        return state.rivalry_value if state else 0
+        return self.rivalry_manager.rivalry_value_for_pair(wrestler_a_id, wrestler_b_id)
 
     def cooldown_remaining_for_pair(self, wrestler_a_id: str, wrestler_b_id: str) -> int:
         """Return remaining cooldown shows for a pair, or 0 if none."""
 
-        key = normalize_pair(wrestler_a_id, wrestler_b_id)
-        state = self.cooldown_states.get(key)
-        return state.remaining_shows if state else 0
+        return self.rivalry_manager.cooldown_remaining_for_pair(wrestler_a_id, wrestler_b_id)
 
     def rivalry_emojis_for_match(self, wrestler_ids: Iterable[str]) -> str:
         """Return rivalry/cooldown emojis for the ordered wrestler pairs."""
 
-        ids = [wrestler_id for wrestler_id in wrestler_ids if wrestler_id]
-        if len(ids) < 2:
-            return ""
-        emojis: list[str] = []
-        for wrestler_a_id, wrestler_b_id in ordered_pairs(ids):
-            key = normalize_pair(wrestler_a_id, wrestler_b_id)
-            cooldown = self.cooldown_states.get(key)
-            if cooldown:
-                emoji = self._cooldown_emoji(cooldown.remaining_shows)
-                if emoji:
-                    emojis.append(emoji)
-                continue
-            rivalry = self.rivalry_states.get(key)
-            if rivalry and rivalry.rivalry_value > 0:
-                emoji = self._rivalry_emoji(rivalry.rivalry_value)
-                if emoji:
-                    emojis.append(emoji)
-        return "".join(emojis)
-
-    def _rivalry_context_for_match(self, match: Match) -> RivalryRatingContext:
-        """Return rivalry rating context for a match based on current state."""
-
-        active_pairs = 0
-        blowoff_pairs = 0
-        has_cooldown = False
-        for wrestler_a_id, wrestler_b_id in ordered_pairs(match.wrestler_ids):
-            key = normalize_pair(wrestler_a_id, wrestler_b_id)
-            if key in self.cooldown_states:
-                has_cooldown = True
-                continue
-            rivalry = self.rivalry_states.get(key)
-            if rivalry is None or rivalry.rivalry_value <= 0:
-                continue
-            if rivalry.rivalry_value >= constants.RIVALRY_LEVEL_CAP:
-                blowoff_pairs += 1
-            else:
-                active_pairs += 1
-        return RivalryRatingContext(
-            active_pairs=active_pairs,
-            blowoff_pairs=blowoff_pairs,
-            has_cooldown=has_cooldown,
-        )
-
-    def _advance_rivalries(self, show: Show) -> None:
-        """Advance rivalry and cooldown state at show end."""
-
-        cooldown_keys = set(self.cooldown_states.keys())
-        blowoff_keys: set[PairKey] = set()
-
-        for slot in show.scheduled_slots:
-            if not isinstance(slot, Match):
-                continue
-            for wrestler_a_id, wrestler_b_id in ordered_pairs(slot.wrestler_ids):
-                key = normalize_pair(wrestler_a_id, wrestler_b_id)
-                if key in cooldown_keys:
-                    self.rivalry_states.pop(key, None)
-                    continue
-                rivalry = self.rivalry_states.get(key)
-                current_value = rivalry.rivalry_value if rivalry else 0
-                if current_value >= constants.RIVALRY_LEVEL_CAP:
-                    blowoff_keys.add(key)
-                    continue
-                new_value = min(constants.RIVALRY_LEVEL_CAP, current_value + 1)
-                self.rivalry_states[key] = RivalryState(
-                    wrestler_a_id=key[0],
-                    wrestler_b_id=key[1],
-                    rivalry_value=new_value,
-                )
-
-        if self.cooldown_states:
-            updated: Dict[PairKey, CooldownState] = {}
-            for key, cooldown in self.cooldown_states.items():
-                remaining = cooldown.remaining_shows - 1
-                if remaining > 0:
-                    updated[key] = CooldownState(
-                        wrestler_a_id=key[0],
-                        wrestler_b_id=key[1],
-                        remaining_shows=remaining,
-                    )
-            self.cooldown_states = updated
-
-        for key in blowoff_keys:
-            self.rivalry_states.pop(key, None)
-            self.cooldown_states[key] = CooldownState(
-                wrestler_a_id=key[0],
-                wrestler_b_id=key[1],
-                remaining_shows=constants.COOLDOWN_SHOWS,
-            )
-
-    def _rivalry_emoji(self, rivalry_value: int) -> str:
-        """Return the emoji for a rivalry value."""
-
-        level = min(constants.RIVALRY_LEVEL_CAP, rivalry_value)
-        emojis = {
-            1: "⚡",
-            2: "🔥",
-            3: "⚔️",
-            4: "💥",
-        }
-        return emojis.get(level, "")
-
-    def _cooldown_emoji(self, remaining_shows: int) -> str:
-        """Return the emoji for cooldown remaining shows."""
-
-        if remaining_shows >= 5:
-            return "🧊"
-        if remaining_shows >= 3:
-            return "❄️"
-        if remaining_shows >= 1:
-            return "💧"
-        return ""
+        return self.rivalry_manager.rivalry_emojis_for_match(wrestler_ids)
 
 
 class ShowApplier:
