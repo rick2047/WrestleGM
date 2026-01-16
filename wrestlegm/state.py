@@ -131,7 +131,7 @@ class GameState:
         except FileNotFoundError as exc:
             raise ValueError("missing_save_file") from exc
         version = payload.get("version", 0)
-        if version > persistence.SAVE_VERSION:
+        if version != persistence.SAVE_VERSION:
             raise ValueError("unsupported_save_version")
         state_payload = payload.get("state", {})
         self._reset_game_state(
