@@ -240,19 +240,17 @@ def save_game_state(
 
     slots = load_slot_index(base_dir)
     last_saved_show_index = max(state.show_index - 1, 0)
-    updated_slots = []
-    for slot in slots:
-        if slot.slot_index == slot_index:
-            updated_slots.append(
-                SaveSlotInfo(
-                    slot_index=slot_index,
-                    name=slot_name,
-                    exists=True,
-                    last_saved_show_index=last_saved_show_index,
-                )
-            )
-        else:
-            updated_slots.append(slot)
+    updated_slots = [
+        SaveSlotInfo(
+            slot_index=slot_index,
+            name=slot_name,
+            exists=True,
+            last_saved_show_index=last_saved_show_index,
+        )
+        if slot.slot_index == slot_index
+        else slot
+        for slot in slots
+    ]
     save_slot_index(updated_slots, base_dir)
 
 
@@ -263,19 +261,17 @@ def clear_save_slot(slot_index: int, base_dir: Path | None = None) -> None:
     if path.exists():
         path.unlink()
     slots = load_slot_index(base_dir)
-    updated_slots = []
-    for slot in slots:
-        if slot.slot_index == slot_index:
-            updated_slots.append(
-                SaveSlotInfo(
-                    slot_index=slot_index,
-                    name=None,
-                    exists=False,
-                    last_saved_show_index=None,
-                )
-            )
-        else:
-            updated_slots.append(slot)
+    updated_slots = [
+        SaveSlotInfo(
+            slot_index=slot_index,
+            name=None,
+            exists=False,
+            last_saved_show_index=None,
+        )
+        if slot.slot_index == slot_index
+        else slot
+        for slot in slots
+    ]
     save_slot_index(updated_slots, base_dir)
 
 

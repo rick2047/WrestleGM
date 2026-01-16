@@ -5,6 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 import json
 
+import pytest
+
 from wrestlegm import persistence
 from wrestlegm.data import load_match_types, load_wrestlers
 from wrestlegm.state import GameState
@@ -65,12 +67,8 @@ def test_load_rejects_empty_slot(tmp_path: Path) -> None:
     match_types = load_match_types()
     state = GameState(wrestlers, match_types, save_dir=tmp_path)
 
-    try:
+    with pytest.raises(ValueError, match="empty_slot"):
         state.load_slot(1)
-    except ValueError as exc:
-        assert str(exc) == "empty_slot"
-    else:
-        raise AssertionError("Expected empty slot load to fail.")
 
 
 def test_load_rejects_unsupported_version(tmp_path: Path) -> None:
@@ -110,9 +108,5 @@ def test_load_rejects_unsupported_version(tmp_path: Path) -> None:
         json.dumps(payload), encoding="utf-8"
     )
 
-    try:
+    with pytest.raises(ValueError, match="unsupported_save_version"):
         state.load_slot(1)
-    except ValueError as exc:
-        assert str(exc) == "unsupported_save_version"
-    else:
-        raise AssertionError("Expected unsupported save version to fail.")
