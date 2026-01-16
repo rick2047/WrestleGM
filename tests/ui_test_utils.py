@@ -141,9 +141,12 @@ async def start_new_game(pilot: Pilot) -> None:
     await wait_for_screen(pilot, SaveSlotSelectionScreen)
     await pilot.press("enter")
     await wait_for_screen(pilot, NameSaveSlotModal)
-    for char in "test":
-        await pilot.press(char)
-    await pilot.press("enter")
+    modal = pilot.app.screen
+    if not isinstance(modal, NameSaveSlotModal):
+        raise AssertionError("Expected NameSaveSlotModal")
+    modal.name_input.value = "test"
+    modal._update_confirm_state()
+    modal.confirm_button.press()
     await wait_for_screen(pilot, BookingHubScreen)
 
 

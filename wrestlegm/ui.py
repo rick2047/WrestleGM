@@ -881,6 +881,7 @@ class BookingHubScreen(Screen):
 
         with Vertical():
             self.run_button = Button("Run Show", id="run-show")
+            self.run_button.disabled = True
             self.back_button = Button("Back", id="back")
             yield self.run_button
             yield self.back_button

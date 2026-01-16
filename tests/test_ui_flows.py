@@ -38,16 +38,16 @@ def test_core_flow_new_game_booking_results_roster() -> None:
     """Drive core gameplay flows using keyboard-only input."""
 
     async def run_flow() -> None:
-            app = TestWrestleGMApp()
-            async with app.run_test(size=VIEWPORT_SIZE) as pilot:
-                assert_screen(app, MainMenuScreen)
-                await start_new_game(pilot)
-                assert_screen(app, BookingHubScreen)
-                booking_hub = app.screen
-                assert booking_hub.run_button.disabled
+        app = TestWrestleGMApp()
+        async with app.run_test(size=VIEWPORT_SIZE) as pilot:
+            assert_screen(app, MainMenuScreen)
+            await start_new_game(pilot)
+            assert_screen(app, BookingHubScreen)
+            booking_hub = app.screen
+            assert booking_hub.run_button.disabled
 
-                await pilot.press("escape")
-                await wait_for_screen(pilot, GameHubScreen)
+            await pilot.press("escape")
+            await wait_for_screen(pilot, GameHubScreen)
 
             await open_roster(pilot)
             assert_screen(app, RosterScreen)
@@ -136,7 +136,7 @@ def test_new_game_overwrite_flow_prefills_name() -> None:
             modal = app.screen
             assert isinstance(modal, NameSaveSlotModal)
             assert modal.name_input.value == "My Save"
-            await pilot.press("enter")
+            modal.confirm_button.press()
             await wait_for_screen(pilot, BookingHubScreen)
 
     run_async(run_flow())

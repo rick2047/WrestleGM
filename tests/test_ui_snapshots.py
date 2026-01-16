@@ -169,6 +169,8 @@ def test_snapshot_s11_roster_overview_default(snap_compare) -> None:
 
     async def run_before(pilot):
         await start_new_game(pilot)
+        await pilot.press("escape")
+        await wait_for_screen(pilot, GameHubScreen)
         await open_roster(pilot)
 
     assert snap_compare(app, terminal_size=VIEWPORT_SIZE, run_before=run_before)
