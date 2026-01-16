@@ -20,7 +20,7 @@
 - Keep everything in `GameState` and only add helper functions.
   - Rejected because it does not clarify ownership or reduce coupling.
 - Place `SessionManager` inside `wrestlegm/persistence.py`.
-  - Rejected per request to move save logic into a new `session.py` module.
+  - Rejected to better separate session lifecycle concerns from persistence implementation details, clarifying ownership by moving session logic to a new `session.py` module.
 
 ## Risks / Trade-offs
 - Risk: UI entry points may need updates to route through `SessionManager` instead of `GameState`.

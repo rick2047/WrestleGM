@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from itertools import combinations
 from typing import Iterable
 
 from wrestlegm import constants
@@ -20,11 +21,7 @@ def ordered_pairs(wrestler_ids: Iterable[str]) -> list[tuple[str, str]]:
     """Return ordered unique pairs based on the wrestler list order."""
 
     ids = list(wrestler_ids)
-    pairs: list[tuple[str, str]] = []
-    for index, wrestler_id in enumerate(ids):
-        for other_id in ids[index + 1 :]:
-            pairs.append((wrestler_id, other_id))
-    return pairs
+    return list(combinations(ids, 2))
 
 
 class RivalryManager:
@@ -121,16 +118,15 @@ class RivalryManager:
                 )
 
         if self.cooldown_states:
-            updated: dict[PairKey, CooldownState] = {}
-            for key, cooldown in self.cooldown_states.items():
-                remaining = cooldown.remaining_shows - 1
-                if remaining > 0:
-                    updated[key] = CooldownState(
-                        wrestler_a_id=key[0],
-                        wrestler_b_id=key[1],
-                        remaining_shows=remaining,
-                    )
-            self.cooldown_states = updated
+            self.cooldown_states = {
+                key: CooldownState(
+                    wrestler_a_id=key[0],
+                    wrestler_b_id=key[1],
+                    remaining_shows=cooldown.remaining_shows - 1,
+                )
+                for key, cooldown in self.cooldown_states.items()
+                if cooldown.remaining_shows > 1
+            }
 
         for key in blowoff_keys:
             self.rivalry_states.pop(key, None)
