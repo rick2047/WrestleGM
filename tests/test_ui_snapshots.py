@@ -20,8 +20,12 @@ from wrestlegm.state import normalize_pair
 from wrestlegm.ui import (
     BookingHubScreen,
     ConfirmBookingModal,
+    GameHubScreen,
+    NameSaveSlotModal,
+    OverwriteSaveSlotModal,
     MatchCategorySelectionScreen,
     ResultsScreen,
+    SaveSlotSelectionScreen,
     WrestlerSelectionScreen,
 )
 
@@ -36,6 +40,8 @@ def test_snapshot_s2_game_hub_default(snap_compare) -> None:
 
     async def run_before(pilot):
         await start_new_game(pilot)
+        await pilot.press("escape")
+        await wait_for_screen(pilot, GameHubScreen)
 
     assert snap_compare(app, terminal_size=VIEWPORT_SIZE, run_before=run_before)
 
@@ -163,6 +169,8 @@ def test_snapshot_s11_roster_overview_default(snap_compare) -> None:
 
     async def run_before(pilot):
         await start_new_game(pilot)
+        await pilot.press("escape")
+        await wait_for_screen(pilot, GameHubScreen)
         await open_roster(pilot)
 
     assert snap_compare(app, terminal_size=VIEWPORT_SIZE, run_before=run_before)
@@ -226,5 +234,59 @@ def test_snapshot_s14_match_booking_rivalry_emojis(snap_compare) -> None:
         await select_wrestler(pilot, 0)
         await pilot.press("down", "enter")
         await select_wrestler(pilot, 1)
+
+    assert snap_compare(app, terminal_size=VIEWPORT_SIZE, run_before=run_before)
+
+
+def test_snapshot_s15_save_slot_selection_empty(snap_compare) -> None:
+    app = TestWrestleGMApp()
+
+    async def run_before(pilot):
+        await pilot.press("down", "enter")
+        await wait_for_screen(pilot, SaveSlotSelectionScreen)
+
+    assert snap_compare(app, terminal_size=VIEWPORT_SIZE, run_before=run_before)
+
+
+def test_snapshot_s16_save_slot_selection_mixed(snap_compare) -> None:
+    app = TestWrestleGMApp()
+
+    async def run_before(pilot):
+        seed_show_card(pilot.app.state)
+        pilot.app.state.run_show()
+        pilot.app.state.current_slot_index = 1
+        pilot.app.state.pending_slot_name = "Indie Run"
+        pilot.app.state.save_current_slot()
+        await pilot.press("down", "enter")
+        await wait_for_screen(pilot, SaveSlotSelectionScreen)
+
+    assert snap_compare(app, terminal_size=VIEWPORT_SIZE, run_before=run_before)
+
+
+def test_snapshot_s17_name_save_slot_modal(snap_compare) -> None:
+    app = TestWrestleGMApp()
+
+    async def run_before(pilot):
+        await pilot.press("enter")
+        await wait_for_screen(pilot, SaveSlotSelectionScreen)
+        await pilot.press("enter")
+        await wait_for_screen(pilot, NameSaveSlotModal)
+
+    assert snap_compare(app, terminal_size=VIEWPORT_SIZE, run_before=run_before)
+
+
+def test_snapshot_s18_overwrite_save_slot_modal(snap_compare) -> None:
+    app = TestWrestleGMApp()
+
+    async def run_before(pilot):
+        seed_show_card(pilot.app.state)
+        pilot.app.state.run_show()
+        pilot.app.state.current_slot_index = 1
+        pilot.app.state.pending_slot_name = "My Save"
+        pilot.app.state.save_current_slot()
+        await pilot.press("enter")
+        await wait_for_screen(pilot, SaveSlotSelectionScreen)
+        await pilot.press("enter")
+        await wait_for_screen(pilot, OverwriteSaveSlotModal)
 
     assert snap_compare(app, terminal_size=VIEWPORT_SIZE, run_before=run_before)
