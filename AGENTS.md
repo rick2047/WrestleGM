@@ -18,8 +18,6 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 <!-- OPENSPEC:END -->
 
 ## Workflow Rules
-- Each new spec MUST start from a new git branch and include opening a PR.
-- Ask for explicit user approval before running git workflow actions (commit, push, PR create/edit).
 - Always merge PRs using a merge commit (no squash merges).
 - To trigger a Gemini review, comment on the PR with `/gemini review`.
 

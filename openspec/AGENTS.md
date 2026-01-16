@@ -14,7 +14,6 @@ Instructions for AI coding assistants using OpenSpec for spec-driven development
 
 ## Workflow Rules
 - Each new spec MUST start from a new git branch and include opening a PR.
-- Ask for explicit user approval before running git workflow actions (commit, push, PR create/edit).
 
 ## Three-Stage Workflow
 
