@@ -70,6 +70,10 @@ The system SHALL edit matches in a dedicated booking screen, require confirmatio
 - **WHEN** the player re-selects a match category with fewer required slots
 - **THEN** the earliest selected wrestlers remain assigned and any extra slots are cleared
 
+#### Scenario: Re-selecting a match category adds new slots
+- **WHEN** the player re-selects a match category with more required slots
+- **THEN** the existing selected wrestlers remain assigned and new empty slots are added
+
 #### Scenario: Confirm disabled until valid
 - **WHEN** the match booking screen has incomplete or invalid selections
 - **THEN** the Confirm action is disabled
