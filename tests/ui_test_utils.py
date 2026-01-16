@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import tempfile
 from pathlib import Path
 from typing import Awaitable, Callable
 
@@ -20,9 +21,11 @@ from wrestlegm.ui import (
     MainMenuScreen,
     MatchBookingScreen,
     MatchCategorySelectionScreen,
+    NameSaveSlotModal,
     PromoBookingScreen,
     ResultsScreen,
     RosterScreen,
+    SaveSlotSelectionScreen,
     WrestleGMApp,
     WrestlerSelectionScreen,
 )
@@ -39,15 +42,21 @@ class TestWrestleGMApp(WrestleGMApp):
 
     def __init__(self) -> None:
         App.__init__(self)
+        self._save_dir = tempfile.TemporaryDirectory()
         self._wrestlers = load_wrestlers(FIXTURE_DIR / "wrestlers.json")
         self._match_types = load_match_types(FIXTURE_DIR / "match_types.json")
-        self.state = GameState(self._wrestlers, self._match_types, seed=SEED)
+        self.state = GameState(
+            self._wrestlers,
+            self._match_types,
+            seed=SEED,
+            save_dir=Path(self._save_dir.name),
+        )
 
-    def new_game(self) -> None:
+    def new_game(self, slot_index: int, slot_name: str) -> None:
         """Start a fresh test session with the fixed seed."""
 
-        self.state = GameState(self._wrestlers, self._match_types, seed=SEED)
-        self.switch_screen(GameHubScreen())
+        self.state.new_game(slot_index, slot_name)
+        self.switch_screen(BookingHubScreen())
 
 
 def run_async(coro: Awaitable[None]) -> None:
@@ -129,12 +138,20 @@ async def start_new_game(pilot: Pilot) -> None:
     """Start a new game from the main menu."""
 
     await pilot.press("enter")
-    await wait_for_screen(pilot, GameHubScreen)
+    await wait_for_screen(pilot, SaveSlotSelectionScreen)
+    await pilot.press("enter")
+    await wait_for_screen(pilot, NameSaveSlotModal)
+    for char in "test":
+        await pilot.press(char)
+    await pilot.press("enter")
+    await wait_for_screen(pilot, BookingHubScreen)
 
 
 async def open_booking_hub(pilot: Pilot) -> None:
     """Open the booking hub from the game hub."""
 
+    if isinstance(pilot.app.screen, BookingHubScreen):
+        return
     await pilot.press("enter")
     await wait_for_screen(pilot, BookingHubScreen)
 

@@ -8,8 +8,11 @@ from wrestlegm.ui import (
     GameHubScreen,
     MainMenuScreen,
     MatchBookingScreen,
+    NameSaveSlotModal,
+    OverwriteSaveSlotModal,
     ResultsScreen,
     RosterScreen,
+    SaveSlotSelectionScreen,
 )
 
 from tests.ui_test_utils import (
@@ -22,6 +25,7 @@ from tests.ui_test_utils import (
     open_promo_booking,
     open_roster,
     run_async,
+    seed_show_card,
     select_match_category,
     select_wrestler,
     start_new_game,
@@ -34,19 +38,16 @@ def test_core_flow_new_game_booking_results_roster() -> None:
     """Drive core gameplay flows using keyboard-only input."""
 
     async def run_flow() -> None:
-        app = TestWrestleGMApp()
-        async with app.run_test(size=VIEWPORT_SIZE) as pilot:
-            assert_screen(app, MainMenuScreen)
-            await start_new_game(pilot)
-            assert_screen(app, GameHubScreen)
+            app = TestWrestleGMApp()
+            async with app.run_test(size=VIEWPORT_SIZE) as pilot:
+                assert_screen(app, MainMenuScreen)
+                await start_new_game(pilot)
+                assert_screen(app, BookingHubScreen)
+                booking_hub = app.screen
+                assert booking_hub.run_button.disabled
 
-            await open_booking_hub(pilot)
-            assert_screen(app, BookingHubScreen)
-            booking_hub = app.screen
-            assert booking_hub.run_button.disabled
-
-            await pilot.press("escape")
-            await wait_for_screen(pilot, GameHubScreen)
+                await pilot.press("escape")
+                await wait_for_screen(pilot, GameHubScreen)
 
             await open_roster(pilot)
             assert_screen(app, RosterScreen)
@@ -88,6 +89,72 @@ def test_core_flow_new_game_booking_results_roster() -> None:
 
             await pilot.press("enter")
             await wait_for_screen(pilot, GameHubScreen)
+
+    run_async(run_flow())
+
+
+def test_load_game_flow() -> None:
+    """Ensure Load Game routes through slot selection to booking hub."""
+
+    async def run_flow() -> None:
+        app = TestWrestleGMApp()
+        seed_show_card(app.state)
+        app.state.run_show()
+        app.state.current_slot_index = 1
+        app.state.pending_slot_name = "Test"
+        app.state.save_current_slot()
+
+        async with app.run_test(size=VIEWPORT_SIZE) as pilot:
+            assert_screen(app, MainMenuScreen)
+            await pilot.press("down", "enter")
+            await wait_for_screen(pilot, SaveSlotSelectionScreen)
+            await pilot.press("enter")
+            await wait_for_screen(pilot, BookingHubScreen)
+
+    run_async(run_flow())
+
+
+def test_new_game_overwrite_flow_prefills_name() -> None:
+    """Ensure overwriting a slot pre-fills the name modal."""
+
+    async def run_flow() -> None:
+        app = TestWrestleGMApp()
+        seed_show_card(app.state)
+        app.state.run_show()
+        app.state.current_slot_index = 1
+        app.state.pending_slot_name = "My Save"
+        app.state.save_current_slot()
+
+        async with app.run_test(size=VIEWPORT_SIZE) as pilot:
+            assert_screen(app, MainMenuScreen)
+            await pilot.press("enter")
+            await wait_for_screen(pilot, SaveSlotSelectionScreen)
+            await pilot.press("enter")
+            await wait_for_screen(pilot, OverwriteSaveSlotModal)
+            await pilot.press("enter")
+            await wait_for_screen(pilot, NameSaveSlotModal)
+            modal = app.screen
+            assert isinstance(modal, NameSaveSlotModal)
+            assert modal.name_input.value == "My Save"
+            await pilot.press("enter")
+            await wait_for_screen(pilot, BookingHubScreen)
+
+    run_async(run_flow())
+
+
+def test_name_save_slot_blocks_empty_name() -> None:
+    """Ensure the name modal blocks empty input."""
+
+    async def run_flow() -> None:
+        app = TestWrestleGMApp()
+        async with app.run_test(size=VIEWPORT_SIZE) as pilot:
+            await pilot.press("enter")
+            await wait_for_screen(pilot, SaveSlotSelectionScreen)
+            await pilot.press("enter")
+            await wait_for_screen(pilot, NameSaveSlotModal)
+            modal = app.screen
+            assert isinstance(modal, NameSaveSlotModal)
+            assert modal.confirm_button.disabled is True
 
     run_async(run_flow())
 

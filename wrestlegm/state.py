@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Dict, Iterable, List, Optional
 
 from wrestlegm import constants
@@ -20,6 +21,7 @@ from wrestlegm.models import (
     WrestlerState,
 )
 from wrestlegm.sim import RivalryRatingContext, SimulationEngine
+from wrestlegm import persistence
 
 PairKey = tuple[str, str]
 
@@ -53,10 +55,27 @@ class GameState:
         wrestlers: Iterable[WrestlerDefinition],
         match_types: Iterable[MatchTypeDefinition],
         seed: int = 1337,
+        save_dir: Path | None = None,
     ) -> None:
+        self._wrestler_defs = list(wrestlers)
+        self._match_type_defs = list(match_types)
+        self._default_seed = seed
+        self._save_dir = save_dir
+        self.current_slot_index: int | None = None
+        self.pending_slot_name: str | None = None
+        self._reset_game_state(self._wrestler_defs, self._match_type_defs, seed)
+
+    def _reset_game_state(
+        self,
+        wrestlers: Iterable[WrestlerDefinition],
+        match_types: Iterable[MatchTypeDefinition],
+        seed: int,
+    ) -> None:
+        """Reset state for a fresh session or after loading."""
+
         self.engine = SimulationEngine(seed=seed)
         self.applier = ShowApplier()
-        self.roster: Dict[str, WrestlerState] = {
+        self.roster = {
             wrestler.id: WrestlerState(
                 id=wrestler.id,
                 name=wrestler.name,
@@ -67,14 +86,77 @@ class GameState:
             )
             for wrestler in wrestlers
         }
-        self.match_types: Dict[str, MatchTypeDefinition] = {
-            match_type.id: match_type for match_type in match_types
-        }
-        self.rivalry_states: Dict[PairKey, RivalryState] = {}
-        self.cooldown_states: Dict[PairKey, CooldownState] = {}
+        self.match_types = {match_type.id: match_type for match_type in match_types}
+        self.rivalry_states = {}
+        self.cooldown_states = {}
         self.show_index = 1
-        self.show_card: List[Optional[ShowSlot]] = [None] * constants.SHOW_SLOT_COUNT
-        self.last_show: Show | None = None
+        self.show_card = [None] * constants.SHOW_SLOT_COUNT
+        self.last_show = None
+
+    def new_game(self, slot_index: int, slot_name: str) -> None:
+        """Start a new session and assign the active slot."""
+
+        self._reset_game_state(
+            self._wrestler_defs,
+            self._match_type_defs,
+            self._default_seed,
+        )
+        self.current_slot_index = slot_index
+        self.pending_slot_name = slot_name
+
+    def list_slots(self) -> list[persistence.SaveSlotInfo]:
+        """Return slot metadata for selection screens."""
+
+        return persistence.load_slot_index(self._save_dir)
+
+    def save_current_slot(self) -> None:
+        """Persist the current slot if one is active."""
+
+        if self.current_slot_index is None:
+            return
+        slots = persistence.load_slot_index(self._save_dir)
+        slot_info = next(
+            (slot for slot in slots if slot.slot_index == self.current_slot_index),
+            None,
+        )
+        slot_name = None
+        if slot_info and slot_info.exists:
+            slot_name = slot_info.name
+        if slot_name is None:
+            slot_name = self.pending_slot_name
+        if slot_name is None:
+            raise ValueError("save_slot_name_required")
+        persistence.save_game_state(self, self.current_slot_index, slot_name, self._save_dir)
+        self.pending_slot_name = None
+
+    def load_slot(self, slot_index: int) -> None:
+        """Load a saved slot into the current game state."""
+
+        slots = persistence.load_slot_index(self._save_dir)
+        slot_info = next((slot for slot in slots if slot.slot_index == slot_index), None)
+        if slot_info is None or not slot_info.exists:
+            raise ValueError("empty_slot")
+        try:
+            payload = persistence.load_save_payload(slot_index, self._save_dir)
+        except FileNotFoundError as exc:
+            raise ValueError("missing_save_file") from exc
+        version = payload.get("version", 0)
+        if version > persistence.SAVE_VERSION:
+            raise ValueError("unsupported_save_version")
+        state_payload = payload.get("state", {})
+        self._reset_game_state(
+            self._wrestler_defs,
+            self._match_type_defs,
+            state_payload.get("rng_seed", self._default_seed),
+        )
+        persistence.deserialize_game_state(self, state_payload)
+        self.current_slot_index = slot_index
+        self.pending_slot_name = None
+
+    def clear_save_slot(self, slot_index: int) -> None:
+        """Clear a persisted save slot and its metadata."""
+
+        persistence.clear_save_slot(slot_index, self._save_dir)
 
     def clear_slot(self, slot_index: int) -> None:
         """Clear a show slot."""
