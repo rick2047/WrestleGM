@@ -102,7 +102,7 @@ The system SHALL block committing invalid matches and running invalid shows acco
 - **THEN** the UI still allows selecting them for a promo slot
 
 #### Scenario: Block low-stamina match booking
-- **WHEN** a wrestler has stamina below `STAMINA_MIN_BOOKABLE` and the player is booking a match
+- **WHEN** a wrestler has stamina at or below `STAMINA_MIN_BOOKABLE` and the player is booking a match
 - **THEN** the UI prevents selection with a ⛔ message
 
 ### Requirement: Results presentation
@@ -448,27 +448,27 @@ Select Wrestler (Match 3 · A)
 │ Match 1                                                         │
 │ 😃 Kenny Omega def. 😈 Eddie Kingston                            │
 │ Singles · Hardcore                                               │
-│                                                              ★★★ │
+│                                                          ★★★☆☆ │
 │                                                                  │
 │ Promo 1                                                         │
 │ Jon Moxley                                                      │
-│                                                              ★★  │
+│                                                          ★★☆☆☆ │
 │                                                                  │
 │ Match 2                                                         │
 │ 😈 Jon Moxley def. 😃 Claudio Castagnoli                          │
 │ Singles · Submission                                             │
-│                                                              ★★★★│
+│                                                          ★★★★☆ │
 │                                                                  │
 │ Promo 2                                                         │
 │ Maria Blaze                                                     │
-│                                                              ★★  │
+│                                                          ★★☆☆☆ │
 │                                                                  │
 │ Match 3                                                         │
 │ 😃 Alpha def. 😈 Beta, 😃 Gamma                                   │
 │ Triple Threat · High Flying                                      │
-│                                                              ★★★ │
+│                                                          ★★★☆☆ │
 ├──────────────────────────────────────────────────────────────────┤
-│ Show Rating: ★★★☆                                               │
+│ Show Rating: ★★★½☆                                             │
 │                                                                  │
 │ [ Continue ]                                                    │
 └──────────────────────────────────────────────────────────────────┘
