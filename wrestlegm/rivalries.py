@@ -20,7 +20,7 @@ from wrestlegm.sim import RivalryRatingContext
 def ordered_pairs(wrestler_ids: Iterable[str]) -> list[tuple[str, str]]:
     """Return ordered unique pairs based on the wrestler list order."""
 
-    ids = list(wrestler_ids)
+    ids = list(dict.fromkeys(wrestler_ids))
     return list(combinations(ids, 2))
 
 
