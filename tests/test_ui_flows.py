@@ -94,7 +94,7 @@ def test_core_flow_new_game_booking_results_roster() -> None:
 
 
 def test_load_game_flow() -> None:
-    """Ensure Load Game routes through slot selection to booking hub."""
+    """Ensure Load Game routes through slot selection to game hub."""
 
     async def run_flow() -> None:
         app = TestWrestleGMApp()
@@ -109,7 +109,7 @@ def test_load_game_flow() -> None:
             await pilot.press("down", "enter")
             await wait_for_screen(pilot, SaveSlotSelectionScreen)
             await pilot.press("enter")
-            await wait_for_screen(pilot, BookingHubScreen)
+            await wait_for_screen(pilot, GameHubScreen)
 
     run_async(run_flow())
 
