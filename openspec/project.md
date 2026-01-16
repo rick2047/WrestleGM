@@ -8,6 +8,7 @@ Create a fun wrestling manager sim where the core enjoyment comes from managing 
 - Deterministic but expressive outcomes driven by roster stats and match types.
 - Long-term roster evolution is the core reward loop.
 - Keyboard-only experience suitable for narrow terminals (target <= 40 columns).
+- Systemic, not scripted: outcomes are explained by numbers, not hidden scripts.
 
 Success criterion:
 - After multiple shows, the roster and show quality clearly change based on booking decisions.

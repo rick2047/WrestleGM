@@ -19,6 +19,10 @@ The system SHALL load match type definitions from `data/match_types.json` with f
 - **AND THEN** match types missing `allowed_categories` are treated as available for all categories
 - **AND THEN** the match types include Standard plus Ambulance, and Ambulance is restricted to Singles
 
+#### Scenario: Match type modifier fields
+- **WHEN** match type definitions are loaded
+- **THEN** modifiers include outcome_chaos, rating_bonus, rating_variance, stamina_cost_winner, stamina_cost_loser, popularity_delta_winner, and popularity_delta_loser
+
 ### Requirement: Match category registry
 The system SHALL define a static match category registry with `id`, `name`, and `size` fields for each category, and SHALL include Singles (2), Triple Threat (3), and Fatal 4-Way (4).
 
