@@ -391,7 +391,7 @@ class WrestleGMApp(App):
         self.switch_screen(BookingHubScreen())
 
     def load_game(self, slot_index: int) -> None:
-        """Load a saved session and show the booking hub."""
+        """Load a saved session and show the game hub."""
 
         try:
             self.state.load_slot(slot_index)
@@ -405,7 +405,7 @@ class WrestleGMApp(App):
                 message = "Save file is missing."
             self.push_screen(ErrorModal(message=message))
             return
-        self.switch_screen(BookingHubScreen())
+        self.switch_screen(GameHubScreen())
 
 
 class MainMenuScreen(Screen):
@@ -555,7 +555,7 @@ class SaveSlotSelectionScreen(Screen):
         if self.mode == "load":
             if not slot.exists:
                 return
-            self.app.load_game(slot.slot_index)
+            self.app.call_later(self.app.load_game, slot.slot_index)
             return
         if slot.exists:
             self.app.push_screen(
@@ -1682,8 +1682,9 @@ class WrestlerSelectionScreen(Screen):
 
         if self.table.cursor_row is None:
             return
-        row_key = self.table.get_row_key(self.table.cursor_row)
-        if row_key is None:
+        try:
+            row_key = self.table.ordered_rows[self.table.cursor_row]
+        except IndexError:
             return
         wrestler_id = row_key_to_id(row_key)
         error = self.validate_selection(wrestler_id)

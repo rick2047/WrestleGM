@@ -100,7 +100,7 @@ def test_load_rejects_unsupported_version(tmp_path: Path) -> None:
         tmp_path,
     )
     payload = {
-        "version": persistence.SAVE_VERSION + 1,
+        "version": 1,
         "slot": {"slot_index": 1, "name": "Test"},
         "state": {"show_index": 1, "show_card": [], "rng_seed": 1337},
     }

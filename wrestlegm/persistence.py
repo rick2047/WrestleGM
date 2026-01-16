@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 import json
 from pathlib import Path
 from typing import Any, Iterable, TYPE_CHECKING
@@ -19,7 +19,7 @@ from wrestlegm.models import (
 if TYPE_CHECKING:
     from wrestlegm.state import GameState
 
-SAVE_VERSION = 1
+SAVE_VERSION = 2
 SLOT_COUNT = 3
 SLOT_INDEX_NAME = "slots.json"
 DEFAULT_SAVE_DIR = Path("dist/data/save")
@@ -126,33 +126,9 @@ def serialize_game_state(state: GameState) -> dict[str, Any]:
     """Serialize GameState into JSON-friendly data."""
 
     return {
-        "roster": [
-            {
-                "id": wrestler.id,
-                "name": wrestler.name,
-                "alignment": wrestler.alignment,
-                "popularity": wrestler.popularity,
-                "stamina": wrestler.stamina,
-                "mic_skill": wrestler.mic_skill,
-            }
-            for wrestler in state.roster.values()
-        ],
-        "rivalry_states": [
-            {
-                "wrestler_a_id": rivalry.wrestler_a_id,
-                "wrestler_b_id": rivalry.wrestler_b_id,
-                "rivalry_value": rivalry.rivalry_value,
-            }
-            for rivalry in state.rivalry_states.values()
-        ],
-        "cooldown_states": [
-            {
-                "wrestler_a_id": cooldown.wrestler_a_id,
-                "wrestler_b_id": cooldown.wrestler_b_id,
-                "remaining_shows": cooldown.remaining_shows,
-            }
-            for cooldown in state.cooldown_states.values()
-        ],
+        "roster": [asdict(wrestler) for wrestler in state.roster.values()],
+        "rivalry_states": [asdict(rivalry) for rivalry in state.rivalry_states.values()],
+        "cooldown_states": [asdict(cooldown) for cooldown in state.cooldown_states.values()],
         "show_index": state.show_index,
         "show_card": [_serialize_slot(slot) for slot in state.show_card],
         "rng_seed": state.engine.seed,
@@ -161,44 +137,72 @@ def serialize_game_state(state: GameState) -> dict[str, Any]:
 
 
 def deserialize_game_state(state: GameState, payload: dict[str, Any]) -> None:
-    """Apply serialized state data to an existing GameState."""
+    """Apply serialized state data to an existing GameState with validation."""
 
-    # Intentionally strict: malformed payloads should surface errors early.
     roster = {}
-    for wrestler_data in payload.get("roster", []):
-        roster[wrestler_data["id"]] = WrestlerState(
-            id=wrestler_data["id"],
-            name=wrestler_data["name"],
-            alignment=wrestler_data["alignment"],
-            popularity=wrestler_data["popularity"],
-            stamina=wrestler_data["stamina"],
-            mic_skill=wrestler_data["mic_skill"],
+    for entry in _iter_payload_list(payload, "roster"):
+        wrestler_id = entry.get("id")
+        if not isinstance(wrestler_id, str) or not wrestler_id:
+            continue
+        alignment = entry.get("alignment")
+        if alignment not in ("Face", "Heel"):
+            alignment = "Face"
+        roster[wrestler_id] = WrestlerState(
+            id=wrestler_id,
+            name=entry.get("name", ""),
+            alignment=alignment,
+            popularity=_coerce_int(entry.get("popularity"), 0),
+            stamina=_coerce_int(entry.get("stamina"), 0),
+            mic_skill=_coerce_int(entry.get("mic_skill"), 0),
         )
     state.roster = roster
 
-    rivalry_states = {}
-    for rivalry_data in payload.get("rivalry_states", []):
+    rivalry_states: dict[tuple[str, str], RivalryState] = {}
+    for entry in _iter_payload_list(payload, "rivalry_states"):
+        wrestler_a_id = entry.get("wrestler_a_id")
+        wrestler_b_id = entry.get("wrestler_b_id")
+        if (
+            not isinstance(wrestler_a_id, str)
+            or not wrestler_a_id
+            or not isinstance(wrestler_b_id, str)
+            or not wrestler_b_id
+        ):
+            continue
         rivalry = RivalryState(
-            wrestler_a_id=rivalry_data["wrestler_a_id"],
-            wrestler_b_id=rivalry_data["wrestler_b_id"],
-            rivalry_value=rivalry_data["rivalry_value"],
+            wrestler_a_id=wrestler_a_id,
+            wrestler_b_id=wrestler_b_id,
+            rivalry_value=_coerce_int(entry.get("rivalry_value"), 0),
         )
         rivalry_states[normalize_pair(rivalry.wrestler_a_id, rivalry.wrestler_b_id)] = rivalry
     state.rivalry_states = rivalry_states
 
-    cooldown_states = {}
-    for cooldown_data in payload.get("cooldown_states", []):
+    cooldown_states: dict[tuple[str, str], CooldownState] = {}
+    for entry in _iter_payload_list(payload, "cooldown_states"):
+        wrestler_a_id = entry.get("wrestler_a_id")
+        wrestler_b_id = entry.get("wrestler_b_id")
+        if (
+            not isinstance(wrestler_a_id, str)
+            or not wrestler_a_id
+            or not isinstance(wrestler_b_id, str)
+            or not wrestler_b_id
+        ):
+            continue
         cooldown = CooldownState(
-            wrestler_a_id=cooldown_data["wrestler_a_id"],
-            wrestler_b_id=cooldown_data["wrestler_b_id"],
-            remaining_shows=cooldown_data["remaining_shows"],
+            wrestler_a_id=wrestler_a_id,
+            wrestler_b_id=wrestler_b_id,
+            remaining_shows=_coerce_int(entry.get("remaining_shows"), 0),
         )
         cooldown_states[normalize_pair(cooldown.wrestler_a_id, cooldown.wrestler_b_id)] = cooldown
     state.cooldown_states = cooldown_states
 
-    state.show_index = payload.get("show_index", 1)
+    show_index = payload.get("show_index", 1)
+    state.show_index = show_index if isinstance(show_index, int) else 1
     show_card_data = payload.get("show_card", [])
-    show_card = [_deserialize_slot(slot_data) for slot_data in show_card_data]
+    show_card = (
+        [_deserialize_slot(slot_data) for slot_data in show_card_data]
+        if isinstance(show_card_data, list)
+        else []
+    )
     if len(show_card) < len(state.show_card):
         show_card.extend([None] * (len(state.show_card) - len(show_card)))
     state.show_card = show_card[: len(state.show_card)]
@@ -206,7 +210,7 @@ def deserialize_game_state(state: GameState, payload: dict[str, Any]) -> None:
 
     rng_seed = payload.get("rng_seed", state.engine.seed)
     rng_state = payload.get("rng_state")
-    state.engine.seed = rng_seed
+    state.engine.seed = rng_seed if isinstance(rng_seed, int) else state.engine.seed
     if rng_state is not None:
         state.engine.rng.setstate(_to_tuple(rng_state))
 
@@ -293,16 +297,12 @@ def _serialize_slot(slot: Match | Promo | None) -> dict[str, Any] | None:
     if slot is None:
         return None
     if isinstance(slot, Match):
-        return {
-            "type": "match",
-            "wrestler_ids": slot.wrestler_ids,
-            "match_category_id": slot.match_category_id,
-            "match_type_id": slot.match_type_id,
-        }
-    return {
-        "type": "promo",
-        "wrestler_id": slot.wrestler_id,
-    }
+        data = asdict(slot)
+        data["type"] = "match"
+        return data
+    data = asdict(slot)
+    data["type"] = "promo"
+    return data
 
 
 def _deserialize_slot(data: dict[str, Any] | None) -> Match | Promo | None:
@@ -311,8 +311,11 @@ def _deserialize_slot(data: dict[str, Any] | None) -> Match | Promo | None:
     if data is None:
         return None
     if data.get("type") == "match":
+        wrestler_ids = data.get("wrestler_ids", [])
+        if not isinstance(wrestler_ids, list):
+            wrestler_ids = []
         return Match(
-            wrestler_ids=list(data.get("wrestler_ids", [])),
+            wrestler_ids=list(wrestler_ids),
             match_category_id=data.get("match_category_id", ""),
             match_type_id=data.get("match_type_id", ""),
         )
@@ -335,3 +338,14 @@ def _to_tuple(value: Any) -> Any:
     if isinstance(value, list):
         return tuple(_to_tuple(item) for item in value)
     return value
+
+
+def _coerce_int(value: Any, default: int) -> int:
+    return value if isinstance(value, int) else default
+
+
+def _iter_payload_list(payload: dict[str, Any], key: str) -> Iterable[dict[str, Any]]:
+    data = payload.get(key, [])
+    if not isinstance(data, list):
+        return []
+    return [entry for entry in data if isinstance(entry, dict)]
