@@ -50,6 +50,13 @@ The system SHALL require each show card to contain exactly three matches and two
 - **WHEN** a show card is validated
 - **THEN** it contains exactly three matches and two promos
 
+### Requirement: No slot weighting
+The system SHALL not apply weighting or bonuses (e.g., main event bonuses) to slot ratings in the MVP.
+
+#### Scenario: No weighted slots
+- **WHEN** the show rating is computed
+- **THEN** each slot contributes equally
+
 ### Requirement: Card locking during simulation
 The system SHALL lock the show card once simulation begins and prevent edits until results are available.
 

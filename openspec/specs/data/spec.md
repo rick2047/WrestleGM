@@ -10,6 +10,13 @@ The system SHALL load wrestler definitions from `data/wrestlers.json` with field
 - **WHEN** the app starts
 - **THEN** it loads all wrestler definitions from `data/wrestlers.json`
 
+### Requirement: Optional wrestler fields
+The system SHALL not require optional wrestler fields such as `style`, `tags`, or `injury_status`, and SHALL ignore additional fields not used by the MVP.
+
+#### Scenario: Optional wrestler fields ignored
+- **WHEN** wrestler data includes extra fields
+- **THEN** the app loads the required fields and ignores the extras
+
 ### Requirement: Data-driven match type definitions
 The system SHALL load match type definitions from `data/match_types.json` with fields `id`, `name`, `description`, `modifiers`, and optional `allowed_categories`. If `allowed_categories` is omitted, the system SHALL treat the match type as available for all categories.
 

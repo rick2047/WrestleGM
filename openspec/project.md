@@ -35,6 +35,7 @@ Success criterion:
 - Deterministic simulation (same inputs + seed = same results)
 - Keyboard-only navigation and no mouse assumptions
 - Explicit systems (no hidden scripts or unexplained outcomes)
+- Extensible systems with no hardcoded content in the MVP
 
 ### Testing Strategy
 - Emphasize determinism and consistency in simulation tests
