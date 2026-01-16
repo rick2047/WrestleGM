@@ -19,3 +19,9 @@ The system SHALL load match type definitions from `data/match_types.json` with f
 - **AND THEN** match types missing `allowed_categories` are treated as available for all categories
 - **AND THEN** the match types include Standard plus Ambulance, and Ambulance is restricted to Singles
 
+### Requirement: Match category registry
+The system SHALL define a static match category registry with `id`, `name`, and `size` fields for each category, and SHALL include Singles (2), Triple Threat (3), and Fatal 4-Way (4).
+
+#### Scenario: Load match categories
+- **WHEN** the app starts
+- **THEN** the match category registry includes Singles, Triple Threat, and Fatal 4-Way with the correct sizes

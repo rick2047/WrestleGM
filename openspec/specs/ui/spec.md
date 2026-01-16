@@ -25,7 +25,7 @@ The system SHALL provide the MVP screens defined in the PRD using Textual widget
 - **THEN** Face alignment uses 😃 and Heel alignment uses 😈
 
 ### Requirement: Global navigation keys and footer
-The system SHALL use keyboard-only navigation and display a persistent footer that shows key bindings only. Enter SHALL activate the focused widget. Escape SHALL back out of the current screen or modal, except on the Game Hub where Escape has no effect. Arrow-key focus order SHALL skip disabled action buttons.
+The system SHALL use keyboard-only navigation and display a persistent footer that shows key bindings only. Enter SHALL activate the focused widget. Escape SHALL back out of the current screen or modal where a back action exists, except on the Game Hub, Main Menu, and Show Results screens where Escape has no effect. Arrow-key focus order SHALL skip disabled action buttons.
 
 #### Scenario: Footer visibility
 - **WHEN** any screen is shown
@@ -37,6 +37,14 @@ The system SHALL use keyboard-only navigation and display a persistent footer th
 
 #### Scenario: Escape on Game Hub
 - **WHEN** the player presses Escape on the Game Hub
+- **THEN** no navigation occurs
+
+#### Scenario: Escape on Main Menu
+- **WHEN** the player presses Escape on the Main Menu
+- **THEN** no navigation occurs
+
+#### Scenario: Escape on Show Results
+- **WHEN** the player presses Escape on the Show Results screen
 - **THEN** no navigation occurs
 
 ### Requirement: Booking hub behavior
@@ -51,7 +59,7 @@ The system SHALL show five slots in fixed order (Match 1, Promo 1, Match 2, Prom
 - **THEN** it shows a `Category · Stipulation` line under the participant list
 
 ### Requirement: Match booking flow
-The system SHALL edit matches in a dedicated booking screen, require confirmation before committing, and split match category selection (size) from stipulation selection (rules). The booking screen SHALL open after a category is chosen, render one wrestler row per required slot based on category, filter stipulations to those allowed for the selected category, allow changing stipulation via an inline dropdown, default the stipulation to the first available option when booking an empty slot, mark already-booked wrestlers with a 📅 indicator in the selection list, show popularity and stamina, display alignment via emoji (Face 😃, Heel 😈), render the selection list as a table with Name/Stamina/Mic/Popularity columns, include a header row naming the name/stamina/mic/popularity columns, format rows as `{emoji} {name:<18} {sta:>3} {mic:>3} {pop:>3}{fatigue}{booked_marker}`, and use 🥱 consistently for low-stamina indicators.
+The system SHALL edit matches in a dedicated booking screen, require confirmation before committing, and split match category selection (size) from stipulation selection (rules). The booking screen SHALL open after a category is chosen, render one wrestler row per required slot based on category, filter stipulations to those allowed for the selected category, allow changing stipulation via an inline dropdown, default the stipulation to the first available option when booking an empty slot, mark already-booked wrestlers with a 📅 indicator in the selection list, show popularity and stamina, display alignment via emoji (Face 😃, Heel 😈), render the selection list as a table with Name/Stamina/Mic/Popularity columns, include a header row naming the name/stamina/mic/popularity columns, truncate names longer than 18 characters to 15 + `...`, format rows as `{emoji} {name:<18} {sta:>3} {mic:>3} {pop:>3}{fatigue}{booked_marker}`, and use 🥱 consistently for low-stamina indicators.
 
 #### Scenario: Stipulation dropdown opens on Enter
 - **WHEN** the user focuses the stipulation dropdown in match booking
@@ -61,6 +69,22 @@ The system SHALL edit matches in a dedicated booking screen, require confirmatio
 #### Scenario: Re-selecting a match category keeps early picks
 - **WHEN** the player re-selects a match category with fewer required slots
 - **THEN** the earliest selected wrestlers remain assigned and any extra slots are cleared
+
+#### Scenario: Confirm disabled until valid
+- **WHEN** the match booking screen has incomplete or invalid selections
+- **THEN** the Confirm action is disabled
+
+#### Scenario: Clear Slot availability
+- **WHEN** the match slot is empty
+- **THEN** Clear Slot is disabled
+
+#### Scenario: Cancel returns to match category selection
+- **WHEN** the player selects Cancel or presses Escape in match booking
+- **THEN** they return to match category selection without committing changes
+
+#### Scenario: Draft selections show booked marker
+- **WHEN** the wrestler selection screen is opened during match booking
+- **THEN** wrestlers already selected in the current draft show a 📅 marker
 
 ### Requirement: Booking validation in UI
 The system SHALL block committing invalid matches and running invalid shows according to the booking rules.
@@ -73,8 +97,12 @@ The system SHALL block committing invalid matches and running invalid shows acco
 - **WHEN** a wrestler has stamina below `STAMINA_MIN_BOOKABLE`
 - **THEN** the UI still allows selecting them for a promo slot
 
+#### Scenario: Block low-stamina match booking
+- **WHEN** a wrestler has stamina below `STAMINA_MIN_BOOKABLE` and the player is booking a match
+- **THEN** the UI prevents selection with a ⛔ message
+
 ### Requirement: Results presentation
-The system SHALL present match and promo results and the overall show rating using star ratings only, and SHALL include `Category · Stipulation` for match results.
+The system SHALL present match and promo results and the overall show rating using star ratings only with half-star precision, and SHALL include `Category · Stipulation` for match results.
 
 #### Scenario: Show results after simulation
 - **WHEN** the show completes
@@ -93,20 +121,7 @@ The system SHALL render a Main Menu that only offers New Game and Quit, and SHAL
 
 #### Scenario: Main menu mockup layout
 - **WHEN** the Main Menu is displayed
-- **THEN** it matches the following ASCII mockup:
-```
-┌──────────────────────────────────────┐
-│ WrestleGM                            │
-│ Main Menu                            │
-├──────────────────────────────────────┤
-│ ▸ New Game                           │
-│                                      │
-│   Quit                               │
-│                                      │
-├──────────────────────────────────────┤
-│ ↑↓ Navigate   Enter Select           │
-└──────────────────────────────────────┘
-```
+- **THEN** it matches the Main Menu mockup in the ASCII mockups section
 
 #### Scenario: Main menu options
 - **WHEN** the Main Menu is shown
@@ -125,22 +140,7 @@ The system SHALL provide a Game Hub screen that displays the current show number
 
 #### Scenario: Game hub mockup layout
 - **WHEN** the Game Hub is displayed
-- **THEN** it matches the following ASCII mockup:
-```
-┌──────────────────────────────────────┐
-│ WrestleGM                            │
-│ Game Hub                             │
-├──────────────────────────────────────┤
-│ ▸ Book Current Show                  │
-│   Show #12                           │
-│                                      │
-│   Roster Overview                    │
-│                                      │
-│   Exit to Main Menu                  │
-├──────────────────────────────────────┤
-│ ↑↓ Navigate   Enter Select   Q Quit  │
-└──────────────────────────────────────┘
-```
+- **THEN** it matches the Game Hub mockup in the ASCII mockups section
 
 #### Scenario: Show subtitle is descriptive
 - **WHEN** the Game Hub is displayed
@@ -191,6 +191,10 @@ The system SHALL provide a promo booking screen that edits a single wrestler for
 - **WHEN** the user selects Confirm with a valid wrestler selected
 - **THEN** a confirmation modal prompts for final confirmation before saving the slot
 
+#### Scenario: Clear Slot availability for promos
+- **WHEN** the promo slot is empty
+- **THEN** Clear Slot is disabled
+
 ### Requirement: Shared wrestler selection for promos
 The system SHALL reuse the existing wrestler selection screen for promo booking and may change only the contextual title text and validation rules needed to allow low-stamina promo selection.
 
@@ -238,3 +242,244 @@ The system SHALL not display rivalry or cooldown emojis on the Show Results scre
 #### Scenario: Results omit rivalry emojis
 - **WHEN** the Show Results screen renders
 - **THEN** no rivalry or cooldown emojis are shown
+
+### Requirement: Microcopy and tone rules
+The system SHALL use neutral, observational language, avoid system explanations or advice, and use "def." instead of "defeated" in match results.
+
+#### Scenario: Match results use "def."
+- **WHEN** match results are shown
+- **THEN** the winner line uses "def."
+
+### Requirement: Widget mapping
+The system SHALL map each screen to the following primary Textual widgets.
+
+| Screen               | Primary Widgets             |
+| -------------------- | --------------------------- |
+| Main Menu            | ListView, Static, Footer    |
+| Game Hub             | ListView, Static, Footer    |
+| Booking Hub          | ListView, Static, Button    |
+| Match Booking        | ListView, Select, Static, Button |
+| Promo Booking        | ListView, Static, Button    |
+| Wrestler Selection   | DataTable, Static, Button   |
+| Match Category Selection | ListView, Static, Button    |
+| Confirmation         | ModalScreen, Static, Button |
+| Simulating           | Static, Footer              |
+| Results              | Static, Button, Footer      |
+| Roster               | DataTable, Static, Button   |
+
+#### Scenario: Widget usage
+- **WHEN** a screen is implemented
+- **THEN** it uses the primary widgets listed for that screen
+
+### Requirement: ASCII mockups
+The system SHALL match the following ASCII mockups for the MVP screens.
+
+#### Scenario: Screen layouts follow mockups
+- **WHEN** an MVP screen is displayed
+- **THEN** it matches the corresponding ASCII mockup
+
+#### Main Menu
+```
+┌──────────────────────────────────────┐
+│ WrestleGM                            │
+│ Main Menu                            │
+├──────────────────────────────────────┤
+│ ▸ New Game                           │
+│                                      │
+│   Quit                               │
+│                                      │
+├──────────────────────────────────────┤
+│ ↑↓ Navigate   Enter Select           │
+└──────────────────────────────────────┘
+```
+
+#### Game Hub
+```
+┌──────────────────────────────────────┐
+│ WrestleGM                            │
+│ Game Hub                             │
+├──────────────────────────────────────┤
+│ ▸ Book Current Show                  │
+│   Show #12                           │
+│                                      │
+│   Roster Overview                    │
+│                                      │
+│   Exit to Main Menu                  │
+├──────────────────────────────────────┤
+│ ↑↓ Navigate   Enter Select   Q Quit  │
+└──────────────────────────────────────┘
+```
+
+#### Booking Hub (Slot-Level)
+```
+┌──────────────────────────────────────┐
+│ WrestleGM                            │
+│ Show #12                             │
+├──────────────────────────────────────┤
+│ ▸ Match 1                            │
+│   😃 Kenny Omega vs 😈 Eddie Kingston │
+│   Singles · Hardcore                 │
+│                                      │
+│   Promo 1                            │
+│   Jon Moxley                         │
+│                                      │
+│   Match 2                            │
+│   😈 Jon Moxley vs 😃 Claudio vs 😃 Kenny │
+│   Triple Threat · Submission         │
+│                                      │
+│   Promo 2                            │
+│   [ Empty ]                          │
+│                                      │
+│   Match 3                            │
+│   [ Empty ]                          │
+│                                      │
+├──────────────────────────────────────┤
+│ [ Run Show ] (disabled)              │
+│ [ Back ]                             │
+└──────────────────────────────────────┘
+```
+
+#### Match Booking (Empty Slot)
+```
+┌──────────────────────────────────────┐
+│ Book Match 3                         │
+│ Singles                              │
+├──────────────────────────────────────┤
+│ ▸ [ Empty ]                          │
+│                                      │
+│   [ Empty ]                          │
+│                                      │
+│   Stipulation                        │
+│   [ Hardcore ▾ ]                     │
+│                                      │
+├──────────────────────────────────────┤
+│ [ Confirm ] (disabled)               │
+│ [ Clear Slot ] (disabled)            │
+│ [ Cancel ]                           │
+└──────────────────────────────────────┘
+```
+
+#### Match Booking (Filled Slot)
+```
+┌──────────────────────────────────────┐
+│ Book Match 3                         │
+│ Singles                              │
+├──────────────────────────────────────┤
+│ ▸ 😃 Kenny Omega                     │
+│                                      │
+│   😈 Eddie Kingston                  │
+│                                      │
+│   Stipulation                        │
+│   Submission                         │
+│                                      │
+├──────────────────────────────────────┤
+│ [ Confirm ]                          │
+│ [ Clear Slot ]                       │
+│ [ Cancel ]                           │
+└──────────────────────────────────────┘
+```
+
+#### Promo Booking (Filled Slot)
+```
+┌──────────────────────────────────────┐
+│ Book Promo 1                         │
+│ Jon Moxley                           │
+├──────────────────────────────────────┤
+│ ▸ Wrestler                           │
+│   Jon Moxley                         │
+│                                      │
+├──────────────────────────────────────┤
+│ [ Confirm ]                          │
+│ [ Clear Slot ]                       │
+│ [ Cancel ]                           │
+└──────────────────────────────────────┘
+```
+
+#### Wrestler Selection
+```
+Select Wrestler (Match 3 · A)
+
+| Name                 | Sta | Mic | Pop     |
+| -------------------- | --- | --- | ------- |
+| 😃 Kenny Omega       |  28 |  88 |  92 🥱 📅 |
+| 😈 Jon Moxley        |  12 |  86 |  88 🥱   |
+| 😃 Eddie Kingston    |  64 |  70 |  74     |
+
+⛔ Already booked in Match 2
+
+[ Select ]   [ Cancel ]
+```
+
+#### Match Category Selection
+```
+┌──────────────────────────────────────┐
+│ Select Match Category                │
+├──────────────────────────────────────┤
+│ ▸ Singles                            │
+│                                      │
+│   Triple Threat                      │
+│                                      │
+│   Fatal 4-Way                         │
+├──────────────────────────────────────┤
+│ [ Select ]   [ Cancel ]              │
+└──────────────────────────────────────┘
+```
+
+#### Match Booking Confirmation (Modal)
+```
+              ┌──────────────────────┐
+              │ Confirm booking?     │
+              ├──────────────────────┤
+              │ [ Confirm ]          │
+              │ [ Cancel ]           │
+              └──────────────────────┘
+```
+
+#### Show Results
+```
+┌────────────────────────── SHOW RESULTS ──────────────────────────┐
+│ WrestleGM                                                        │
+│ Show #12 · RAW                                                   │
+├──────────────────────────────────────────────────────────────────┤
+│ Match 1                                                         │
+│ 😃 Kenny Omega def. 😈 Eddie Kingston                            │
+│ Singles · Hardcore                                               │
+│                                                              ★★★ │
+│                                                                  │
+│ Promo 1                                                         │
+│ Jon Moxley                                                      │
+│                                                              ★★  │
+│                                                                  │
+│ Match 2                                                         │
+│ 😈 Jon Moxley def. 😃 Claudio Castagnoli                          │
+│ Singles · Submission                                             │
+│                                                              ★★★★│
+│                                                                  │
+│ Promo 2                                                         │
+│ Maria Blaze                                                     │
+│                                                              ★★  │
+│                                                                  │
+│ Match 3                                                         │
+│ 😃 Alpha def. 😈 Beta, 😃 Gamma                                   │
+│ Triple Threat · High Flying                                      │
+│                                                              ★★★ │
+├──────────────────────────────────────────────────────────────────┤
+│ Show Rating: ★★★☆                                               │
+│                                                                  │
+│ [ Continue ]                                                    │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+#### Roster Overview
+```
+Roster Overview
+
+| Name                   | Sta | Mic | Pop  |
+| ---------------------- | --- | --- | ---- |
+| 😃 Kenny Omega         |  28 |  88 |  89  |
+| 😈 Jon Moxley          |  12 |  86 |  82 🥱 |
+| 😃 Eddie Kingston      |  64 |  70 |  74  |
+| 😃 Claudio Castagnoli  |  71 |  75 |  77  |
+
+[ Back ]
+```

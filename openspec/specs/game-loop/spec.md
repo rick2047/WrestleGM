@@ -10,12 +10,26 @@ The system SHALL support a show-driven loop that books a 3-match, 2-promo card, 
 - **WHEN** the player runs a fully booked show
 - **THEN** the system simulates all match and promo slots, applies deltas, and increments the show index
 
+### Requirement: Fixed show slot order
+The system SHALL structure each show card as five slots in the fixed order Match 1, Promo 1, Match 2, Promo 2, Match 3.
+
+#### Scenario: Show card slot order
+- **WHEN** a new show card is created
+- **THEN** it contains five slots in the fixed match/promo order
+
 ### Requirement: Show validation rules
 The system SHALL prevent running a show unless it has exactly three valid matches, two promos each with a wrestler assigned, no duplicate wrestlers across any slot, all match-booked wrestlers meet stamina requirements, each match includes exactly the number of wrestlers required by its selected match category, and each stipulation is allowed for its selected category.
 
 #### Scenario: Block invalid show run
 - **WHEN** the card is incomplete, contains duplicate wrestlers, has a match wrestler below stamina requirements, a match does not meet its required category size, or a stipulation is incompatible with its category
 - **THEN** the system blocks simulation
+
+### Requirement: Match booking stamina threshold
+The system SHALL use `STAMINA_MIN_BOOKABLE = 10` as the minimum stamina required to book a wrestler in a match.
+
+#### Scenario: Enforce minimum stamina for matches
+- **WHEN** a wrestler has stamina of 10 or below
+- **THEN** they cannot be booked into a match
 
 ### Requirement: Between-show recovery
 The system SHALL restore stamina to wrestlers who did not participate in the previous show by a fixed amount and clamp to 0–100.
@@ -24,10 +38,13 @@ The system SHALL restore stamina to wrestlers who did not participate in the pre
 - **WHEN** a wrestler does not appear in any match or promo on the show
 - **THEN** their stamina increases by the recovery amount and is clamped to 0–100
 
+#### Scenario: Recovery amount
+- **WHEN** recovery is applied
+- **THEN** resting wrestlers regain 15 stamina
+
 ### Requirement: Show applier responsibilities
 The system SHALL apply match deltas, promo deltas, and between-show recovery through a dedicated `ShowApplier` owned by game state.
 
 #### Scenario: Apply show results through applier
 - **WHEN** a show finishes simulation
 - **THEN** the `ShowApplier` applies match deltas, promo deltas, recovery, and clamping rules
-

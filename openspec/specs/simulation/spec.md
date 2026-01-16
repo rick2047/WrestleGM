@@ -51,6 +51,10 @@ The system SHALL compute the overall show rating as the arithmetic mean of match
 - **WHEN** a show has slot ratings for matches and promos
 - **THEN** the show rating equals their arithmetic mean
 
+#### Scenario: Empty show rating
+- **WHEN** a show has no slot ratings
+- **THEN** the show rating is `0.0`
+
 ### Requirement: End-of-show state application
 The system SHALL apply all stat deltas once per show and clamp popularity and stamina to 0–100.
 

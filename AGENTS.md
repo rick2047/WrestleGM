@@ -21,6 +21,7 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 - Each new spec MUST start from a new git branch and include opening a PR.
 - Ask for explicit user approval before running git workflow actions (commit, push, PR create/edit).
 - Always merge PRs using a merge commit (no squash merges).
+- To trigger a Gemini review, comment on the PR with `/gemini review`.
 
 ## GitHub Access
 - Use the GitHub MCP server for all GitHub issues/PRs/comments and related actions.
