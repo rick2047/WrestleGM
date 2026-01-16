@@ -110,3 +110,68 @@ def test_load_rejects_unsupported_version(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="unsupported_save_version"):
         state.load_slot(1)
+
+
+def test_save_writes_version_2(tmp_path: Path) -> None:
+    wrestlers = load_wrestlers()
+    match_types = load_match_types()
+    state = GameState(wrestlers, match_types, save_dir=tmp_path)
+
+    state.current_slot_index = 1
+    state.pending_slot_name = "Test"
+    state.save_current_slot()
+
+    payload = persistence.load_save_payload(1, tmp_path)
+    assert payload["version"] == 2
+
+
+def test_load_supports_v1_payload(tmp_path: Path) -> None:
+    wrestlers = load_wrestlers()
+    match_types = load_match_types()
+    state = GameState(wrestlers, match_types, save_dir=tmp_path)
+
+    seed_show_card(state)
+    state.run_show()
+
+    persistence.save_slot_index(
+        [
+            persistence.SaveSlotInfo(
+                slot_index=1,
+                name="Test",
+                exists=True,
+                last_saved_show_index=1,
+            ),
+            persistence.SaveSlotInfo(
+                slot_index=2,
+                name=None,
+                exists=False,
+                last_saved_show_index=None,
+            ),
+            persistence.SaveSlotInfo(
+                slot_index=3,
+                name=None,
+                exists=False,
+                last_saved_show_index=None,
+            ),
+        ],
+        tmp_path,
+    )
+    payload = {
+        "version": 1,
+        "slot": {"slot_index": 1, "name": "Test"},
+        "state": persistence.serialize_game_state(state),
+    }
+    persistence.slot_path(1, tmp_path).write_text(
+        json.dumps(payload), encoding="utf-8"
+    )
+
+    loaded = GameState(wrestlers, match_types, save_dir=tmp_path)
+    loaded.load_slot(1)
+
+    assert loaded.show_index == state.show_index
+    assert loaded.show_card == state.show_card
+    assert loaded.rivalry_states == state.rivalry_states
+    assert loaded.cooldown_states == state.cooldown_states
+    assert loaded.roster.keys() == state.roster.keys()
+    for wrestler_id in state.roster:
+        assert loaded.roster[wrestler_id] == state.roster[wrestler_id]
