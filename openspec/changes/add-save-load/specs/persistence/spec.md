@@ -7,7 +7,7 @@ The system SHALL store save data under `dist/data/save` using fixed filenames pe
 - **THEN** it writes `dist/data/save/slot_2.json`
 
 ### Requirement: Save slot metadata and naming
-Each save slot SHALL include `slot_index`, `name`, `exists`, and `last_saved_show_index` metadata. The slot name SHALL be immutable after the first save.
+Each save slot SHALL include `slot_index`, `name`, `exists`, and `last_saved_show_index` metadata. The slot name SHALL be immutable for an existing save, but an overwrite flow SHALL allow naming a new save in that slot.
 
 #### Scenario: First save requires naming
 - **WHEN** a player saves into an unused slot
@@ -16,6 +16,10 @@ Each save slot SHALL include `slot_index`, `name`, `exists`, and `last_saved_sho
 #### Scenario: Slot name remains unchanged
 - **WHEN** a player saves to an existing slot
 - **THEN** the slot name is preserved and not changed
+
+#### Scenario: Overwrite creates a new name
+- **WHEN** a player overwrites a slot to start a new game
+- **THEN** a new slot name is captured for the new save
 
 #### Scenario: Slot metadata is tracked
 - **WHEN** the slot list is shown

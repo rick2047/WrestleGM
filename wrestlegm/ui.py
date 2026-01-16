@@ -395,7 +395,15 @@ class WrestleGMApp(App):
 
         try:
             self.state.load_slot(slot_index)
-        except ValueError:
+        except ValueError as exc:
+            message = "Unable to load save."
+            if str(exc) == "unsupported_save_version":
+                message = "Save version unsupported."
+            elif str(exc) == "corrupt_save_file":
+                message = "Save file is corrupt."
+            elif str(exc) in {"empty_slot", "missing_save_file"}:
+                message = "Save file is missing."
+            self.push_screen(ErrorModal(message=message))
             return
         self.switch_screen(BookingHubScreen())
 
@@ -1903,6 +1911,74 @@ class ConfirmBookingModal(ModalScreen):
         """Cycle focus across modal action buttons."""
 
         focus_order = [self.confirm_button, self.cancel_button]
+        focused = self.app.focused
+        if focused not in focus_order:
+            focus_order[0].focus()
+            return
+        index = focus_order.index(focused)
+        focus_order[(index + delta) % len(focus_order)].focus()
+
+
+class ErrorModal(ModalScreen):
+    """Modal error dialog for load failures."""
+
+    BINDINGS = [
+        ("enter", "activate", "Ok"),
+        ("escape", "cancel", "Ok"),
+        ("up", "focus_prev", "Prev"),
+        ("down", "focus_next", "Next"),
+    ]
+
+    def __init__(self, *, message: str) -> None:
+        super().__init__()
+        self.message = message
+
+    def compose(self) -> ComposeResult:
+        """Build the error modal layout."""
+
+        with Vertical(classes="panel"):
+            yield Static("Error")
+            yield Static(self.message)
+            self.ok_button = Button("Ok", id="ok")
+            yield self.ok_button
+
+    def on_mount(self) -> None:
+        """Focus the ok button."""
+
+        self.ok_button.focus()
+
+    def action_cancel(self) -> None:
+        """Close the modal."""
+
+        self.dismiss(result=True)
+
+    def action_activate(self) -> None:
+        """Activate the focused button."""
+
+        focused = self.app.focused
+        if isinstance(focused, Button) and not focused.disabled:
+            focused.press()
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        """Close the modal on ok."""
+
+        if event.button.id == "ok":
+            self.dismiss(result=True)
+
+    def action_focus_next(self) -> None:
+        """Move focus to the next modal action."""
+
+        self._move_focus(1)
+
+    def action_focus_prev(self) -> None:
+        """Move focus to the previous modal action."""
+
+        self._move_focus(-1)
+
+    def _move_focus(self, delta: int) -> None:
+        """Cycle focus across modal action buttons."""
+
+        focus_order = [self.ok_button]
         focused = self.app.focused
         if focused not in focus_order:
             focus_order[0].focus()

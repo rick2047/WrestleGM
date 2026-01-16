@@ -108,3 +108,10 @@ The system SHALL provide an Overwrite Save Slot modal when starting a new game o
 #### Scenario: Cancel returns to slot selection
 - **WHEN** the player cancels overwrite
 - **THEN** the Save Slot Selection screen is shown
+
+### Requirement: Load error feedback
+The system SHALL show a modal error message when loading a save fails due to missing, corrupt, or unsupported save files.
+
+#### Scenario: Load failure shows error
+- **WHEN** a load attempt fails
+- **THEN** an error modal explains the failure and returns the player to Save Slot Selection
