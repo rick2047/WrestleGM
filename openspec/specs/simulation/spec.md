@@ -10,6 +10,13 @@ The system SHALL simulate each match using an outcome step, rating step, and sta
 - **WHEN** the same roster stats, stipulation config, show card, and seed are used for matches with `N >= 2`
 - **THEN** the match winners, ratings, and deltas are identical across runs
 
+### Requirement: RNG governance and hidden inputs
+The system SHALL use a single seeded RNG for all simulation randomness and SHALL not depend on wall-clock time, UI state, or other implicit inputs.
+
+#### Scenario: No hidden randomness inputs
+- **WHEN** the same explicit inputs and seed are used
+- **THEN** outcomes are reproducible without relying on hidden inputs
+
 ### Requirement: Outcome simulation formula and RNG discipline
 The system SHALL compute winners using the outcome pipeline and use exactly one RNG draw per match for the final probability sample.
 
@@ -17,6 +24,7 @@ The system SHALL compute winners using the outcome pipeline and use exactly one 
 - **WHEN** a match is simulated with `N` wrestlers
 - **THEN** power is computed per wrestler as `power_i = popularity_i * P_WEIGHT + stamina_i * S_WEIGHT`
 - **AND THEN** base probabilities are `p_base_i = power_i / sum(power)`
+- **AND THEN** if total power is 0, base probabilities are uniform
 - **AND THEN** chaos is applied as `p_final_i = lerp(p_base_i, 1/N, outcome_chaos)`
 - **AND THEN** the `p_final_i` values are normalized to sum to 1
 - **AND THEN** a single RNG draw `r` selects the winner from the cumulative distribution of `p_final_i`
@@ -27,7 +35,8 @@ The system SHALL compute match ratings in 0–100 space with alignment and match
 #### Scenario: Rating computation with rivalry and cooldown
 - **WHEN** a match rating is simulated for `N` wrestlers
 - **THEN** `base_100 = pop_avg * POP_W + sta_avg * STA_W` using averages across all wrestlers
-- **AND THEN** alignment modifiers apply based on face/heel counts (all heels: `-2 * ALIGN_BONUS`, all faces: `0`, heels > faces: `+ALIGN_BONUS`, heels == faces: `0`, faces > heels: `-ALIGN_BONUS`)
+- **AND THEN** alignment modifiers apply for 1v1 (face vs heel: `+ALIGN_BONUS`, heel vs heel: `-2 * ALIGN_BONUS`, face vs face: `0`)
+- **AND THEN** for matches with `N >= 3`, multi-man alignment modifiers apply (all heels: `-2 * ALIGN_BONUS`, all faces: `0`, heels > faces: `+ALIGN_BONUS`, heels == faces: `0`, faces > heels: `-ALIGN_BONUS`)
 - **AND THEN** `rating_bonus` is added
 - **AND THEN** one RNG draw applies `swing` in `[-rating_variance, +rating_variance]`
 - **AND THEN** `rating_100` is clamped to 0–100 and converted to stars via `round((rating_100/100)*5, 1)`
@@ -44,6 +53,14 @@ The system SHALL produce popularity and stamina deltas based solely on match typ
 - **THEN** the winner receives `popularity_delta_winner` and `-stamina_cost_winner` once
 - **AND THEN** each non-winner receives `popularity_delta_loser` and `-stamina_cost_loser` once
 
+#### Scenario: Match rating does not alter deltas
+- **WHEN** a match rating is computed
+- **THEN** popularity and stamina deltas depend only on match type modifiers
+
+#### Scenario: Stamina costs are fixed by match type
+- **WHEN** a match is simulated
+- **THEN** stamina deltas use the match type stamina costs without scaling by rating
+
 ### Requirement: Show rating aggregation
 The system SHALL compute the overall show rating as the arithmetic mean of match and promo ratings.
 
@@ -51,12 +68,24 @@ The system SHALL compute the overall show rating as the arithmetic mean of match
 - **WHEN** a show has slot ratings for matches and promos
 - **THEN** the show rating equals their arithmetic mean
 
+#### Scenario: Empty show rating
+- **WHEN** a show has no slot ratings
+- **THEN** the show rating is `0.0`
+
+#### Scenario: Show rating uses no RNG
+- **WHEN** the show rating is computed
+- **THEN** no RNG draws are used
+
 ### Requirement: End-of-show state application
 The system SHALL apply all stat deltas once per show and clamp popularity and stamina to 0–100.
 
 #### Scenario: Clamp stats after applying deltas
 - **WHEN** deltas would push a stat below 0 or above 100
 - **THEN** the resulting stat is clamped to the 0–100 range
+
+#### Scenario: Apply deltas once per show
+- **WHEN** a show completes
+- **THEN** all stat deltas are applied once and order does not change results
 
 ### Requirement: Between-show stamina recovery
 The system SHALL restore stamina only for wrestlers who did not appear on the previous show and clamp results to 0–100.
@@ -72,12 +101,33 @@ The system SHALL centralize RNG ownership and simulation methods in a `Simulatio
 - **WHEN** a show is simulated
 - **THEN** the `SimulationEngine` is used to compute outcomes, ratings, and deltas
 
+### Requirement: RNG seed stored in game state
+The system SHALL store the simulation RNG seed in game state to support reproducibility during a session.
+
+#### Scenario: Seed retention
+- **WHEN** a new game is started with a seed
+- **THEN** the seed is retained in state for future simulations in the current session
+
 ### Requirement: Deterministic promo simulation pipeline
 The system SHALL simulate each promo using a rating step and a stat delta step using the same seeded RNG instance owned by a `SimulationEngine`.
 
 #### Scenario: Deterministic promo ratings with same inputs
 - **WHEN** the same wrestler stats and seed are used
 - **THEN** promo ratings and deltas are identical across runs
+
+### Requirement: Show simulation order
+The system SHALL simulate show slots in card order and return results in the same order.
+
+#### Scenario: Preserve card order in results
+- **WHEN** a show card is simulated
+- **THEN** the results list follows the original slot order
+
+### Requirement: Simulation pipeline stages
+The system SHALL run the simulation pipeline in this order: outcome (matches only), rating, stat deltas, show rating aggregation, and end-of-show state application.
+
+#### Scenario: Pipeline order
+- **WHEN** a show is simulated and applied
+- **THEN** the pipeline stages execute in the defined order
 
 ### Requirement: Promo rating simulation formula and bounds
 The system SHALL compute promo ratings in 0–100 space from mic skill and popularity, apply variance using one RNG draw with `PROMO_VARIANCE = 8`, clamp, and convert to 0.0–5.0 stars using the shared conversion rules.
@@ -101,3 +151,35 @@ The system SHALL apply fixed popularity deltas based on promo quality and grant 
 - **WHEN** a wrestler appears in a promo slot
 - **THEN** the wrestler stamina delta is `floor(STAMINA_RECOVERY_PER_SHOW / 2)`
 
+### Requirement: Simulation debug payloads
+The system SHALL provide debug payloads for outcome, rating, and promo rating simulations that include the intermediate values used to compute results.
+
+#### Scenario: Outcome debug payload
+- **WHEN** a match outcome is simulated
+- **THEN** the debug payload includes powers, base probabilities, outcome chaos, final probabilities, RNG sample, and winner id
+
+#### Scenario: Rating debug payload
+- **WHEN** a match rating is simulated
+- **THEN** the debug payload includes averages, alignment modifier, rating bonus, variance, swing, and rating values
+
+#### Scenario: Promo debug payload
+- **WHEN** a promo rating is simulated
+- **THEN** the debug payload includes base rating, swing, and rating values
+
+### Requirement: Result payloads include deltas and identifiers
+The system SHALL include stat deltas in match and promo results, include applied match type modifiers on match results, and record winner/non-winners, rating, match category, and match type identifiers.
+
+#### Scenario: Match result payload
+- **WHEN** a match is simulated
+- **THEN** the result includes winner id, non-winner ids, rating, match category id, match type id, applied modifiers, and stat deltas
+
+#### Scenario: Promo result payload
+- **WHEN** a promo is simulated
+- **THEN** the result includes wrestler id, rating, and stat deltas
+
+### Requirement: Simulation test coverage
+The system SHALL include tests that cover determinism, outcome normalization, rating bounds, alignment modifiers, multi-man determinism, promo determinism, promo deltas, match deltas, show rating aggregation, and stat clamping.
+
+#### Scenario: Simulation tests run
+- **WHEN** simulation tests run
+- **THEN** they cover determinism, outcome, rating bounds, alignment, multi-man, promo, deltas, show rating, and clamp behavior
