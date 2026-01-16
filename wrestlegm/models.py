@@ -6,9 +6,10 @@ from dataclasses import dataclass
 from typing import Dict, List, Literal, Union
 
 Alignment = Literal["Face", "Heel"]
+PairKey = tuple[str, str]
 
 
-def normalize_pair(wrestler_a_id: str, wrestler_b_id: str) -> tuple[str, str]:
+def normalize_pair(wrestler_a_id: str, wrestler_b_id: str) -> PairKey:
     """Return a normalized pair key for two wrestler IDs."""
 
     return (

@@ -2097,6 +2097,7 @@ class ResultsScreen(Screen):
 
     def action_continue(self) -> None:
         """Return to the game hub."""
+        # Fail fast if the save state is invalid; inputs are validated upstream.
         self.app.state.save_current_slot()
         self.app.switch_screen(GameHubScreen())
 

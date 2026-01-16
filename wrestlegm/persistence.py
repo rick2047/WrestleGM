@@ -76,6 +76,7 @@ def load_slot_index(base_dir: Path | None = None) -> list[SaveSlotInfo]:
     if not path.exists():
         return default_slots()
 
+    # Fail fast on corrupt slot index so we notice bad persistence data early.
     data = json.loads(path.read_text(encoding="utf-8"))
     slots_data = data.get("slots", []) if isinstance(data, dict) else []
     slots_by_index: dict[int, SaveSlotInfo] = {
@@ -162,6 +163,7 @@ def serialize_game_state(state: GameState) -> dict[str, Any]:
 def deserialize_game_state(state: GameState, payload: dict[str, Any]) -> None:
     """Apply serialized state data to an existing GameState."""
 
+    # Intentionally strict: malformed payloads should surface errors early.
     roster = {}
     for wrestler_data in payload.get("roster", []):
         roster[wrestler_data["id"]] = WrestlerState(
@@ -333,4 +335,3 @@ def _to_tuple(value: Any) -> Any:
     if isinstance(value, list):
         return tuple(_to_tuple(item) for item in value)
     return value
-

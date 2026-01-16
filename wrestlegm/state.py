@@ -10,6 +10,7 @@ from wrestlegm.models import (
     Match,
     MatchTypeDefinition,
     CooldownState,
+    PairKey,
     Promo,
     PromoResult,
     RivalryState,
@@ -23,8 +24,6 @@ from wrestlegm.models import (
 )
 from wrestlegm.sim import RivalryRatingContext, SimulationEngine
 from wrestlegm import persistence
-
-PairKey = tuple[str, str]
 
 
 def ordered_pairs(wrestler_ids: Iterable[str]) -> list[tuple[str, str]]:
