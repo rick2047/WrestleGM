@@ -11,11 +11,9 @@ Persistence currently relies on hand-written dict assembly and parsing in `wrest
   - Introducing external serialization libraries.
 
 ## Decisions
-- Decision: Introduce dedicated snapshot dataclasses for persistence and use `dataclasses.asdict` for serialization.
-- Decision: Write saves using a new schema version when schema changes are required; support loading v1 by mapping to snapshot types.
-- Decision: Keep RNG state persistence explicit (seed plus RNG state) with tuple/list conversion encapsulated in snapshot serialization.
 - Decision: Persist using existing domain dataclasses serialized with `dataclasses.asdict`, avoiding separate snapshot classes.
 - Decision: Enforce strict save version matching (`version == SAVE_VERSION`) with no backward compatibility.
+- Decision: Keep RNG state persistence explicit (seed plus RNG state) with tuple/list conversion.
 - Decision: Harden deserialization with defensive `.get()` access and type guards to avoid crashes on malformed payloads.
 - Decision: Route load flow to the Game Hub after successful load.
 - Decision: Defer load action from the slot selection to avoid Enter key propagation into the next screen.

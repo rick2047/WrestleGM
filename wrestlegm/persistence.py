@@ -137,64 +137,62 @@ def serialize_game_state(state: GameState) -> dict[str, Any]:
 
 
 def deserialize_game_state(state: GameState, payload: dict[str, Any]) -> None:
-    """Apply serialized state data to an existing GameState."""
+    """Apply serialized state data to an existing GameState with validation."""
 
     roster = {}
-    roster_data = payload.get("roster", [])
-    if isinstance(roster_data, list):
-        for entry in roster_data:
-            if not isinstance(entry, dict):
-                continue
-            wrestler_id = entry.get("id")
-            if not isinstance(wrestler_id, str) or not wrestler_id:
-                continue
-            alignment = entry.get("alignment")
-            if alignment not in ("Face", "Heel"):
-                alignment = "Face"
-            roster[wrestler_id] = WrestlerState(
-                id=wrestler_id,
-                name=entry.get("name", ""),
-                alignment=alignment,
-                popularity=_coerce_int(entry.get("popularity"), 0),
-                stamina=_coerce_int(entry.get("stamina"), 0),
-                mic_skill=_coerce_int(entry.get("mic_skill"), 0),
-            )
+    for entry in _iter_payload_list(payload, "roster"):
+        wrestler_id = entry.get("id")
+        if not isinstance(wrestler_id, str) or not wrestler_id:
+            continue
+        alignment = entry.get("alignment")
+        if alignment not in ("Face", "Heel"):
+            alignment = "Face"
+        roster[wrestler_id] = WrestlerState(
+            id=wrestler_id,
+            name=entry.get("name", ""),
+            alignment=alignment,
+            popularity=_coerce_int(entry.get("popularity"), 0),
+            stamina=_coerce_int(entry.get("stamina"), 0),
+            mic_skill=_coerce_int(entry.get("mic_skill"), 0),
+        )
     state.roster = roster
 
     rivalry_states: dict[tuple[str, str], RivalryState] = {}
-    rivalry_data = payload.get("rivalry_states", [])
-    if isinstance(rivalry_data, list):
-        for entry in rivalry_data:
-            if not isinstance(entry, dict):
-                continue
-            wrestler_a_id = entry.get("wrestler_a_id")
-            wrestler_b_id = entry.get("wrestler_b_id")
-            if not isinstance(wrestler_a_id, str) or not isinstance(wrestler_b_id, str):
-                continue
-            rivalry = RivalryState(
-                wrestler_a_id=wrestler_a_id,
-                wrestler_b_id=wrestler_b_id,
-                rivalry_value=_coerce_int(entry.get("rivalry_value"), 0),
-            )
-            rivalry_states[normalize_pair(rivalry.wrestler_a_id, rivalry.wrestler_b_id)] = rivalry
+    for entry in _iter_payload_list(payload, "rivalry_states"):
+        wrestler_a_id = entry.get("wrestler_a_id")
+        wrestler_b_id = entry.get("wrestler_b_id")
+        if (
+            not isinstance(wrestler_a_id, str)
+            or not wrestler_a_id
+            or not isinstance(wrestler_b_id, str)
+            or not wrestler_b_id
+        ):
+            continue
+        rivalry = RivalryState(
+            wrestler_a_id=wrestler_a_id,
+            wrestler_b_id=wrestler_b_id,
+            rivalry_value=_coerce_int(entry.get("rivalry_value"), 0),
+        )
+        rivalry_states[normalize_pair(rivalry.wrestler_a_id, rivalry.wrestler_b_id)] = rivalry
     state.rivalry_states = rivalry_states
 
     cooldown_states: dict[tuple[str, str], CooldownState] = {}
-    cooldown_data = payload.get("cooldown_states", [])
-    if isinstance(cooldown_data, list):
-        for entry in cooldown_data:
-            if not isinstance(entry, dict):
-                continue
-            wrestler_a_id = entry.get("wrestler_a_id")
-            wrestler_b_id = entry.get("wrestler_b_id")
-            if not isinstance(wrestler_a_id, str) or not isinstance(wrestler_b_id, str):
-                continue
-            cooldown = CooldownState(
-                wrestler_a_id=wrestler_a_id,
-                wrestler_b_id=wrestler_b_id,
-                remaining_shows=_coerce_int(entry.get("remaining_shows"), 0),
-            )
-            cooldown_states[normalize_pair(cooldown.wrestler_a_id, cooldown.wrestler_b_id)] = cooldown
+    for entry in _iter_payload_list(payload, "cooldown_states"):
+        wrestler_a_id = entry.get("wrestler_a_id")
+        wrestler_b_id = entry.get("wrestler_b_id")
+        if (
+            not isinstance(wrestler_a_id, str)
+            or not wrestler_a_id
+            or not isinstance(wrestler_b_id, str)
+            or not wrestler_b_id
+        ):
+            continue
+        cooldown = CooldownState(
+            wrestler_a_id=wrestler_a_id,
+            wrestler_b_id=wrestler_b_id,
+            remaining_shows=_coerce_int(entry.get("remaining_shows"), 0),
+        )
+        cooldown_states[normalize_pair(cooldown.wrestler_a_id, cooldown.wrestler_b_id)] = cooldown
     state.cooldown_states = cooldown_states
 
     show_index = payload.get("show_index", 1)
@@ -344,3 +342,10 @@ def _to_tuple(value: Any) -> Any:
 
 def _coerce_int(value: Any, default: int) -> int:
     return value if isinstance(value, int) else default
+
+
+def _iter_payload_list(payload: dict[str, Any], key: str) -> Iterable[dict[str, Any]]:
+    data = payload.get(key, [])
+    if not isinstance(data, list):
+        return []
+    return [entry for entry in data if isinstance(entry, dict)]
