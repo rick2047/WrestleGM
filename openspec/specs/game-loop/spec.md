@@ -57,12 +57,12 @@ The system SHALL not apply weighting or bonuses (e.g., main event bonuses) to sl
 - **WHEN** the show rating is computed
 - **THEN** each slot contributes equally
 
-### Requirement: Card locking during simulation
-The system SHALL lock the show card once simulation begins and prevent edits until results are available.
+### Requirement: No card edits during simulation flow
+The system SHALL not expose show card editing actions while the simulating or results screens are active.
 
-#### Scenario: Card locked while simulating
+#### Scenario: Card edits unavailable while simulating
 - **WHEN** a show enters simulation
-- **THEN** the card cannot be edited until the show completes
+- **THEN** the UI does not offer booking actions until results are complete
 
 ### Requirement: Show card reset after completion
 The system SHALL clear the show card after a show is completed and applied.
@@ -128,12 +128,12 @@ The system SHALL not provide partial recovery for participants, rating-based rec
 - **WHEN** recovery is applied
 - **THEN** only resting wrestlers receive the fixed recovery amount
 
-### Requirement: Show lifecycle states
-The system SHALL model show progression through Planning, Locked, Simulating, Completed, and Applied states.
+### Requirement: Show lifecycle flow
+The system SHALL progress through planning, simulating, results, and applied phases via the UI flow without requiring explicit lifecycle state tracking in the data model.
 
-#### Scenario: Show lifecycle progression
+#### Scenario: Show lifecycle flow
 - **WHEN** a show is booked and run
-- **THEN** it transitions through planning, locked, simulating, completed, and applied states
+- **THEN** the UI follows the planning, simulating, results, and applied phases in order
 
 ### Requirement: Ordering guarantees
 The system SHALL simulate slots in card order, and the order SHALL not affect outcomes or ratings in the MVP.
