@@ -35,6 +35,10 @@ Save files SHALL be JSON, human-readable, and include a mandatory `version` fiel
 - **WHEN** a player attempts to load a save with `version` greater than 1
 - **THEN** loading is blocked with an error
 
+#### Scenario: Corrupt save payload blocks load
+- **WHEN** a save file contains invalid JSON
+- **THEN** loading is blocked with an error
+
 #### Scenario: Save includes RNG seed
 - **WHEN** a save is created
 - **THEN** the RNG seed is persisted alongside the other game state fields

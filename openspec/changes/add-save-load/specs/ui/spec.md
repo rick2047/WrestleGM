@@ -65,7 +65,7 @@ The system SHALL provide a Game Hub screen that displays the current show number
 
 ## ADDED Requirements
 ### Requirement: Save slot selection screen
-The system SHALL provide a Save Slot Selection screen that is shared by New Game and Load Game flows. The screen SHALL display exactly three slots with slot number, slot name when present, and last saved show number when present. Empty slots SHALL be disabled for Load Game. Selecting an empty slot in New Game SHALL proceed to Name Save Slot. Selecting a filled slot in New Game SHALL prompt for overwrite confirmation. Selecting a filled slot in Load Game SHALL load and navigate to the Booking Hub.
+The system SHALL provide a Save Slot Selection screen that is shared by New Game and Load Game flows. The screen SHALL display exactly three slots with slot number, slot name when present, and the next show number to be played (derived from the last saved show index). Empty slots SHALL be disabled for Load Game. Selecting an empty slot in New Game SHALL proceed to Name Save Slot. Selecting a filled slot in New Game SHALL prompt for overwrite confirmation. Selecting a filled slot in Load Game SHALL load and navigate to the Booking Hub.
 
 #### Scenario: Load game blocks empty slots
 - **WHEN** the player selects an empty slot in Load Game mode
@@ -103,7 +103,7 @@ The system SHALL provide an Overwrite Save Slot modal when starting a new game o
 
 #### Scenario: Confirm overwrites and proceeds
 - **WHEN** the player confirms overwrite
-- **THEN** the slot is cleared and the Name Save Slot modal is shown
+- **THEN** the Name Save Slot modal is shown and the existing save is retained until a new name is confirmed
 
 #### Scenario: Cancel returns to slot selection
 - **WHEN** the player cancels overwrite
