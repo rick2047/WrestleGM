@@ -7,7 +7,14 @@ import json
 from pathlib import Path
 from typing import Any, Iterable, TYPE_CHECKING
 
-from wrestlegm.models import CooldownState, Match, Promo, RivalryState, WrestlerState
+from wrestlegm.models import (
+    CooldownState,
+    Match,
+    Promo,
+    RivalryState,
+    WrestlerState,
+    normalize_pair,
+)
 
 if TYPE_CHECKING:
     from wrestlegm.state import GameState
@@ -174,7 +181,7 @@ def deserialize_game_state(state: GameState, payload: dict[str, Any]) -> None:
             wrestler_b_id=rivalry_data["wrestler_b_id"],
             rivalry_value=rivalry_data["rivalry_value"],
         )
-        rivalry_states[_normalize_pair(rivalry.wrestler_a_id, rivalry.wrestler_b_id)] = rivalry
+        rivalry_states[normalize_pair(rivalry.wrestler_a_id, rivalry.wrestler_b_id)] = rivalry
     state.rivalry_states = rivalry_states
 
     cooldown_states = {}
@@ -184,7 +191,7 @@ def deserialize_game_state(state: GameState, payload: dict[str, Any]) -> None:
             wrestler_b_id=cooldown_data["wrestler_b_id"],
             remaining_shows=cooldown_data["remaining_shows"],
         )
-        cooldown_states[_normalize_pair(cooldown.wrestler_a_id, cooldown.wrestler_b_id)] = cooldown
+        cooldown_states[normalize_pair(cooldown.wrestler_a_id, cooldown.wrestler_b_id)] = cooldown
     state.cooldown_states = cooldown_states
 
     state.show_index = payload.get("show_index", 1)
@@ -206,7 +213,10 @@ def load_save_payload(slot_index: int, base_dir: Path | None = None) -> dict[str
     """Load a save payload from disk."""
 
     path = slot_path(slot_index, base_dir)
-    return json.loads(path.read_text(encoding="utf-8"))
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise ValueError("corrupt_save_file") from exc
 
 
 def save_payload(
@@ -324,12 +334,3 @@ def _to_tuple(value: Any) -> Any:
         return tuple(_to_tuple(item) for item in value)
     return value
 
-
-def _normalize_pair(wrestler_a_id: str, wrestler_b_id: str) -> tuple[str, str]:
-    """Return a normalized pair key for two wrestler IDs."""
-
-    return (
-        (wrestler_a_id, wrestler_b_id)
-        if wrestler_a_id <= wrestler_b_id
-        else (wrestler_b_id, wrestler_a_id)
-    )

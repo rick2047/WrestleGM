@@ -8,6 +8,16 @@ from typing import Dict, List, Literal, Union
 Alignment = Literal["Face", "Heel"]
 
 
+def normalize_pair(wrestler_a_id: str, wrestler_b_id: str) -> tuple[str, str]:
+    """Return a normalized pair key for two wrestler IDs."""
+
+    return (
+        (wrestler_a_id, wrestler_b_id)
+        if wrestler_a_id <= wrestler_b_id
+        else (wrestler_b_id, wrestler_a_id)
+    )
+
+
 @dataclass
 class WrestlerState:
     """Mutable wrestler state for the running game."""

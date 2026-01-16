@@ -505,7 +505,7 @@ class SaveSlotSelectionScreen(Screen):
         """Format a slot label for display."""
 
         if slot.exists:
-            show_index = slot.last_saved_show_index or 0
+            show_index = (slot.last_saved_show_index or 0) + 1
             name = slot.name or "Unnamed"
             return f"Slot {slot.slot_index} · {name} · Show #{show_index}"
         empty_label = f"Slot {slot.slot_index} · [ Empty ]"
@@ -555,28 +555,29 @@ class SaveSlotSelectionScreen(Screen):
                 lambda result: self._handle_overwrite(slot, result),
             )
             return
-        self._prompt_for_name(slot.slot_index, "")
+        self._prompt_for_name(slot.slot_index, "", overwrite=False)
 
     def _handle_overwrite(self, slot: persistence.SaveSlotInfo, result: bool | None) -> None:
         """Handle overwrite confirmation result."""
 
         if result:
-            self.app.state.clear_save_slot(slot.slot_index)
-            self._prompt_for_name(slot.slot_index, slot.name or "")
+            self._prompt_for_name(slot.slot_index, slot.name or "", overwrite=True)
 
-    def _prompt_for_name(self, slot_index: int, initial_name: str) -> None:
+    def _prompt_for_name(self, slot_index: int, initial_name: str, *, overwrite: bool) -> None:
         """Prompt for a slot name before starting a new game."""
 
         self.app.push_screen(
             NameSaveSlotModal(initial_name=initial_name),
-            lambda name: self._start_new_game(slot_index, name),
+            lambda name: self._start_new_game(slot_index, name, overwrite=overwrite),
         )
 
-    def _start_new_game(self, slot_index: int, name: str | None) -> None:
+    def _start_new_game(self, slot_index: int, name: str | None, *, overwrite: bool) -> None:
         """Start a new game after naming a slot."""
 
         if name is None:
             return
+        if overwrite:
+            self.app.state.clear_save_slot(slot_index)
         self.app.new_game(slot_index, name)
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
