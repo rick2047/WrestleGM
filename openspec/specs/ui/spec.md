@@ -94,7 +94,6 @@ The system SHALL use a consistent emoji indicator language and alignment emojis 
 
 | Indicator | Meaning                                         | Blocks Action |
 | --------- | ----------------------------------------------- | ------------- |
-| ⚠️        | Empty or incomplete field                       | Yes           |
 | ⛔         | Logical impossibility (e.g. duplicate wrestler) | Yes           |
 | 🥱        | Low stamina / fatigued                          | Yes           |
 | 📅        | Already booked in another slot                  | Yes           |
@@ -109,9 +108,9 @@ Alignment SHALL be shown by prefixing the wrestler name with Face 😃 or Heel �
 - **WHEN** an invalid selection is attempted
 - **THEN** the UI displays a ⛔ indicator with a short inline message
 
-#### Scenario: Empty slots show ⚠️
+#### Scenario: Empty slots show placeholders
 - **WHEN** a booking field is empty or incomplete
-- **THEN** a ⚠️ indicator is shown and the action is blocked
+- **THEN** it shows an `[ Empty ]` or `[ Unset ]` placeholder and the action is blocked
 
 ### Requirement: Validation philosophy
 The system SHALL validate actions at commit time, block impossible states only, allow low-stamina wrestlers in promos, avoid advisory warnings beyond indicators and short inline errors, and avoid projections or odds in the UI.
