@@ -9,7 +9,7 @@ The system SHALL compute match ratings in 0–100 space, apply a list of rating 
 - **AND THEN** all registered rating modifiers are applied to the `base_100` rating
 - **AND THEN** `rating_bonus` from the match type is added
 - **AND THEN** one RNG draw applies `swing` in `[-rating_variance, +rating_variance]`
-- **AND THEN** `rating_100` is clamped to 0–100 and converted to stars via `round((rating_100/100)*5, 1)`
+- **AND THEN** `rating_100` is clamped to 0–100 and converted to stars via `round(rating_100 / 20, 1)`
 - **AND THEN** the final rating is clamped to 0.0–5.0 stars
 
 ## ADDED Requirements
