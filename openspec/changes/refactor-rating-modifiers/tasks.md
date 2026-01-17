@@ -4,3 +4,4 @@
 - [ ] 4. Add tests that cover modifier application order, alignment bonuses, rivalry bonuses, and cooldown penalties.
 - [ ] 5. Add a new `RivalryModifier` to demonstrate the extensibility of the system.
 - [ ] 6. Update `docs/simulation.md` to describe the modifier system and the 1 star = 20 points scaling rule.
+- [ ] 7. Run all tests and ensure they pass.
