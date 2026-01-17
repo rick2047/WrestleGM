@@ -1,0 +1,7 @@
+- [x] 1. Define the `RatingModifier` interface and data structures.
+- [x] 2. Implement an `AlignmentModifier` that encapsulates the existing alignment-based rating logic.
+- [x] 3. Refactor the `SimulationEngine.simulate_rating` method to use a list of `RatingModifier` objects.
+- [x] 4. Add tests that cover modifier application order, alignment bonuses, rivalry bonuses, and cooldown penalties.
+- [x] 5. Add a new `RivalryModifier` to demonstrate the extensibility of the system.
+- [x] 6. Update `docs/simulation.md` to describe the modifier system and the 1 star = 20 points scaling rule.
+- [x] 7. Run all tests and ensure they pass.

@@ -207,6 +207,7 @@ from wrestlegm.data import load_match_types, load_wrestlers
 from wrestlegm.models import Match, MatchTypeDefinition, Promo, PromoResult, WrestlerState
 from wrestlegm import persistence
 from wrestlegm.session import SessionManager
+from wrestlegm.state import GameState
 
 
 FATIGUE_ICON = "🥱"

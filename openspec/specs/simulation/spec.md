@@ -30,19 +30,15 @@ The system SHALL compute winners using the outcome pipeline and use exactly one 
 - **AND THEN** a single RNG draw `r` selects the winner from the cumulative distribution of `p_final_i`
 
 ### Requirement: Rating simulation formula and bounds
-The system SHALL compute match ratings in 0–100 space with alignment and match type modifiers, apply variance using one RNG draw, convert to stars, apply rivalry bonuses and blowoff multipliers in star space, apply a cooldown penalty if any cooldown pair exists, and clamp to 0.0–5.0 stars.
+The system SHALL compute match ratings in 0–100 space, apply a list of rating modifiers (with any star-based bonuses converted to 0–100 using 1 star = 20 points), apply variance using one RNG draw, convert to stars, and clamp to 0.0–5.0 stars.
 
-#### Scenario: Rating computation with rivalry and cooldown
+#### Scenario: Rating computation with modifiers
 - **WHEN** a match rating is simulated for `N` wrestlers
 - **THEN** `base_100 = pop_avg * POP_W + sta_avg * STA_W` using averages across all wrestlers
-- **AND THEN** alignment modifiers apply for 1v1 (face vs heel: `+ALIGN_BONUS`, heel vs heel: `-2 * ALIGN_BONUS`, face vs face: `0`)
-- **AND THEN** for matches with `N >= 3`, multi-man alignment modifiers apply (all heels: `-2 * ALIGN_BONUS`, all faces: `0`, heels > faces: `+ALIGN_BONUS`, heels == faces: `0`, faces > heels: `-ALIGN_BONUS`)
-- **AND THEN** `rating_bonus` is added
+- **AND THEN** all registered rating modifiers are applied to the `base_100` rating
+- **AND THEN** `rating_bonus` from the match type is added
 - **AND THEN** one RNG draw applies `swing` in `[-rating_variance, +rating_variance]`
-- **AND THEN** `rating_100` is clamped to 0–100 and converted to stars via `round((rating_100/100)*5, 1)`
-- **AND THEN** each active rivalry pair adds `+0.25` stars
-- **AND THEN** each blowoff pair adds `+0.5` stars
-- **AND THEN** if any cooldown pair exists in the match, `-1.0` stars is applied once
+- **AND THEN** `rating_100` is clamped to 0–100 and converted to stars via `round(rating_100 / 20, 1)`
 - **AND THEN** the final rating is clamped to 0.0–5.0 stars
 
 ### Requirement: Stat delta simulation rules
@@ -183,3 +179,21 @@ The system SHALL include tests that cover determinism, outcome normalization, ra
 #### Scenario: Simulation tests run
 - **WHEN** simulation tests run
 - **THEN** they cover determinism, outcome, rating bounds, alignment, multi-man, promo, deltas, show rating, and clamp behavior
+
+### Requirement: Extensible rating modifier system
+The system SHALL provide a `RatingModifier` interface that allows for the creation of new rating adjustment logic without modifying the core simulation engine.
+
+#### Scenario: Alignment modifier
+- **WHEN** a match is simulated with a `AlignmentModifier`
+- **THEN** for 1v1 matches, the modifier returns `+ALIGN_BONUS` for face vs heel, `-2 * ALIGN_BONUS` for heel vs heel, and `0` for face vs face
+- **AND THEN** for matches with `N >= 3`, the modifier returns `-2 * ALIGN_BONUS` for all heels, `0` for all faces, `+ALIGN_BONUS` for heels > faces, `0` for heels == faces, and `-ALIGN_BONUS` for faces > heels
+
+#### Scenario: Rivalry modifier
+- **WHEN** a match is simulated with a `RivalryModifier`
+- **THEN** each active rivalry pair adds a configurable bonus (defined in stars and converted to 0–100 by multiplying by 20)
+- **AND THEN** each blowoff pair adds a configurable bonus (defined in stars and converted to 0–100 by multiplying by 20)
+
+#### Scenario: Cooldown modifier
+- **WHEN** a match is simulated with a `CooldownModifier`
+- **THEN** if any cooldown pair exists in the match, a configurable penalty (defined in stars and converted to 0–100 by multiplying by 20) is applied to the rating
+

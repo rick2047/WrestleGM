@@ -15,7 +15,7 @@ from wrestlegm.models import (
     WrestlerDefinition,
     WrestlerState,
 )
-from wrestlegm.sim import RivalryRatingContext, SimulationEngine
+from wrestlegm.sim import AlignmentModifier, MatchContext, RivalryRatingContext, SimulationEngine
 from wrestlegm.state import ShowApplier
 
 
@@ -175,7 +175,8 @@ class TestMatchSimulation:
         )
         match_type = MatchTypeDefinition("test", "Test", "", modifiers)
         engine = SimulationEngine(seed=2)
-        rating, debug = engine.simulate_rating([wrestler_a, wrestler_b], match_type)
+        context = MatchContext([wrestler_a, wrestler_b], match_type)
+        rating, debug = engine.simulate_rating(context, [AlignmentModifier()])
         assert 0.0 <= rating <= 5.0
         assert 0 <= debug.rating_100 <= 100
 
@@ -193,7 +194,8 @@ class TestMatchSimulation:
         )
         match_type = MatchTypeDefinition("test", "Test", "", modifiers)
         engine = SimulationEngine(seed=3)
-        _, debug = engine.simulate_rating([face, heel], match_type)
+        context = MatchContext([face, heel], match_type)
+        _, debug = engine.simulate_rating(context, [AlignmentModifier()])
         assert debug.alignment_mod == constants.ALIGN_BONUS
 
     def test_alignment_modifiers_multi_man(self) -> None:
@@ -210,14 +212,60 @@ class TestMatchSimulation:
         )
         match_type = MatchTypeDefinition("test", "Test", "", modifiers)
         engine = SimulationEngine(seed=9)
-        _, debug_all_faces = engine.simulate_rating([face, face], match_type)
+        context_all_faces = MatchContext([face, face], match_type)
+        _, debug_all_faces = engine.simulate_rating(context_all_faces, [AlignmentModifier()])
         assert debug_all_faces.alignment_mod == 0
-        _, debug_all_heels = engine.simulate_rating([heel, heel, heel], match_type)
+        context_all_heels = MatchContext([heel, heel, heel], match_type)
+        _, debug_all_heels = engine.simulate_rating(context_all_heels, [AlignmentModifier()])
         assert debug_all_heels.alignment_mod == -2 * constants.ALIGN_BONUS
-        _, debug_heels_majority = engine.simulate_rating([heel, heel, face], match_type)
+        context_heels_majority = MatchContext([heel, heel, face], match_type)
+        _, debug_heels_majority = engine.simulate_rating(context_heels_majority, [AlignmentModifier()])
         assert debug_heels_majority.alignment_mod == constants.ALIGN_BONUS
-        _, debug_faces_majority = engine.simulate_rating([face, face, heel], match_type)
+        context_faces_majority = MatchContext([face, face, heel], match_type)
+        _, debug_faces_majority = engine.simulate_rating(context_faces_majority, [AlignmentModifier()])
         assert debug_faces_majority.alignment_mod == -constants.ALIGN_BONUS
+
+    def test_modifier_application_order(self) -> None:
+        wrestler = WrestlerState("a", "Alpha", "Face", popularity=80, stamina=20, mic_skill=50)
+        modifiers = MatchTypeModifiers(
+            outcome_chaos=0.0,
+            rating_bonus=10,
+            rating_variance=0,
+            stamina_cost_winner=0,
+            stamina_cost_loser=0,
+            popularity_delta_winner=0,
+            popularity_delta_loser=0,
+        )
+        match_type = MatchTypeDefinition("test", "Test", "", modifiers)
+
+        class FlatModifier:
+            def __init__(self, value: float) -> None:
+                self.value = value
+
+            def calculate_modifier(self, context: MatchContext) -> float:
+                return self.value
+
+        class BonusFromMatchType:
+            def calculate_modifier(self, context: MatchContext) -> float:
+                return context.match_type.modifiers.rating_bonus
+
+        context = MatchContext([wrestler], match_type)
+        engine = SimulationEngine(seed=11)
+        rating, debug = engine.simulate_rating(
+            context,
+            [
+                FlatModifier(5),
+                BonusFromMatchType(),
+            ],
+        )
+
+        expected_base = wrestler.popularity * constants.POP_W + wrestler.stamina * constants.STA_W
+        expected_100 = expected_base + 5 + match_type.modifiers.rating_bonus + match_type.modifiers.rating_bonus
+        expected_100_clamped = max(0, min(100, expected_100))
+        expected_stars = round(expected_100_clamped / 20, 1)
+
+        assert debug.rating_100 == expected_100_clamped
+        assert rating == expected_stars
 
     def test_rivalry_rating_adjustments(self) -> None:
         roster_state = build_roster_state()
@@ -242,6 +290,7 @@ class TestMatchSimulation:
         expected += constants.BLOWOFF_BONUS
         expected -= constants.COOLDOWN_PENALTY
         expected = max(0.0, min(5.0, expected))
+        expected = round(expected, 1)
 
         assert adjusted_result.rating == expected
 

@@ -40,16 +40,17 @@ Constants live in `wrestlegm/constants.py`.
 ## Rating Simulation
 
 - Base rating uses weighted popularity and stamina averages.
-- Alignment adds a bonus for Face vs Heel or penalty for Heel vs Heel.
-- Match type rating bonus and variance apply.
+- Rating modifiers apply in 0-100 space (alignment, rivalry bonuses, cooldown penalties).
+- Rivalry and cooldown values are defined in stars and converted using 1 star = 20 points.
+- Match type rating bonus and variance apply after modifiers.
 - One RNG draw applies variance, then ratings clamp to 0-100 and convert to stars.
 
 Formula highlights (from `simulate_rating()`):
 
 - `base_100 = pop_avg * POP_W + sta_avg * STA_W`
 - alignment modifier: `+ALIGN_BONUS` (Face vs Heel), `-2*ALIGN_BONUS` (Heel vs Heel)
-- `rating_100 = clamp(base_100 + rating_bonus + swing, 0, 100)`
-- `rating_stars = round((rating_100 / 100) * 5, 1)`
+- `rating_100 = clamp(base_100 + modifiers + rating_bonus + swing, 0, 100)`
+- `rating_stars = round(rating_100 / 20, 1)`
 
 ## Stat Deltas
 

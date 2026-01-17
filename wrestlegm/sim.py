@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import random
-from typing import Callable, Dict, Iterable, List
+from typing import Callable, Dict, Iterable, List, Protocol
 
 from wrestlegm import constants
 from wrestlegm.models import (
@@ -67,6 +67,68 @@ class RivalryRatingContext:
     has_cooldown: bool = False
 
 
+@dataclass(frozen=True)
+class MatchContext:
+    """Match context passed to rating modifiers."""
+
+    wrestlers: List[WrestlerState]
+    match_type: MatchTypeDefinition
+    rivalry_context: RivalryRatingContext | None = None
+
+
+class RatingModifier(Protocol):
+    """Protocol for rating modifiers that adjust match ratings."""
+
+    def calculate_modifier(self, context: MatchContext) -> float:
+        """Return rating adjustment in 0-100 space."""
+
+
+class AlignmentModifier:
+    """Modifier that applies face/heel alignment adjustments."""
+
+    def calculate_modifier(self, context: MatchContext) -> float:
+        wrestlers = context.wrestlers
+        faces = sum(1 for w in wrestlers if w.alignment == "Face")
+        heels = len(wrestlers) - faces
+        if len(wrestlers) == 2:
+            if faces == 1 and heels == 1:
+                return constants.ALIGN_BONUS
+            if heels == 2:
+                return -2 * constants.ALIGN_BONUS
+            return 0.0
+        if heels == len(wrestlers):
+            return -2 * constants.ALIGN_BONUS
+        if faces == len(wrestlers):
+            return 0.0
+        if heels > faces:
+            return constants.ALIGN_BONUS
+        if heels == faces:
+            return 0.0
+        return -constants.ALIGN_BONUS
+
+
+class RivalryModifier:
+    """Modifier that applies rivalry bonuses in 0-100 space."""
+
+    def calculate_modifier(self, context: MatchContext) -> float:
+        rivalry = context.rivalry_context
+        if rivalry is None:
+            return 0.0
+        bonus = rivalry.active_pairs * constants.RIVALRY_BONUS
+        bonus += rivalry.blowoff_pairs * constants.BLOWOFF_BONUS
+        return bonus * 20
+
+
+class CooldownModifier:
+    """Modifier that applies cooldown penalties in 0-100 space."""
+
+    def calculate_modifier(self, context: MatchContext) -> float:
+        rivalry = context.rivalry_context
+        if rivalry is None or not rivalry.has_cooldown:
+            return 0.0
+        return -constants.COOLDOWN_PENALTY * 20
+
+
 def clamp(value: float, minimum: float, maximum: float) -> float:
     """Clamp a value to a range."""
 
@@ -77,16 +139,6 @@ def lerp(start: float, end: float, amount: float) -> float:
     """Linearly interpolate between two values."""
 
     return start + (end - start) * amount
-
-
-def apply_rivalry_adjustments(rating: float, context: RivalryRatingContext) -> float:
-    """Apply rivalry bonuses and cooldown penalties to a star rating."""
-
-    rating += context.active_pairs * constants.RIVALRY_BONUS
-    rating += context.blowoff_pairs * constants.BLOWOFF_BONUS
-    if context.has_cooldown:
-        rating -= constants.COOLDOWN_PENALTY
-    return clamp(rating, 0.0, 5.0)
 
 
 class SimulationEngine:
@@ -151,55 +203,42 @@ class SimulationEngine:
 
     def simulate_rating(
         self,
-        wrestlers: List[WrestlerState],
-        match_type: MatchTypeDefinition,
+        context: MatchContext,
+        modifiers: List[RatingModifier],
     ) -> tuple[float, RatingDebug]:
         """Simulate a match rating in stars."""
 
-        if not wrestlers:
+        if not context.wrestlers:
             raise ValueError("Cannot simulate rating without wrestlers.")
 
-        pop_avg = sum(w.popularity for w in wrestlers) / len(wrestlers)
-        sta_avg = sum(w.stamina for w in wrestlers) / len(wrestlers)
+        pop_avg = sum(w.popularity for w in context.wrestlers) / len(context.wrestlers)
+        sta_avg = sum(w.stamina for w in context.wrestlers) / len(context.wrestlers)
         base_100 = pop_avg * constants.POP_W + sta_avg * constants.STA_W
 
-        faces = sum(1 for w in wrestlers if w.alignment == "Face")
-        heels = len(wrestlers) - faces
-        if len(wrestlers) == 2:
-            if faces == 1 and heels == 1:
-                alignment_mod = constants.ALIGN_BONUS
-            elif heels == 2:
-                alignment_mod = -2 * constants.ALIGN_BONUS
-            else:
-                alignment_mod = 0.0
-        elif heels == len(wrestlers):
-            alignment_mod = -2 * constants.ALIGN_BONUS
-        elif faces == len(wrestlers):
-            alignment_mod = 0.0
-        elif heels > faces:
-            alignment_mod = constants.ALIGN_BONUS
-        elif heels == faces:
-            alignment_mod = 0.0
-        else:
-            alignment_mod = -constants.ALIGN_BONUS
+        alignment_mod = 0.0
+        total_modifier = 0.0
+        for modifier in modifiers:
+            modifier_value = modifier.calculate_modifier(context)
+            total_modifier += modifier_value
+            if isinstance(modifier, AlignmentModifier):
+                alignment_mod = modifier_value
 
-        base_100 += alignment_mod
-        base_100 += match_type.modifiers.rating_bonus
+        rating_bonus = context.match_type.modifiers.rating_bonus
 
         swing = self.rng.randint(
-            -match_type.modifiers.rating_variance,
-            match_type.modifiers.rating_variance,
+            -context.match_type.modifiers.rating_variance,
+            context.match_type.modifiers.rating_variance,
         )
-        rating_100 = clamp(base_100 + swing, 0, 100)
-        rating_stars = round((rating_100 / 100) * 5, 1)
+        rating_100 = clamp(base_100 + total_modifier + rating_bonus + swing, 0, 100)
+        rating_stars = round(rating_100 / 20, 1)
 
         debug = RatingDebug(
             pop_avg=pop_avg,
             sta_avg=sta_avg,
             base_100=base_100,
             alignment_mod=alignment_mod,
-            rating_bonus=match_type.modifiers.rating_bonus,
-            rating_variance=match_type.modifiers.rating_variance,
+            rating_bonus=rating_bonus,
+            rating_variance=context.match_type.modifiers.rating_variance,
             swing=swing,
             rating_100=rating_100,
             rating_stars=rating_stars,
@@ -266,14 +305,24 @@ class SimulationEngine:
 
         match_type = match_types[match.match_type_id]
         wrestlers = [roster[wrestler_id] for wrestler_id in match.wrestler_ids]
+        context = MatchContext(
+            wrestlers=wrestlers,
+            match_type=match_type,
+            rivalry_context=rivalry_context,
+        )
 
         winner_id, non_winner_ids, _ = self.simulate_outcome(
             wrestlers,
             match_type.modifiers,
         )
-        rating, _ = self.simulate_rating(wrestlers, match_type)
-        if rivalry_context is not None:
-            rating = apply_rivalry_adjustments(rating, rivalry_context)
+        rating, _ = self.simulate_rating(
+            context,
+            [
+                AlignmentModifier(),
+                RivalryModifier(),
+                CooldownModifier(),
+            ],
+        )
         deltas = self.simulate_stat_deltas(
             winner_id,
             non_winner_ids,
