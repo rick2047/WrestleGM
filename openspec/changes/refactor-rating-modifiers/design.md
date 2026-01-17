@@ -1,6 +1,6 @@
 # Design: Rating Modifier System
 
-The core of this design is a new `RatingModifier` protocol (or abstract base class) that defines a standard interface for rating modifiers. The modifier interface accepts a context object to keep the API extensible as new data needs emerge.
+The core of this design is a new `RatingModifier` protocol (or abstract base class) that defines a standard interface for rating modifiers. The modifier interface accepts a match context object to keep the API extensible as new data needs emerge.
 
 ```python
 from dataclasses import dataclass
@@ -8,11 +8,10 @@ from typing import List, Protocol
 from wrestlegm.models import WrestlerState, MatchTypeDefinition
 
 @dataclass(frozen=True)
-class RatingContext:
+class MatchContext:
     wrestlers: List[WrestlerState]
     match_type: MatchTypeDefinition
     rivalry_context: "RivalryRatingContext | None" = None
-    tag_team_context: "TagTeamRatingContext | None" = None
 
 class RatingModifier(Protocol):
     """
@@ -21,7 +20,7 @@ class RatingModifier(Protocol):
     """
     def calculate_modifier(
         self,
-        context: RatingContext
+        context: MatchContext
     ) -> float:
         """
         Calculates a rating adjustment.
@@ -62,7 +61,7 @@ To this:
 ```python
 def simulate_rating(
     self,
-    context: RatingContext,
+    context: MatchContext,
     modifiers: List[RatingModifier],
 ) -> tuple[float, RatingDebug]:
     base_rating = # ... calculate base rating ...
