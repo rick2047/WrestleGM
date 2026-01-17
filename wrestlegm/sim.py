@@ -34,21 +34,6 @@ class OutcomeDebug:
 
 
 @dataclass(frozen=True)
-class RatingDebug:
-    """Debug payload for rating simulation."""
-
-    pop_avg: float
-    sta_avg: float
-    base_100: float
-    alignment_mod: float
-    rating_bonus: float
-    rating_variance: int
-    swing: int
-    rating_100: float
-    rating_stars: float
-
-
-@dataclass(frozen=True)
 class PromoRatingDebug:
     """Debug payload for promo rating simulation."""
 
@@ -212,7 +197,7 @@ class SimulationEngine:
         self,
         context: MatchContext,
         modifiers: List[RatingModifier],
-    ) -> tuple[float, RatingDebug]:
+    ) -> float:
         """Simulate a match rating in stars."""
 
         if not context.wrestlers:
@@ -237,18 +222,7 @@ class SimulationEngine:
         rating_100 = clamp(base_100 + total_modifier + swing, 0, 100)
         rating_stars = round(rating_100 / 20, 1)
 
-        debug = RatingDebug(
-            pop_avg=pop_avg,
-            sta_avg=sta_avg,
-            base_100=base_100,
-            alignment_mod=alignment_mod,
-            rating_bonus=context.match_type.modifiers.rating_bonus,
-            rating_variance=context.match_type.modifiers.rating_variance,
-            swing=swing,
-            rating_100=rating_100,
-            rating_stars=rating_stars,
-        )
-        return rating_stars, debug
+        return rating_stars
 
     def simulate_stat_deltas(
         self,
@@ -320,7 +294,7 @@ class SimulationEngine:
             wrestlers,
             match_type.modifiers,
         )
-        rating, _ = self.simulate_rating(
+        rating = self.simulate_rating(
             context,
             [
                 AlignmentModifier(),

@@ -416,10 +416,6 @@ The system SHALL provide debug payloads for outcome, rating, and promo rating si
 - **WHEN** a match outcome is simulated
 - **THEN** the debug payload includes powers, base probabilities, outcome chaos, final probabilities, RNG sample, and winner id
 
-#### Scenario: Rating debug payload
-- **WHEN** a match rating is simulated
-- **THEN** the debug payload includes averages, alignment modifier, rating bonus, variance, swing, and rating values
-
 #### Scenario: Promo debug payload
 - **WHEN** a promo rating is simulated
 - **THEN** the debug payload includes base rating, swing, and rating values
