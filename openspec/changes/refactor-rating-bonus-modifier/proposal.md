@@ -6,6 +6,7 @@ The PRD now frames the match type rating bonus as part of the rating modifier sy
 ## What Changes
 - Treat the match type rating bonus as a `RatingModifier` instead of a separate step.
 - Update simulation specs to describe the unified modifier flow.
+- Remove `RatingDebug` from the simulation output and specs.
 
 ## Impact
 - Affected specs: `specs/simulation/spec.md`

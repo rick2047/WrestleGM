@@ -31,3 +31,14 @@ The system SHALL provide a `RatingModifier` interface that allows for the creati
 #### Scenario: Cooldown modifier
 - **WHEN** a match is simulated with a `CooldownModifier`
 - **THEN** if any cooldown pair exists in the match, a configurable penalty (defined in stars and converted to 0–100 by multiplying by 20) is applied to the rating
+
+### Requirement: Simulation debug payloads
+The system SHALL provide debug payloads for outcome and promo rating simulations that include the intermediate values used to compute results.
+
+#### Scenario: Outcome debug payload
+- **WHEN** a match outcome is simulated
+- **THEN** the debug payload includes powers, base probabilities, outcome chaos, final probabilities, RNG sample, and winner id
+
+#### Scenario: Promo debug payload
+- **WHEN** a promo rating is simulated
+- **THEN** the debug payload includes base rating, swing, and rating values
