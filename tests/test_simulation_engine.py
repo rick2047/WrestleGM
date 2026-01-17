@@ -15,7 +15,13 @@ from wrestlegm.models import (
     WrestlerDefinition,
     WrestlerState,
 )
-from wrestlegm.sim import AlignmentModifier, MatchContext, RivalryRatingContext, SimulationEngine
+from wrestlegm.sim import (
+    AlignmentModifier,
+    MatchContext,
+    MatchTypeBonusModifier,
+    RivalryRatingContext,
+    SimulationEngine,
+)
 from wrestlegm.state import ShowApplier
 
 
@@ -245,26 +251,23 @@ class TestMatchSimulation:
             def calculate_modifier(self, context: MatchContext) -> float:
                 return self.value
 
-        class BonusFromMatchType:
-            def calculate_modifier(self, context: MatchContext) -> float:
-                return context.match_type.modifiers.rating_bonus
-
         context = MatchContext([wrestler], match_type)
         engine = SimulationEngine(seed=11)
         rating, debug = engine.simulate_rating(
             context,
             [
                 FlatModifier(5),
-                BonusFromMatchType(),
+                MatchTypeBonusModifier(),
             ],
         )
 
         expected_base = wrestler.popularity * constants.POP_W + wrestler.stamina * constants.STA_W
-        expected_100 = expected_base + 5 + match_type.modifiers.rating_bonus + match_type.modifiers.rating_bonus
+        expected_100 = expected_base + 5 + match_type.modifiers.rating_bonus
         expected_100_clamped = max(0, min(100, expected_100))
         expected_stars = round(expected_100_clamped / 20, 1)
 
         assert debug.rating_100 == expected_100_clamped
+        assert debug.rating_bonus == match_type.modifiers.rating_bonus
         assert rating == expected_stars
 
     def test_rivalry_rating_adjustments(self) -> None:

@@ -107,6 +107,13 @@ class AlignmentModifier:
         return -constants.ALIGN_BONUS
 
 
+class MatchTypeBonusModifier:
+    """Modifier that applies match type rating bonuses."""
+
+    def calculate_modifier(self, context: MatchContext) -> float:
+        return context.match_type.modifiers.rating_bonus
+
+
 class RivalryModifier:
     """Modifier that applies rivalry bonuses in 0-100 space."""
 
@@ -223,13 +230,11 @@ class SimulationEngine:
             if isinstance(modifier, AlignmentModifier):
                 alignment_mod = modifier_value
 
-        rating_bonus = context.match_type.modifiers.rating_bonus
-
         swing = self.rng.randint(
             -context.match_type.modifiers.rating_variance,
             context.match_type.modifiers.rating_variance,
         )
-        rating_100 = clamp(base_100 + total_modifier + rating_bonus + swing, 0, 100)
+        rating_100 = clamp(base_100 + total_modifier + swing, 0, 100)
         rating_stars = round(rating_100 / 20, 1)
 
         debug = RatingDebug(
@@ -237,7 +242,7 @@ class SimulationEngine:
             sta_avg=sta_avg,
             base_100=base_100,
             alignment_mod=alignment_mod,
-            rating_bonus=rating_bonus,
+            rating_bonus=context.match_type.modifiers.rating_bonus,
             rating_variance=context.match_type.modifiers.rating_variance,
             swing=swing,
             rating_100=rating_100,
@@ -319,6 +324,7 @@ class SimulationEngine:
             context,
             [
                 AlignmentModifier(),
+                MatchTypeBonusModifier(),
                 RivalryModifier(),
                 CooldownModifier(),
             ],
