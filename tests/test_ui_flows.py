@@ -13,6 +13,7 @@ from wrestlegm.ui import (
     ResultsScreen,
     RosterScreen,
     SaveSlotSelectionScreen,
+    WrestleGMApp,
 )
 
 from tests.ui_test_utils import (
@@ -91,6 +92,14 @@ def test_core_flow_new_game_booking_results_roster() -> None:
             await wait_for_screen(pilot, GameHubScreen)
 
     run_async(run_flow())
+
+
+def test_app_bootstraps_without_errors() -> None:
+    """Ensure the app initializes its core state without crashing."""
+
+    app = WrestleGMApp()
+    assert app.session is not None
+    assert app.state is not None
 
 
 def test_load_game_flow() -> None:
