@@ -19,7 +19,7 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 
 ## Workflow Rules
 - Always merge PRs using a merge commit (no squash merges).
-- To trigger a Gemini review, comment on the PR with `/gemini review`.
+- When you create a PR for the first time, automatically trigger a Gemini review (no extra prompt needed).
 
 ## GitHub Access
 - Use the GitHub MCP server for all GitHub issues/PRs/comments and related actions.
