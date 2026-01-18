@@ -10,12 +10,12 @@
 ## 3. Phase 3: Wrestler View scaffold
 - [ ] 3.1 Add Wrestler View widget with configurable blocks and empty-state behavior
 - [ ] 3.2 Create a small script to render the Wrestler View for visual inspection
-- [ ] 3.3 Proceed to Phase 4
+- [ ] 3.3 Implement avatar rendering with rich-pixels half renderer and safe fallback to default image
+- [ ] 3.4 Proceed to Phase 4
 
 ## 4. Phase 4: Wrestler View refinements
-- [ ] 4.1 Implement avatar rendering with rich-pixels half renderer and safe fallback to default image
-- [ ] 4.2 Adjust Wrestler View layout and block behavior to match specs
-- [ ] 4.3 Proceed to Phase 5
+- [ ] 4.1 Adjust Wrestler View layout and block behavior to match specs
+- [ ] 4.2 Proceed to Phase 5
 
 ## 5. Phase 5: UI tests
 - [ ] 5.1 Update UI snapshot tests, flow tests, and fixtures; regenerate baselines
