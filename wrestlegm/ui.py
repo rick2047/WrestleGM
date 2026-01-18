@@ -254,7 +254,7 @@ def load_avatar_renderable(
         if Pixels is None:
             return None
         try:
-            return Pixels.from_image_path(path, resize=(48, 24))
+            return Pixels.from_image_path(path, resize=(24, 12))
         except Exception:
             return None
 

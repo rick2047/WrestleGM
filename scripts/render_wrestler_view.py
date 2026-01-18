@@ -38,7 +38,7 @@ class WrestlerViewDemo(App):
     }
 
     .wrestler-avatar {
-        width: 24;
+        width: 12;
         margin-right: 1;
     }
 
