@@ -5,12 +5,12 @@
 ## 2. Phase 2: Data model + tests
 - [x] 2.1 Extend wrestler data model and loaders for description + avatar_path
 - [x] 2.2 Add or update tests for the data model changes and make them pass
-- [ ] 2.3 Ask user to confirm Phase 2 is complete
+- [x] 2.3 Ask user to confirm Phase 2 is complete
 
 ## 3. Phase 3: Wrestler View scaffold
-- [ ] 3.1 Add Wrestler View widget with configurable blocks and empty-state behavior
-- [ ] 3.2 Create a small script to render the Wrestler View for visual inspection
-- [ ] 3.3 Implement avatar rendering with rich-pixels half renderer and safe fallback to default image
+- [x] 3.1 Add Wrestler View widget with configurable blocks and empty-state behavior
+- [x] 3.2 Create a small script to render the Wrestler View for visual inspection
+- [x] 3.3 Implement avatar rendering with rich-pixels half renderer and safe fallback to default image
 - [ ] 3.4 Ask user to confirm Phase 3 is complete
 
 ## 4. Phase 4: Wrestler View refinements

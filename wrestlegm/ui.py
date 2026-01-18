@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 import logging
+from pathlib import Path
 from typing import Callable, Optional
 
 from textual.app import App, ComposeResult
@@ -21,6 +22,12 @@ from textual.widgets import (
     Select,
     Static,
 )
+from textual.widget import Widget
+
+try:
+    from rich_pixels import Pixels
+except ImportError:  # pragma: no cover - optional UI dependency
+    Pixels = None
 
 
 class EdgeAwareListView(ListView):
@@ -214,6 +221,108 @@ FATIGUE_ICON = "🥱"
 EMPTY_ICON = "⚠️"
 BLOCK_ICON = "⛔"
 ALIGNMENT_EMOJI = {"Face": "😃", "Heel": "😈"}
+ASSET_DIR = Path(__file__).resolve().parents[1] / "data" / "images"
+DEFAULT_AVATAR_PATH = ASSET_DIR / "default.png"
+PLACEHOLDER_AVATAR_PATH = ASSET_DIR / "select.png"
+
+
+@dataclass(frozen=True)
+class WrestlerViewConfig:
+    """Configuration for which Wrestler View blocks are rendered."""
+
+    show_avatar: bool = True
+    show_name: bool = True
+    show_stats: bool = True
+    show_description: bool = False
+    show_rivalry: bool = False
+    rivalry_compact: bool = False
+
+
+def load_avatar_renderable(
+    avatar_path: str,
+    *,
+    empty_state: bool,
+) -> object:
+    """Return a renderable avatar with fallback to the default image."""
+
+    if empty_state:
+        target_path = PLACEHOLDER_AVATAR_PATH
+    else:
+        target_path = Path(avatar_path) if avatar_path else DEFAULT_AVATAR_PATH
+
+    def render_path(path: Path) -> object | None:
+        if Pixels is None:
+            return None
+        try:
+            return Pixels.from_image_path(path, resize=(48, 24))
+        except Exception:
+            return None
+
+    renderable = render_path(target_path)
+    if renderable is None and target_path != DEFAULT_AVATAR_PATH:
+        renderable = render_path(DEFAULT_AVATAR_PATH)
+    return renderable or "[image unavailable]"
+
+
+class WrestlerView(Widget):
+    """Composable widget for displaying wrestler identity blocks."""
+
+    def __init__(
+        self,
+        wrestler: object | None,
+        config: WrestlerViewConfig,
+        *,
+        rivalries: list[str] | None = None,
+        empty_label: str = "Select Wrestler",
+    ) -> None:
+        super().__init__()
+        self.wrestler = wrestler
+        self.config = config
+        self.rivalries = rivalries or []
+        self.empty_label = empty_label
+
+    def compose(self) -> ComposeResult:
+        empty_state = self.wrestler is None
+        with Horizontal(classes="wrestler-view"):
+            if self.config.show_avatar:
+                avatar_path = "" if empty_state else getattr(self.wrestler, "avatar_path", "")
+                yield Static(
+                    load_avatar_renderable(avatar_path, empty_state=empty_state),
+                    classes="wrestler-avatar",
+                )
+            if empty_state:
+                yield Static(self.empty_label, classes="wrestler-empty-label")
+                return
+            with Vertical():
+                if self.config.show_name:
+                    alignment = getattr(self.wrestler, "alignment", "Face")
+                    name = getattr(self.wrestler, "name", "")
+                    yield Static(
+                        f"{ALIGNMENT_EMOJI.get(alignment, '')} {name}".strip(),
+                        classes="wrestler-name",
+                    )
+                if self.config.show_stats:
+                    popularity = getattr(self.wrestler, "popularity", 0)
+                    stamina = getattr(self.wrestler, "stamina", 0)
+                    mic_skill = getattr(self.wrestler, "mic_skill", 0)
+                    yield Static(
+                        f"⭐{popularity}  🔋{stamina}  🎤{mic_skill}",
+                        classes="wrestler-stats",
+                    )
+                if self.config.show_description:
+                    description = getattr(self.wrestler, "description", "")
+                    if description:
+                        yield Static(f"\"{description}\"", classes="wrestler-description")
+                if self.config.show_rivalry and self.rivalries:
+                    if self.config.rivalry_compact:
+                        rivalry_line = " ".join(self.rivalries)
+                        yield Static(rivalry_line, classes="wrestler-rivalry")
+                    else:
+                        yield Static("Rivalries", classes="wrestler-rivalry-title")
+                        yield Static(
+                            "\n".join(self.rivalries),
+                            classes="wrestler-rivalry",
+                        )
 
 
 def format_stars(rating: float) -> str:
