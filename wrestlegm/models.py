@@ -41,6 +41,8 @@ class WrestlerDefinition:
     popularity: int
     stamina: int
     mic_skill: int
+    description: str
+    avatar_path: str
 
 
 @dataclass(frozen=True)

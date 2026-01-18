@@ -3,8 +3,8 @@
 - [x] 1.2 Ask user to confirm Phase 1 is complete
 
 ## 2. Phase 2: Data model + tests
-- [ ] 2.1 Extend wrestler data model and loaders for description + avatar_path
-- [ ] 2.2 Add or update tests for the data model changes and make them pass
+- [x] 2.1 Extend wrestler data model and loaders for description + avatar_path
+- [x] 2.2 Add or update tests for the data model changes and make them pass
 - [ ] 2.3 Ask user to confirm Phase 2 is complete
 
 ## 3. Phase 3: Wrestler View scaffold

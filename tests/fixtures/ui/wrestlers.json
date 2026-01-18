@@ -5,7 +5,9 @@
     "alignment": "Face",
     "popularity": 80,
     "stamina": 80,
-    "mic_skill": 80
+    "mic_skill": 80,
+    "description": "",
+    "avatar_path": ""
   },
   {
     "id": "bravo",
@@ -13,7 +15,9 @@
     "alignment": "Heel",
     "popularity": 70,
     "stamina": 78,
-    "mic_skill": 70
+    "mic_skill": 70,
+    "description": "",
+    "avatar_path": ""
   },
   {
     "id": "charlie",
@@ -21,7 +25,9 @@
     "alignment": "Face",
     "popularity": 65,
     "stamina": 74,
-    "mic_skill": 65
+    "mic_skill": 65,
+    "description": "",
+    "avatar_path": ""
   },
   {
     "id": "delta",
@@ -29,7 +35,9 @@
     "alignment": "Heel",
     "popularity": 60,
     "stamina": 72,
-    "mic_skill": 60
+    "mic_skill": 60,
+    "description": "",
+    "avatar_path": ""
   },
   {
     "id": "echo",
@@ -37,7 +45,9 @@
     "alignment": "Face",
     "popularity": 55,
     "stamina": 70,
-    "mic_skill": 55
+    "mic_skill": 55,
+    "description": "",
+    "avatar_path": ""
   },
   {
     "id": "foxtrot",
@@ -45,7 +55,9 @@
     "alignment": "Heel",
     "popularity": 50,
     "stamina": 68,
-    "mic_skill": 50
+    "mic_skill": 50,
+    "description": "",
+    "avatar_path": ""
   },
   {
     "id": "gamma",
@@ -53,7 +65,9 @@
     "alignment": "Face",
     "popularity": 45,
     "stamina": 66,
-    "mic_skill": 55
+    "mic_skill": 55,
+    "description": "",
+    "avatar_path": ""
   },
   {
     "id": "hotel",
@@ -61,6 +75,8 @@
     "alignment": "Heel",
     "popularity": 40,
     "stamina": 64,
-    "mic_skill": 52
+    "mic_skill": 52,
+    "description": "",
+    "avatar_path": ""
   }
 ]
