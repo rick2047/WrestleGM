@@ -1,6 +1,6 @@
 ## 1. Phase 1: Roster data setup
-- [ ] 1.1 Create the new `data/wrestlers.json` mapped to `data/images/01.png`-`10.png` with <=80-char descriptions from `data/images/description.md`, and wire default/placeholder paths
-- [ ] 1.2 Ask user to confirm Phase 1 is complete
+- [x] 1.1 Create the new `data/wrestlers.json` mapped to `data/images/01.png`-`10.png` with <=80-char descriptions from `data/images/description.md`, and wire default/placeholder paths
+- [x] 1.2 Ask user to confirm Phase 1 is complete
 
 ## 2. Phase 2: Data model + tests
 - [ ] 2.1 Extend wrestler data model and loaders for description + avatar_path
