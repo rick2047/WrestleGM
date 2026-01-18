@@ -264,7 +264,7 @@ def load_avatar_renderable(
     return renderable or "[image unavailable]"
 
 
-class WrestlerView(Widget):
+class WrestlerView(Horizontal):
     """Composable widget for displaying wrestler identity blocks."""
 
     def __init__(
@@ -280,49 +280,49 @@ class WrestlerView(Widget):
         self.config = config
         self.rivalries = rivalries or []
         self.empty_label = empty_label
+        self.add_class("wrestler-view")
 
     def compose(self) -> ComposeResult:
         empty_state = self.wrestler is None
-        with Horizontal(classes="wrestler-view"):
-            if self.config.show_avatar:
-                avatar_path = "" if empty_state else getattr(self.wrestler, "avatar_path", "")
+        if self.config.show_avatar:
+            avatar_path = "" if empty_state else getattr(self.wrestler, "avatar_path", "")
+            yield Static(
+                load_avatar_renderable(avatar_path, empty_state=empty_state),
+                classes="wrestler-avatar",
+            )
+        if empty_state:
+            yield Static(self.empty_label, classes="wrestler-empty-label")
+            return
+        with Vertical():
+            if self.config.show_name:
+                alignment = getattr(self.wrestler, "alignment", "Face")
+                name = getattr(self.wrestler, "name", "")
                 yield Static(
-                    load_avatar_renderable(avatar_path, empty_state=empty_state),
-                    classes="wrestler-avatar",
+                    f"{ALIGNMENT_EMOJI.get(alignment, '')} {name}".strip(),
+                    classes="wrestler-name",
                 )
-            if empty_state:
-                yield Static(self.empty_label, classes="wrestler-empty-label")
-                return
-            with Vertical():
-                if self.config.show_name:
-                    alignment = getattr(self.wrestler, "alignment", "Face")
-                    name = getattr(self.wrestler, "name", "")
+            if self.config.show_stats:
+                popularity = getattr(self.wrestler, "popularity", 0)
+                stamina = getattr(self.wrestler, "stamina", 0)
+                mic_skill = getattr(self.wrestler, "mic_skill", 0)
+                yield Static(
+                    f"⭐{popularity}  🔋{stamina}  🎤{mic_skill}",
+                    classes="wrestler-stats",
+                )
+            if self.config.show_description:
+                description = getattr(self.wrestler, "description", "")
+                if description:
+                    yield Static(f"\"{description}\"", classes="wrestler-description")
+            if self.config.show_rivalry and self.rivalries:
+                if self.config.rivalry_compact:
+                    rivalry_line = " ".join(self.rivalries)
+                    yield Static(rivalry_line, classes="wrestler-rivalry")
+                else:
+                    yield Static("Rivalries", classes="wrestler-rivalry-title")
                     yield Static(
-                        f"{ALIGNMENT_EMOJI.get(alignment, '')} {name}".strip(),
-                        classes="wrestler-name",
+                        "\n".join(self.rivalries),
+                        classes="wrestler-rivalry",
                     )
-                if self.config.show_stats:
-                    popularity = getattr(self.wrestler, "popularity", 0)
-                    stamina = getattr(self.wrestler, "stamina", 0)
-                    mic_skill = getattr(self.wrestler, "mic_skill", 0)
-                    yield Static(
-                        f"⭐{popularity}  🔋{stamina}  🎤{mic_skill}",
-                        classes="wrestler-stats",
-                    )
-                if self.config.show_description:
-                    description = getattr(self.wrestler, "description", "")
-                    if description:
-                        yield Static(f"\"{description}\"", classes="wrestler-description")
-                if self.config.show_rivalry and self.rivalries:
-                    if self.config.rivalry_compact:
-                        rivalry_line = " ".join(self.rivalries)
-                        yield Static(rivalry_line, classes="wrestler-rivalry")
-                    else:
-                        yield Static("Rivalries", classes="wrestler-rivalry-title")
-                        yield Static(
-                            "\n".join(self.rivalries),
-                            classes="wrestler-rivalry",
-                        )
 
 
 def format_stars(rating: float) -> str:
