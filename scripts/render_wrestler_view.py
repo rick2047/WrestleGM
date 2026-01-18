@@ -28,11 +28,27 @@ class WrestlerViewDemo(App):
         height: auto;
         padding: 1 2;
         border: solid gray;
+        background: black;
+        color: white;
     }
 
     .wrestler-view {
         height: auto;
         margin-bottom: 1;
+    }
+
+    .wrestler-avatar {
+        width: 24;
+        margin-right: 1;
+    }
+
+    .wrestler-name,
+    .wrestler-stats,
+    .wrestler-description,
+    .wrestler-rivalry-title,
+    .wrestler-rivalry,
+    .wrestler-empty-label {
+        color: white;
     }
     """
 
