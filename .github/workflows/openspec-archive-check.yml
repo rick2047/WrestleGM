@@ -1,0 +1,31 @@
+name: OpenSpec Archive Check
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  openspec-archive-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Fail if active OpenSpec changes exist
+        run: |
+          set -euo pipefail
+          if [ ! -d openspec/changes ]; then
+            echo "openspec/changes not found; skipping."
+            exit 0
+          fi
+
+          active_changes="$(find openspec/changes -mindepth 1 -maxdepth 1 -type d -not -name archive -printf '%f\n' | sort)"
+          if [ -n "${active_changes}" ]; then
+            echo "::error::Active OpenSpec changes must be archived before merge:"
+            echo "${active_changes}"
+            exit 1
+          fi
+
+          echo "No active OpenSpec changes found."
