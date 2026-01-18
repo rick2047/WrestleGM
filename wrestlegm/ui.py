@@ -297,10 +297,10 @@ class WrestlerView(Horizontal):
             if self.config.show_name:
                 alignment = getattr(self.wrestler, "alignment", "Face")
                 name = getattr(self.wrestler, "name", "")
-                    yield Static(
-                        f"{ALIGNMENT_EMOJI.get(alignment, '')} {name}".strip(),
-                        classes="wrestler-name-header",
-                    )
+                yield Static(
+                    f"{ALIGNMENT_EMOJI.get(alignment, '')} {name}".strip(),
+                    classes="wrestler-name-header",
+                )
             if self.config.show_stats:
                 popularity = getattr(self.wrestler, "popularity", 0)
                 stamina = getattr(self.wrestler, "stamina", 0)
