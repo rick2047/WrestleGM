@@ -17,6 +17,8 @@ Booking UI needs higher identity density while remaining readable in narrow term
   - Why: Ensures robust behavior when custom assets are missing or invalid.
 - Decision: Match Booking header aggregates rivalry emojis across all unordered pairs and compresses counts with ASCII `xN`.
   - Why: Provides quick intensity read without overflowing narrow headers.
+- Decision: Rivalry lists in inspection contexts are scrollable when needed.
+  - Why: Keeps the Wrestler View layout stable in narrow terminals while showing full rivalry data.
 
 ## Alternatives considered
 - Multiple per-screen bespoke widgets.

@@ -16,6 +16,7 @@ The system SHALL provide a Wrestler View component built from optional blocks: A
 #### Scenario: Rivalry block variants
 - **WHEN** Wrestler View is used in Match Booking
 - **THEN** rivalry renders as compact emoji-only badges without scrolling
+- **AND THEN** compact badge order follows opponent order derived from the participant list order (the same order used by `itertools.combinations(participants, 2)`)
 - **WHEN** Wrestler View is used in inspection contexts
 - **THEN** rivalry renders as a full emoji-only list and MAY be scrollable
 
@@ -63,7 +64,7 @@ The system SHALL allow opening a read-only Wrestler View modal from the Wrestler
 
 ## MODIFIED Requirements
 ### Requirement: Match booking flow
-The system SHALL edit matches in a dedicated booking screen, require confirmation before committing, and allow selecting wrestler count inline. The booking screen SHALL render one Wrestler View per required slot based on the selected wrestler count, allow changing match type via an inline dropdown, default the match type to the first available option when booking an empty slot, mark already-booked wrestlers with a 📅 indicator in the selection list, show popularity and stamina in the selection table, display alignment via emoji (Face 😃, Heel 😈), truncate names longer than 18 characters to 15 + `...`, format rows as `{emoji} {name:<18} {sta:>3} {mic:>3} {pop:>3}{fatigue}{booked_marker}`, and use 🥱 consistently for low-stamina indicators.
+The system SHALL edit matches in a dedicated booking screen, require confirmation before committing, and allow selecting wrestler count inline. The booking screen SHALL render one Wrestler View per required slot based on the selected wrestler count, allow changing match type via an inline dropdown, default the match type to the first available option when booking an empty slot, mark already-booked wrestlers with a 📅 indicator in the selection list, include a header row with `Name`, `⭐`, `🔋`, and `🎤` columns in the selection table, show popularity, stamina, and mic skill values, display alignment via emoji (Face 😃, Heel 😈), truncate names longer than 18 characters to 15 + `...`, format rows as `{emoji} {name:<18} {sta:>3} {mic:>3} {pop:>3}{fatigue}{booked_marker}`, and use 🥱 consistently for low-stamina indicators.
 
 #### Scenario: Match booking opens without category selection
 - **WHEN** the player selects a match slot
@@ -141,7 +142,7 @@ The system SHALL reuse the wrestler selection screen for promo booking and may c
 - **AND THEN** the inspection modal is available via `i`
 
 ### Requirement: Wrestler selection screen layout
-The system SHALL render a wrestler selection table with Name/Sta/Mic/Pop columns, an inline message row for blocking errors, Select/Cancel actions, and an inspection modal.
+The system SHALL render a wrestler selection table with Name/⭐/🔋/🎤 columns, an inline message row for blocking errors, Select/Cancel actions, and an inspection modal.
 
 #### Scenario: Wrestler selection components
 - **WHEN** the wrestler selection screen renders
@@ -328,11 +329,11 @@ The system SHALL match the following ASCII mockups for the MVP screens.
 ```
 Select Wrestler (Match 3 · A)
 
-| Name                 | Sta | Mic | Pop |
-| -------------------- | --- | --- | ---:|
-| 😃 Kenny Omega       |  28 |  88 |  92 🥱 📅 |
-| 😈 Jon Moxley        |  12 |  86 |  88 🥱   |
-| 😃 Eddie Kingston    |  64 |  70 |  74     |
+| Name                 | ⭐  | 🔋  | 🎤  |
+| -------------------- | -- | -- | --:|
+| 😃 Kenny Omega       | 92 | 28 | 88 🥱 📅 |
+| 😈 Jon Moxley        | 88 | 12 | 86 🥱   |
+| 😃 Eddie Kingston    | 74 | 64 | 70     |
 
 ⛔ Already booked in Match 2
 
@@ -344,11 +345,11 @@ Select Wrestler (Match 3 · A)
 ┌──────────────────────────────────────────────┐
 │ Select Wrestler                               │
 ├──────────────────────────────────────────────┤
-│ Name            ⭐   🔋   🎤   Align            │
-│ ▶ Okada           92   28   88   😃            │
-│   Jay White       85   40   70   😈            │
-│   Naito           88   35   82   😃            │
-│   Omega           90   30   85   😃            │
+│ Name            ⭐   🔋   🎤                  │
+│ ▶ 😃 Okada        92   28   88               │
+│   😈 Jay White    85   40   70               │
+│   😃 Naito        88   35   82               │
+│   😃 Omega        90   30   85               │
 │                                              │
 │ ┌──────────────────────────────────────────┐ │
 │ │ Wrestler Details                          │ │

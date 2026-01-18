@@ -91,11 +91,11 @@ The current booking UI is list-heavy and low on wrestler identity. This change m
 ┌──────────────────────────────────────────────┐
 │ Select Wrestler                               │
 ├──────────────────────────────────────────────┤
-│ Name            ⭐   🔋   🎤   Align            │
-│ ▶ Okada           92   28   88   😃            │
-│   Jay White       85   40   70   😈            │
-│   Naito           88   35   82   😃            │
-│   Omega           90   30   85   😃            │
+│ Name            ⭐   🔋   🎤                  │
+│ ▶ 😃 Okada        92   28   88               │
+│   😈 Jay White    85   40   70               │
+│   😃 Naito        88   35   82               │
+│   😃 Omega        90   30   85               │
 │                                              │
 │ ┌──────────────────────────────────────────┐ │
 │ │ Wrestler Details                          │ │
