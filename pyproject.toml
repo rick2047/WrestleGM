@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "textual>=7.1.0",
+    "rich-pixels",
 ]
 
 [dependency-groups]
