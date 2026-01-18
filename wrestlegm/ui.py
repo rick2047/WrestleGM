@@ -469,7 +469,10 @@ class WrestleGMApp(App):
     }
 
     .wrestler-name-header {
-        text-style: bold;
+        text-style: bold underline;
+        color: #f5f5f5;
+        background: #222222;
+        padding: 0 1;
     }
 
     Button {

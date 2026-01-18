@@ -50,6 +50,13 @@ class WrestlerViewDemo(App):
     .wrestler-empty-label {
         color: white;
     }
+
+    .wrestler-name-header {
+        text-style: bold underline;
+        color: #f5f5f5;
+        background: #222222;
+        padding: 0 1;
+    }
     """
 
     def compose(self) -> ComposeResult:
