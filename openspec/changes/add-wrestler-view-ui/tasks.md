@@ -11,7 +11,7 @@
 - [x] 3.1 Add Wrestler View widget with configurable blocks and empty-state behavior
 - [x] 3.2 Create a small script to render the Wrestler View for visual inspection
 - [x] 3.3 Implement avatar rendering with rich-pixels half renderer and safe fallback to default image
-- [ ] 3.4 Ask user to confirm Phase 3 is complete
+- [x] 3.4 Ask user to confirm Phase 3 is complete
 
 ## 4. Phase 4: Wrestler View refinements
 - [ ] 4.1 Adjust Wrestler View layout and block behavior to match specs
