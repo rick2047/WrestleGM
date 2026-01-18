@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 from textual.app import App, ComposeResult
-from textual.containers import Vertical
+from textual.containers import Vertical, VerticalScroll
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
@@ -35,11 +35,22 @@ class WrestlerViewDemo(App):
     .wrestler-view {
         height: auto;
         margin-bottom: 1;
+        align: center top;
+        background: #111111;
+        padding: 0 1;
     }
 
     .wrestler-avatar {
-        width: 12;
         margin-right: 1;
+        width: 24;
+        text-align: center;
+    }
+
+    .wrestler-avatar-frame {
+        width: 24;
+        height: 12;
+        align: center middle;
+        margin: 0 0 1 0;
     }
 
     .wrestler-name,
@@ -70,23 +81,116 @@ class WrestlerViewDemo(App):
             show_rivalry=True,
             rivalry_compact=False,
         )
-        wrestler = WrestlerDefinition(
-            id="demo",
-            name="Kazuchika Okada",
-            alignment="Face",
-            popularity=92,
-            stamina=28,
-            mic_skill=88,
-            description="Ace of the Rainmaker era, calm, precise, relentless.",
-            avatar_path="data/images/01.png",
-        )
+        wrestlers = [
+            WrestlerDefinition(
+                id="01",
+                name="Brutus Hale",
+                alignment="Heel",
+                popularity=82,
+                stamina=45,
+                mic_skill=60,
+                description="Ruthless powerhouse with a broken nose and a cold stare.",
+                avatar_path="data/images/01.png",
+            ),
+            WrestlerDefinition(
+                id="02",
+                name="Evan Bright",
+                alignment="Face",
+                popularity=86,
+                stamina=58,
+                mic_skill=84,
+                description="Charismatic hero with a confident smile and crowd energy.",
+                avatar_path="data/images/02.png",
+            ),
+            WrestlerDefinition(
+                id="03",
+                name="Silas Ward",
+                alignment="Face",
+                popularity=78,
+                stamina=62,
+                mic_skill=70,
+                description="Veteran technician, calm and calculating.",
+                avatar_path="data/images/03.png",
+            ),
+            WrestlerDefinition(
+                id="04",
+                name="Rex Slaughter",
+                alignment="Heel",
+                popularity=74,
+                stamina=68,
+                mic_skill=62,
+                description="Wild brawler with an unhinged glare.",
+                avatar_path="data/images/04.png",
+            ),
+            WrestlerDefinition(
+                id="05",
+                name="Kai Jetstream",
+                alignment="Face",
+                popularity=80,
+                stamina=72,
+                mic_skill=66,
+                description="High-flying cruiserweight built for speed.",
+                avatar_path="data/images/05.png",
+            ),
+            WrestlerDefinition(
+                id="06",
+                name="El Niebla",
+                alignment="Face",
+                popularity=76,
+                stamina=55,
+                mic_skill=60,
+                description="Masked wrestler with a piercing gaze.",
+                avatar_path="data/images/06.png",
+            ),
+            WrestlerDefinition(
+                id="07",
+                name="Magnus Crown",
+                alignment="Face",
+                popularity=90,
+                stamina=70,
+                mic_skill=78,
+                description="Dominant champion with iron calm.",
+                avatar_path="data/images/07.png",
+            ),
+            WrestlerDefinition(
+                id="08",
+                name="Vance Cruel",
+                alignment="Heel",
+                popularity=79,
+                stamina=50,
+                mic_skill=74,
+                description="Sadistic heel with a twisted grin.",
+                avatar_path="data/images/08.png",
+            ),
+            WrestlerDefinition(
+                id="09",
+                name="Kade Iron",
+                alignment="Heel",
+                popularity=77,
+                stamina=65,
+                mic_skill=58,
+                description="Stoic enforcer with a relentless aura.",
+                avatar_path="data/images/09.png",
+            ),
+            WrestlerDefinition(
+                id="10",
+                name="Luca Flair",
+                alignment="Face",
+                popularity=83,
+                stamina=48,
+                mic_skill=88,
+                description="Eccentric showman with wild charisma.",
+                avatar_path="data/images/10.png",
+            ),
+        ]
         with Vertical(id="demo"):
-            yield WrestlerView(
-                wrestler,
-                config,
-                rivalries=["💥 Kenny Omega", "⚔️ Tetsuya Naito", "🔥 Jay White"],
-            )
-            yield WrestlerView(None, config)
+            with VerticalScroll():
+                for wrestler in wrestlers:
+                    yield WrestlerView(
+                        wrestler,
+                        config,
+                        rivalries=["💥 Kenny Omega", "⚔️ Tetsuya Naito", "🔥 Jay White"],
+                    )
 
 
 if __name__ == "__main__":

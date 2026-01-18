@@ -284,46 +284,47 @@ class WrestlerView(Vertical):
 
     def compose(self) -> ComposeResult:
         empty_state = self.wrestler is None
-        if not empty_state and self.config.show_name:
-            alignment = getattr(self.wrestler, "alignment", "Face")
-            name = getattr(self.wrestler, "name", "")
-            yield Static(
-                f"{ALIGNMENT_EMOJI.get(alignment, '')} {name}".strip(),
-                classes="wrestler-name-header",
-            )
-        with Horizontal():
-            if self.config.show_avatar:
-                avatar_path = "" if empty_state else getattr(self.wrestler, "avatar_path", "")
+        if self.config.show_name:
+            if empty_state:
+                yield Static(self.empty_label, classes="wrestler-empty-label")
+            else:
+                alignment = getattr(self.wrestler, "alignment", "Face")
+                name = getattr(self.wrestler, "name", "")
+                yield Static(
+                    f"{ALIGNMENT_EMOJI.get(alignment, '')} {name}".strip(),
+                    classes="wrestler-name-header",
+                )
+        if self.config.show_avatar:
+            avatar_path = "" if empty_state else getattr(self.wrestler, "avatar_path", "")
+            with Vertical(classes="wrestler-avatar-frame"):
                 yield Static(
                     load_avatar_renderable(avatar_path, empty_state=empty_state),
                     classes="wrestler-avatar",
                 )
-            if empty_state:
-                yield Static(self.empty_label, classes="wrestler-empty-label")
-                return
-            with Vertical():
-                if self.config.show_stats:
-                    popularity = getattr(self.wrestler, "popularity", 0)
-                    stamina = getattr(self.wrestler, "stamina", 0)
-                    mic_skill = getattr(self.wrestler, "mic_skill", 0)
-                    yield Static(
-                        f"⭐{popularity}  🔋{stamina}  🎤{mic_skill}",
-                        classes="wrestler-stats",
-                    )
-                if self.config.show_description:
-                    description = getattr(self.wrestler, "description", "")
-                    if description:
-                        yield Static(f"\"{description}\"", classes="wrestler-description")
-                if self.config.show_rivalry and self.rivalries:
-                    if self.config.rivalry_compact:
-                        rivalry_line = " ".join(self.rivalries)
-                        yield Static(rivalry_line, classes="wrestler-rivalry")
-                    else:
-                        yield Static("Rivalries", classes="wrestler-rivalry-title")
-                        yield Static(
-                            "\n".join(self.rivalries),
-                            classes="wrestler-rivalry",
-                        )
+        if empty_state:
+            return
+        if self.config.show_stats:
+            popularity = getattr(self.wrestler, "popularity", 0)
+            stamina = getattr(self.wrestler, "stamina", 0)
+            mic_skill = getattr(self.wrestler, "mic_skill", 0)
+            yield Static(
+                f"⭐{popularity}  🔋{stamina}  🎤{mic_skill}",
+                classes="wrestler-stats",
+            )
+        if self.config.show_description:
+            description = getattr(self.wrestler, "description", "")
+            if description:
+                yield Static(f"\"{description}\"", classes="wrestler-description")
+        if self.config.show_rivalry and self.rivalries:
+            if self.config.rivalry_compact:
+                rivalry_line = " ".join(self.rivalries)
+                yield Static(rivalry_line, classes="wrestler-rivalry")
+            else:
+                yield Static("Rivalries", classes="wrestler-rivalry-title")
+                yield Static(
+                    "\n".join(self.rivalries),
+                    classes="wrestler-rivalry",
+                )
 
 
 def format_stars(rating: float) -> str:
@@ -475,6 +476,24 @@ class WrestleGMApp(App):
         background: #222222;
         padding: 0 1;
         width: 100%;
+        text-align: center;
+    }
+
+    .wrestler-view {
+        align: center top;
+        background: #111111;
+        padding: 0 1;
+    }
+
+    .wrestler-avatar-frame {
+        width: 24;
+        height: 12;
+        align: center middle;
+        margin: 0 0 1 0;
+    }
+
+    .wrestler-avatar {
+        width: 24;
         text-align: center;
     }
 
