@@ -56,6 +56,8 @@ class WrestlerViewDemo(App):
         color: #f5f5f5;
         background: #222222;
         padding: 0 1;
+        width: 100%;
+        text-align: center;
     }
     """
 
