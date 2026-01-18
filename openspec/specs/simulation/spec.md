@@ -35,8 +35,7 @@ The system SHALL compute match ratings in 0–100 space, apply a list of rating 
 #### Scenario: Rating computation with modifiers
 - **WHEN** a match rating is simulated for `N` wrestlers
 - **THEN** `base_100 = pop_avg * POP_W + sta_avg * STA_W` using averages across all wrestlers
-- **AND THEN** all registered rating modifiers are applied to the `base_100` rating
-- **AND THEN** `rating_bonus` from the match type is added
+- **AND THEN** all registered rating modifiers are applied to the `base_100` rating, including a match type bonus modifier
 - **AND THEN** one RNG draw applies `swing` in `[-rating_variance, +rating_variance]`
 - **AND THEN** `rating_100` is clamped to 0–100 and converted to stars via `round(rating_100 / 20, 1)`
 - **AND THEN** the final rating is clamped to 0.0–5.0 stars
@@ -148,15 +147,11 @@ The system SHALL apply fixed popularity deltas based on promo quality and grant 
 - **THEN** the wrestler stamina delta is `floor(STAMINA_RECOVERY_PER_SHOW / 2)`
 
 ### Requirement: Simulation debug payloads
-The system SHALL provide debug payloads for outcome, rating, and promo rating simulations that include the intermediate values used to compute results.
+The system SHALL provide debug payloads for outcome and promo rating simulations that include the intermediate values used to compute results.
 
 #### Scenario: Outcome debug payload
 - **WHEN** a match outcome is simulated
 - **THEN** the debug payload includes powers, base probabilities, outcome chaos, final probabilities, RNG sample, and winner id
-
-#### Scenario: Rating debug payload
-- **WHEN** a match rating is simulated
-- **THEN** the debug payload includes averages, alignment modifier, rating bonus, variance, swing, and rating values
 
 #### Scenario: Promo debug payload
 - **WHEN** a promo rating is simulated
@@ -187,6 +182,10 @@ The system SHALL provide a `RatingModifier` interface that allows for the creati
 - **WHEN** a match is simulated with a `AlignmentModifier`
 - **THEN** for 1v1 matches, the modifier returns `+ALIGN_BONUS` for face vs heel, `-2 * ALIGN_BONUS` for heel vs heel, and `0` for face vs face
 - **AND THEN** for matches with `N >= 3`, the modifier returns `-2 * ALIGN_BONUS` for all heels, `0` for all faces, `+ALIGN_BONUS` for heels > faces, `0` for heels == faces, and `-ALIGN_BONUS` for faces > heels
+
+#### Scenario: Match type bonus modifier
+- **WHEN** a match is simulated with a `MatchTypeBonusModifier`
+- **THEN** the modifier returns the match type rating bonus in 0–100 space
 
 #### Scenario: Rivalry modifier
 - **WHEN** a match is simulated with a `RivalryModifier`
