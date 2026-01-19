@@ -2,12 +2,8 @@
 
 from wrestlegm.ui import WrestleGMApp
 
-
-def main() -> None:
-    """Run the WrestleGM Textual app."""
-
-    WrestleGMApp().run()
+app = WrestleGMApp()
 
 
 if __name__ == "__main__":
-    main()
+    app.run()
