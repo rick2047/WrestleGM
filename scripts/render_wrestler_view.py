@@ -24,7 +24,7 @@ class WrestlerViewDemo(App):
     }
 
     #demo {
-        width: 40;
+        width: 100%;
         height: auto;
         padding: 1 2;
         border: solid gray;
