@@ -254,7 +254,7 @@ def load_avatar_renderable(
         if Pixels is None:
             return None
         try:
-            return Pixels.from_image_path(path, resize=(24, 12))
+            return Pixels.from_image_path(path)
         except Exception:
             return None
 
@@ -486,14 +486,14 @@ class WrestleGMApp(App):
     }
 
     .wrestler-avatar-frame {
-        width: 24;
-        height: 12;
+        width: 48;
+        height: 24;
         align: center middle;
         margin: 0 0 1 0;
     }
 
     .wrestler-avatar {
-        width: 24;
+        width: 48;
         text-align: center;
     }
 

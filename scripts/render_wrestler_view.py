@@ -42,13 +42,13 @@ class WrestlerViewDemo(App):
 
     .wrestler-avatar {
         margin-right: 1;
-        width: 24;
+        width: 48;
         text-align: center;
     }
 
     .wrestler-avatar-frame {
-        width: 24;
-        height: 12;
+        width: 48;
+        height: 24;
         align: center middle;
         margin: 0 0 1 0;
     }
