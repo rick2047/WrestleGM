@@ -570,6 +570,11 @@ class WrestleGMApp(App):
         border: solid gray;
     }
 
+    .booking-screen {
+        align: center top;
+        padding-bottom: 1;
+    }
+
     .section-title {
         text-style: bold;
         margin-bottom: 1;
@@ -650,6 +655,10 @@ class WrestleGMApp(App):
         background: black;
     }
 
+    .booking-shell .booking-card {
+        height: 1fr;
+    }
+
     .match-booking-header {
         text-style: bold;
         text-wrap: nowrap;
@@ -666,14 +675,23 @@ class WrestleGMApp(App):
         margin-bottom: 1;
     }
 
-    .match-wrestlers {
+    .booking-actions {
+        width: 100%;
+        align: center middle;
+        margin-top: 0;
         height: auto;
+    }
+
+    .booking-shell {
+        width: 100%;
+        height: 1fr;
+    }
+
+    .match-wrestlers-scroll {
+        height: 1fr;
         margin-bottom: 1;
     }
 
-    .match-wrestlers ListView {
-        height: auto;
-    }
 
     .wrestler-list-item {
         height: 24;
@@ -749,6 +767,8 @@ class WrestleGMApp(App):
             pass
         try:
             for widget in self.query(".booking-card"):
+                widget.styles.width = card_width
+            for widget in self.query(".booking-actions"):
                 widget.styles.width = card_width
         except NoMatches:
             pass
@@ -1428,82 +1448,83 @@ class MatchBookingScreen(Screen):
     def compose(self) -> ComposeResult:
         """Build the match booking layout."""
 
-        with Vertical(classes="booking-card"):
-            self.header = Static("", classes="match-booking-header")
-            yield self.header
+        with Vertical(classes="booking-shell"):
+            with Vertical(classes="booking-card"):
+                self.header = Static("", classes="match-booking-header")
+                yield self.header
 
-            with Horizontal(classes="match-booking-controls"):
-                yield Static("Wrestlers:")
-                self.match_category_select = SafeSelect(
-                    self._match_category_options(),
-                    id="match-category",
-                )
-                yield self.match_category_select
-                yield Static("Type:")
-                self.match_type_select = SafeSelect(
-                    self._match_type_options_for_category(self.initial_category_id),
-                    id="match-type",
-                )
-                yield self.match_type_select
-
-            yield Static("Wrestlers", classes="booking-section-title")
-
-            max_wrestlers = max(
-                (category["size"] for category in constants.MATCH_CATEGORIES.values()),
-                default=2,
-            )
-            self.wrestler_views: list[WrestlerView] = []
-            self.wrestler_list_items: list[ListItem] = []
-            self.vs_list_items: list[ListItem] = []
-            config = WrestlerViewConfig(
-                show_avatar=True,
-                show_name=True,
-                show_stats=True,
-                show_description=False,
-                show_rivalry=True,
-                rivalry_compact=True,
-            )
-            list_items: list[ListItem] = []
-            for index in range(max_wrestlers):
-                view = WrestlerView(None, config)
-                self.wrestler_views.append(view)
-                wrestler_item = ListItem(
-                    view, id=f"field-wrestler-{index}", classes="wrestler-list-item"
-                )
-                self.wrestler_list_items.append(wrestler_item)
-                list_items.append(wrestler_item)
-                if index < max_wrestlers - 1:
-                    vs_item = ListItem(
-                        Static("vs", classes="wrestler-vs"),
-                        id=f"vs-{index}",
-                        classes="wrestler-vs-item",
+                with Horizontal(classes="match-booking-controls"):
+                    yield Static("Wrestlers:")
+                    self.match_category_select = SafeSelect(
+                        self._match_category_options(),
+                        id="match-category",
                     )
-                    self.vs_list_items.append(vs_item)
-                    list_items.append(vs_item)
-            self.fields = FilteredListView(
-                *list_items,
-                is_item_active=lambda item: item in self.wrestler_list_items
-                and item.styles.display != "none",
-                on_edge_prev=self.action_focus_prev,
-                on_edge_next=self.action_focus_next,
-            )
-            self.wrestler_container = Vertical(classes="match-wrestlers")
-            with self.wrestler_container:
-                yield self.fields
+                    yield self.match_category_select
+                    yield Static("Type:")
+                    self.match_type_select = SafeSelect(
+                        self._match_type_options_for_category(self.initial_category_id),
+                        id="match-type",
+                    )
+                    yield self.match_type_select
 
-            with Horizontal():
+                yield Static("Wrestlers", classes="booking-section-title")
+
+                max_wrestlers = max(
+                    (category["size"] for category in constants.MATCH_CATEGORIES.values()),
+                    default=2,
+                )
+                self.wrestler_views: list[WrestlerView] = []
+                self.wrestler_list_items: list[ListItem] = []
+                self.vs_list_items: list[ListItem] = []
+                config = WrestlerViewConfig(
+                    show_avatar=True,
+                    show_name=True,
+                    show_stats=True,
+                    show_description=False,
+                    show_rivalry=True,
+                    rivalry_compact=True,
+                )
+                list_items: list[ListItem] = []
+                for index in range(max_wrestlers):
+                    view = WrestlerView(None, config)
+                    self.wrestler_views.append(view)
+                    wrestler_item = ListItem(
+                        view, id=f"field-wrestler-{index}", classes="wrestler-list-item"
+                    )
+                    self.wrestler_list_items.append(wrestler_item)
+                    list_items.append(wrestler_item)
+                    if index < max_wrestlers - 1:
+                        vs_item = ListItem(
+                            Static("vs", classes="wrestler-vs"),
+                            id=f"vs-{index}",
+                            classes="wrestler-vs-item",
+                        )
+                        self.vs_list_items.append(vs_item)
+                        list_items.append(vs_item)
+                self.fields = FilteredListView(
+                    *list_items,
+                    is_item_active=lambda item: item in self.wrestler_list_items
+                    and item.styles.display != "none",
+                    on_edge_prev=self.action_focus_prev,
+                    on_edge_next=self.action_focus_next,
+                )
+                self.wrestler_container = VerticalScroll(classes="match-wrestlers-scroll")
+                with self.wrestler_container:
+                    yield self.fields
+
+            with Horizontal(classes="booking-actions"):
                 self.clear_button = Button("Clear Slot", id="clear")
                 self.confirm_button = Button("Confirm", id="confirm")
                 self.cancel_button = Button("Cancel", id="cancel")
                 yield self.clear_button
                 yield self.confirm_button
                 yield self.cancel_button
-
         yield Footer()
 
     def on_mount(self) -> None:
         """Load existing slot data and focus the field list."""
 
+        self.add_class("booking-screen")
         self.fields.focus()
         existing = self.app.state.show_card[self.slot_index]
         if isinstance(existing, Match):
@@ -1851,40 +1872,42 @@ class PromoBookingScreen(Screen):
         self.draft = PromoDraft()
 
     def compose(self) -> ComposeResult:
-        with Vertical(classes="booking-card"):
-            self.header = Static("", classes="match-booking-header")
-            yield self.header
+        with Vertical(classes="booking-shell"):
+            with Vertical(classes="booking-card"):
+                self.header = Static("", classes="match-booking-header")
+                yield self.header
 
-            yield Static("Performer", classes="booking-section-title")
+                yield Static("Performer", classes="booking-section-title")
 
-            config = WrestlerViewConfig(
-                show_avatar=True,
-                show_name=True,
-                show_stats=True,
-                show_description=False,
-                show_rivalry=False,
-            )
-            self.wrestler_view = WrestlerView(None, config)
-            self.fields = EdgeAwareListView(
-                ListItem(
-                    self.wrestler_view, id="field-wrestler", classes="wrestler-list-item"
-                ),
-                on_edge_prev=self.action_focus_prev,
-                on_edge_next=self.action_focus_next,
-            )
-            yield self.fields
+                config = WrestlerViewConfig(
+                    show_avatar=True,
+                    show_name=True,
+                    show_stats=True,
+                    show_description=False,
+                    show_rivalry=False,
+                )
+                self.wrestler_view = WrestlerView(None, config)
+                self.fields = EdgeAwareListView(
+                    ListItem(
+                        self.wrestler_view, id="field-wrestler", classes="wrestler-list-item"
+                    ),
+                    on_edge_prev=self.action_focus_prev,
+                    on_edge_next=self.action_focus_next,
+                )
+                with VerticalScroll(classes="match-wrestlers-scroll"):
+                    yield self.fields
 
-            with Horizontal():
+            with Horizontal(classes="booking-actions"):
                 self.clear_button = Button("Clear Slot", id="clear")
                 self.confirm_button = Button("Confirm", id="confirm")
                 self.cancel_button = Button("Cancel", id="cancel")
                 yield self.clear_button
                 yield self.confirm_button
                 yield self.cancel_button
-
         yield Footer()
 
     def on_mount(self) -> None:
+        self.add_class("booking-screen")
         self.fields.focus()
         existing = self.app.state.show_card[self.slot_index]
         if isinstance(existing, Promo):
