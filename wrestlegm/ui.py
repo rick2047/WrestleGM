@@ -306,7 +306,9 @@ class WrestlerView(Vertical):
                     self.stats_line = Static("", classes="wrestler-stats")
                     yield self.stats_line
                 if self.config.show_description:
-                    self.description_line = Static("", classes="wrestler-description")
+                    self.description_line = Static(
+                        "", classes="wrestler-description", expand=True
+                    )
                     yield self.description_line
                 if self.config.show_rivalry:
                     if self.config.rivalry_compact:
@@ -562,7 +564,7 @@ class WrestleGMApp(App):
     }
 
     .panel {
-        width: 80%;
+        width: 100%;
         height: auto;
         padding: 1 2;
         border: solid gray;
@@ -586,6 +588,7 @@ class WrestleGMApp(App):
         background: #111111;
         padding: 0 1;
         height: auto;
+        width: 100%;
     }
 
     .wrestler-avatar-frame {
@@ -607,7 +610,7 @@ class WrestleGMApp(App):
     }
 
     .wrestler-info {
-        width: 100%;
+        width: 1fr;
         height: auto;
     }
 
@@ -624,6 +627,12 @@ class WrestleGMApp(App):
         padding: 0 1;
     }
 
+    .wrestler-description {
+        text-wrap: wrap;
+        width: 1fr;
+        height: auto;
+    }
+
     .wrestler-rivalry-title {
         text-style: bold;
         color: #cccccc;
@@ -634,7 +643,7 @@ class WrestleGMApp(App):
     }
 
     .booking-card {
-        width: 90%;
+        width: 100%;
         height: auto;
         padding: 1 2;
         border: solid gray;
@@ -688,7 +697,7 @@ class WrestleGMApp(App):
     }
 
     .inspect-panel {
-        width: 90%;
+        width: 100%;
     }
 
     Button {
@@ -717,6 +726,37 @@ class WrestleGMApp(App):
         """Show the main menu at startup."""
 
         self.push_screen(MainMenuScreen())
+        self._apply_responsive_layout()
+
+    def on_resize(self) -> None:
+        """Update responsive widths when the terminal size changes."""
+
+        self._apply_responsive_layout()
+
+    def _apply_responsive_layout(self) -> None:
+        """Apply responsive widths based on terminal columns."""
+
+        if self.size is None:
+            return
+        width = self.size.width
+        panel_width = max(30, min(int(width * 0.8), width - 4))
+        card_width = max(32, min(int(width * 0.9), width - 2))
+        inspect_width = max(40, min(int(width * 0.9), width - 2))
+        try:
+            for widget in self.query(".panel"):
+                widget.styles.width = panel_width
+        except NoMatches:
+            pass
+        try:
+            for widget in self.query(".booking-card"):
+                widget.styles.width = card_width
+        except NoMatches:
+            pass
+        try:
+            for widget in self.query(".inspect-panel"):
+                widget.styles.width = inspect_width
+        except NoMatches:
+            pass
 
     def new_game(self, slot_index: int, slot_name: str) -> None:
         """Start a fresh session and show the booking hub."""
