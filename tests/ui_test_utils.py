@@ -21,7 +21,6 @@ from wrestlegm.ui import (
     GameHubScreen,
     MainMenuScreen,
     MatchBookingScreen,
-    MatchCategorySelectionScreen,
     NameSaveSlotModal,
     PromoBookingScreen,
     ResultsScreen,
@@ -193,7 +192,7 @@ async def open_match_booking(pilot: Pilot, slot_index: int) -> None:
         await pilot.press("down")
         await pilot.pause(0.05)
     await pilot.press("enter")
-    await wait_for_screen(pilot, MatchCategorySelectionScreen)
+    await wait_for_screen(pilot, MatchBookingScreen)
 
 
 async def open_promo_booking(pilot: Pilot, slot_index: int) -> None:
@@ -227,18 +226,17 @@ async def select_wrestler(pilot: Pilot, row_index: int) -> None:
 
 
 async def select_match_category(pilot: Pilot, row_index: int = 0) -> None:
-    """Select a match category by row index in the selection screen."""
+    """Select a match category by row index in match booking."""
 
-    await wait_for_screen(pilot, MatchCategorySelectionScreen)
-    screen = pilot.app.screen
-    if isinstance(screen, MatchCategorySelectionScreen):
-        screen.list_view.index = row_index
-        screen.action_select()
-    else:
-        for _ in range(row_index):
-            await pilot.press("down")
-        await pilot.press("enter")
     await wait_for_screen(pilot, MatchBookingScreen)
+    screen = pilot.app.screen
+    if isinstance(screen, MatchBookingScreen):
+        category_id = constants.MATCH_CATEGORY_ORDER[row_index]
+        screen.draft.match_category_id = category_id
+        screen._apply_match_category_change()
+        screen._refresh_match_category_options()
+        screen._refresh_match_type_options()
+        screen.refresh_view()
 
 
 async def confirm_booking(pilot: Pilot) -> None:

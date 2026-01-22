@@ -67,6 +67,43 @@ class RivalryManager:
                     emojis.append(emoji)
         return "".join(emojis)
 
+    def rivalry_emoji_for_pair(self, wrestler_a_id: str, wrestler_b_id: str) -> str:
+        """Return the rivalry or cooldown emoji for a wrestler pair."""
+
+        key = normalize_pair(wrestler_a_id, wrestler_b_id)
+        cooldown = self.cooldown_states.get(key)
+        if cooldown:
+            return self._cooldown_emoji(cooldown.remaining_shows)
+        rivalry = self.rivalry_states.get(key)
+        if rivalry and rivalry.rivalry_value > 0:
+            return self._rivalry_emoji(rivalry.rivalry_value)
+        return ""
+
+    def rivalry_summary_for_match(self, wrestler_ids: Iterable[str]) -> str:
+        """Return aggregated rivalry emoji counts for a match."""
+
+        ids = [wrestler_id for wrestler_id in wrestler_ids if wrestler_id]
+        if len(ids) < 2:
+            return ""
+        counts: dict[str, int] = {}
+        for wrestler_a_id, wrestler_b_id in ordered_pairs(ids):
+            emoji = self.rivalry_emoji_for_pair(wrestler_a_id, wrestler_b_id)
+            if not emoji:
+                continue
+            counts[emoji] = counts.get(emoji, 0) + 1
+        if not counts:
+            return ""
+        order = ["💥", "⚔️", "🔥", "⚡", "🧊", "❄️", "💧"]
+        parts: list[str] = []
+        for emoji in order:
+            count = counts.get(emoji)
+            if count:
+                parts.append(f"{emoji} x{count}")
+        for emoji, count in counts.items():
+            if emoji not in order:
+                parts.append(f"{emoji} x{count}")
+        return "  ".join(parts)
+
     def rivalry_context_for_match(self, match: Match) -> RivalryRatingContext:
         """Return rivalry rating context for a match based on current state."""
 

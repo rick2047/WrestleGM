@@ -218,7 +218,7 @@ def test_stipulation_dropdown_opens_on_enter() -> None:
             assert_screen(app, MatchBookingScreen)
             screen = app.screen
             await wait_for_condition(pilot, lambda: hasattr(screen, "fields"))
-            screen.action_focus_next()
+            screen.match_type_select.focus()
             await pilot.pause(0.05)
             await pilot.press("enter")
 

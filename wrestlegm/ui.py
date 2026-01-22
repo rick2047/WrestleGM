@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from itertools import combinations
 import logging
 from pathlib import Path
 from typing import Callable, Optional
 
 from textual.app import App, ComposeResult
 from textual import events
-from textual.containers import Horizontal, Vertical
+from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.screen import ModalScreen, Screen
 from textual.css.query import NoMatches
 from textual.widgets import (
@@ -280,51 +281,123 @@ class WrestlerView(Vertical):
         self.config = config
         self.rivalries = rivalries or []
         self.empty_label = empty_label
+        self.avatar: Static | None = None
+        self.name_line: Static | None = None
+        self.empty_label_line: Static | None = None
+        self.stats_line: Static | None = None
+        self.description_line: Static | None = None
+        self.rivalry_title: Static | None = None
+        self.rivalry_line: Static | None = None
         self.add_class("wrestler-view")
 
     def compose(self) -> ComposeResult:
+        with Horizontal(classes="wrestler-view-body"):
+            if self.config.show_avatar:
+                with Vertical(classes="wrestler-avatar-frame"):
+                    self.avatar = Static("", classes="wrestler-avatar")
+                    yield self.avatar
+            with Vertical(classes="wrestler-info"):
+                if self.config.show_name:
+                    self.name_line = Static("", classes="wrestler-name-header")
+                    self.empty_label_line = Static(
+                        self.empty_label, classes="wrestler-empty-label"
+                    )
+                    yield self.name_line
+                    yield self.empty_label_line
+                if self.config.show_stats:
+                    self.stats_line = Static("", classes="wrestler-stats")
+                    yield self.stats_line
+                if self.config.show_description:
+                    self.description_line = Static("", classes="wrestler-description")
+                    yield self.description_line
+                if self.config.show_rivalry:
+                    if self.config.rivalry_compact:
+                        self.rivalry_line = Static("", classes="wrestler-rivalry")
+                        yield self.rivalry_line
+                    else:
+                        self.rivalry_title = Static(
+                            "Rivalries", classes="wrestler-rivalry-title"
+                        )
+                        yield self.rivalry_title
+                        with VerticalScroll(classes="wrestler-rivalry-scroll"):
+                            self.rivalry_line = Static("", classes="wrestler-rivalry")
+                            yield self.rivalry_line
+
+    def on_mount(self) -> None:
+        self.refresh_view()
+
+    def set_wrestler(
+        self, wrestler: object | None, *, rivalries: list[str] | None = None
+    ) -> None:
+        """Update the assigned wrestler and refresh the view."""
+
+        self.wrestler = wrestler
+        if rivalries is not None:
+            self.rivalries = rivalries
+        self.refresh_view()
+
+    def refresh_view(self) -> None:
+        """Refresh the display based on the assigned wrestler."""
+
         empty_state = self.wrestler is None
-        if self.config.show_name:
+        if self.avatar is not None:
+            avatar_path = "" if empty_state else getattr(self.wrestler, "avatar_path", "")
+            self.avatar.update(load_avatar_renderable(avatar_path, empty_state=empty_state))
+
+        if self.name_line is not None and self.empty_label_line is not None:
             if empty_state:
-                yield Static(self.empty_label, classes="wrestler-empty-label")
+                self.empty_label_line.update(self.empty_label)
+                self.empty_label_line.styles.display = "block"
+                self.name_line.styles.display = "none"
             else:
                 alignment = getattr(self.wrestler, "alignment", "Face")
                 name = getattr(self.wrestler, "name", "")
-                yield Static(
-                    f"{ALIGNMENT_EMOJI.get(alignment, '')} {name}".strip(),
-                    classes="wrestler-name-header",
+                self.name_line.update(
+                    f"{ALIGNMENT_EMOJI.get(alignment, '')} {name}".strip()
                 )
-        if self.config.show_avatar:
-            avatar_path = "" if empty_state else getattr(self.wrestler, "avatar_path", "")
-            with Vertical(classes="wrestler-avatar-frame"):
-                yield Static(
-                    load_avatar_renderable(avatar_path, empty_state=empty_state),
-                    classes="wrestler-avatar",
-                )
+                self.name_line.styles.display = "block"
+                self.empty_label_line.styles.display = "none"
+
         if empty_state:
+            for widget in (
+                self.stats_line,
+                self.description_line,
+                self.rivalry_title,
+                self.rivalry_line,
+            ):
+                if widget is not None:
+                    widget.styles.display = "none"
             return
-        if self.config.show_stats:
+
+        if self.stats_line is not None:
             popularity = getattr(self.wrestler, "popularity", 0)
             stamina = getattr(self.wrestler, "stamina", 0)
             mic_skill = getattr(self.wrestler, "mic_skill", 0)
-            yield Static(
-                f"⭐{popularity}  🔋{stamina}  🎤{mic_skill}",
-                classes="wrestler-stats",
-            )
-        if self.config.show_description:
+            self.stats_line.update(f"⭐{popularity}  🔋{stamina}  🎤{mic_skill}")
+            self.stats_line.styles.display = "block"
+
+        if self.description_line is not None:
             description = getattr(self.wrestler, "description", "")
             if description:
-                yield Static(f"\"{description}\"", classes="wrestler-description")
-        if self.config.show_rivalry and self.rivalries:
-            if self.config.rivalry_compact:
-                rivalry_line = " ".join(self.rivalries)
-                yield Static(rivalry_line, classes="wrestler-rivalry")
+                self.description_line.update(f"\"{description}\"")
+                self.description_line.styles.display = "block"
             else:
-                yield Static("Rivalries", classes="wrestler-rivalry-title")
-                yield Static(
-                    "\n".join(self.rivalries),
-                    classes="wrestler-rivalry",
-                )
+                self.description_line.styles.display = "none"
+
+        if self.rivalry_line is not None:
+            if self.rivalries:
+                if self.config.rivalry_compact:
+                    rivalry_text = " ".join(self.rivalries)
+                else:
+                    rivalry_text = "\n".join(self.rivalries)
+                self.rivalry_line.update(rivalry_text)
+                self.rivalry_line.styles.display = "block"
+                if self.rivalry_title is not None:
+                    self.rivalry_title.styles.display = "block"
+            else:
+                self.rivalry_line.styles.display = "none"
+                if self.rivalry_title is not None:
+                    self.rivalry_title.styles.display = "none"
 
 
 def format_stars(rating: float) -> str:
@@ -387,7 +460,8 @@ def slot_label(slot_index: int, slot_type: str) -> str:
 def row_key_to_id(row_key: object) -> str:
     """Normalize Textual row keys to their underlying string ID."""
 
-    value = getattr(row_key, "value", row_key)
+    value = getattr(row_key, "key", row_key)
+    value = getattr(value, "value", value)
     return str(value)
 
 
@@ -397,6 +471,37 @@ def truncate_name(name: str, max_len: int = 18) -> str:
     if len(name) <= max_len:
         return name
     return f"{name[: max_len - 3]}..."
+
+
+@dataclass(frozen=True)
+class WrestlerViewData:
+    """UI-ready wrestler data for the Wrestler View widget."""
+
+    name: str
+    alignment: str
+    popularity: int
+    stamina: int
+    mic_skill: int
+    description: str
+    avatar_path: str
+
+
+def build_wrestler_view_data(state: GameState, wrestler_id: str) -> WrestlerViewData:
+    """Combine mutable wrestler state and static definition data."""
+
+    wrestler = state.roster[wrestler_id]
+    definition = state.wrestler_defs.get(wrestler_id)
+    description = definition.description if definition else ""
+    avatar_path = definition.avatar_path if definition else ""
+    return WrestlerViewData(
+        name=wrestler.name,
+        alignment=wrestler.alignment,
+        popularity=wrestler.popularity,
+        stamina=wrestler.stamina,
+        mic_skill=wrestler.mic_skill,
+        description=description,
+        avatar_path=avatar_path,
+    )
 
 
 @dataclass
@@ -471,30 +576,106 @@ class WrestleGMApp(App):
     }
 
     .wrestler-name-header {
-        text-style: bold underline;
+        text-style: bold;
         color: #f5f5f5;
         background: #222222;
         padding: 0 1;
         width: 100%;
-        text-align: center;
     }
 
     .wrestler-view {
-        align: center top;
+        align: left top;
         background: #111111;
         padding: 0 1;
+        height: auto;
     }
 
     .wrestler-avatar-frame {
         width: 48;
         height: 24;
         align: center middle;
-        margin: 0 0 1 0;
+        margin: 0 1 0 0;
     }
 
     .wrestler-avatar {
         width: 48;
         text-align: center;
+    }
+
+    .wrestler-view-body {
+        width: 100%;
+        height: auto;
+    }
+
+    .wrestler-info {
+        width: 100%;
+        height: auto;
+    }
+
+    .wrestler-empty-label {
+        color: #dddddd;
+        text-style: bold;
+        padding: 0 1;
+    }
+
+    .wrestler-stats,
+    .wrestler-description,
+    .wrestler-rivalry,
+    .wrestler-rivalry-title {
+        padding: 0 1;
+    }
+
+    .wrestler-rivalry-title {
+        text-style: bold;
+        color: #cccccc;
+    }
+
+    .wrestler-rivalry-scroll {
+        height: 3;
+    }
+
+    .booking-card {
+        width: 40;
+        height: auto;
+        padding: 1 2;
+        border: solid gray;
+        background: black;
+    }
+
+    .match-booking-header {
+        text-style: bold;
+        text-wrap: nowrap;
+        overflow: hidden;
+    }
+
+    .match-booking-controls {
+        height: auto;
+        margin: 0 0 1 0;
+    }
+
+    .booking-section-title {
+        text-style: bold;
+        margin-bottom: 1;
+    }
+
+    .match-wrestlers {
+        height: auto;
+        margin-bottom: 1;
+    }
+
+    .wrestler-vs {
+        text-align: center;
+        color: #cccccc;
+        height: 1;
+    }
+
+    .modal-hint {
+        text-align: center;
+        color: #cccccc;
+    }
+
+    .inspect-panel {
+        width: 60;
     }
 
     Button {
@@ -1086,7 +1267,7 @@ class BookingHubScreen(Screen):
         if index is None:
             return
         if self.app.state.slot_type(index) == "match":
-            self.open_match_category_selection(index)
+            self.open_match_booking(index)
         else:
             self.app.push_screen(PromoBookingScreen(index))
 
@@ -1099,31 +1280,18 @@ class BookingHubScreen(Screen):
         if index is None:
             return
         if self.app.state.slot_type(index) == "match":
-            self.open_match_category_selection(index)
+            self.open_match_booking(index)
         else:
             self.app.push_screen(PromoBookingScreen(index))
 
-    def open_match_category_selection(self, slot_index: int) -> None:
-        """Open match category selection before booking a match slot."""
+    def open_match_booking(self, slot_index: int) -> None:
+        """Open match booking for a match slot."""
 
         existing = self.app.state.show_card[slot_index]
         initial_category_id = None
         if isinstance(existing, Match):
             initial_category_id = existing.match_category_id
-        self.app.push_screen(
-            MatchCategorySelectionScreen(
-                slot_index=slot_index,
-                initial_category_id=initial_category_id,
-                on_select=lambda category_id: self.open_match_booking(
-                    slot_index, category_id
-                ),
-            )
-        )
-
-    def open_match_booking(self, slot_index: int, match_category_id: str) -> None:
-        """Open match booking with a preselected match category."""
-
-        self.app.push_screen(MatchBookingScreen(slot_index, match_category_id))
+        self.app.push_screen(MatchBookingScreen(slot_index, initial_category_id))
 
     def action_run_show(self) -> None:
         """Run the show if the current card is valid."""
@@ -1195,7 +1363,7 @@ class MatchBookingScreen(Screen):
         ("escape", "cancel", "Cancel"),
     ]
 
-    def __init__(self, slot_index: int, match_category_id: str) -> None:
+    def __init__(self, slot_index: int, match_category_id: str | None = None) -> None:
         """Create a booking screen for a specific slot."""
 
         super().__init__()
@@ -1203,49 +1371,74 @@ class MatchBookingScreen(Screen):
         self.draft = BookingDraft()
         self.initial_category_id = match_category_id
         self.draft.match_category_id = match_category_id
-        self.draft.ensure_size(match_category_size(match_category_id))
 
     def compose(self) -> ComposeResult:
         """Build the match booking layout."""
 
-        self.header = Static("", classes="section-title")
-        yield self.header
-        self.detail = Static("", classes="section-title")
-        yield self.detail
+        with Vertical(classes="booking-card"):
+            self.header = Static("", classes="match-booking-header")
+            yield self.header
 
-        max_wrestlers = max(
-            (category["size"] for category in constants.MATCH_CATEGORIES.values()),
-            default=2,
-        )
-        self.wrestler_items: list[Static] = []
-        self.wrestler_list_items: list[ListItem] = []
-        for index in range(max_wrestlers):
-            item = Static("")
-            self.wrestler_items.append(item)
-            self.wrestler_list_items.append(ListItem(item, id=f"field-wrestler-{index}"))
-        self.fields = FilteredListView(
-            *self.wrestler_list_items,
-            is_item_active=lambda item: item.styles.display != "none",
-            on_edge_prev=self.action_focus_prev,
-            on_edge_next=self.action_focus_next,
-        )
-        yield self.fields
+            with Horizontal(classes="match-booking-controls"):
+                yield Static("Wrestlers:")
+                self.match_category_select = SafeSelect(
+                    self._match_category_options(),
+                    id="match-category",
+                )
+                yield self.match_category_select
+                yield Static("Type:")
+                self.match_type_select = SafeSelect(
+                    self._match_type_options_for_category(self.initial_category_id),
+                    id="match-type",
+                )
+                yield self.match_type_select
 
-        self.match_type_label = Static("Stipulation")
-        yield self.match_type_label
-        self.match_type_select = SafeSelect(
-            self._match_type_options_for_category(self.initial_category_id),
-            id="match-type",
-        )
-        yield self.match_type_select
+            yield Static("Wrestlers", classes="booking-section-title")
 
-        with Vertical():
-            self.confirm_button = Button("Confirm", id="confirm")
-            self.clear_button = Button("Clear Slot", id="clear")
-            self.cancel_button = Button("Cancel", id="cancel")
-            yield self.confirm_button
-            yield self.clear_button
-            yield self.cancel_button
+            max_wrestlers = max(
+                (category["size"] for category in constants.MATCH_CATEGORIES.values()),
+                default=2,
+            )
+            self.wrestler_views: list[WrestlerView] = []
+            self.wrestler_list_items: list[ListItem] = []
+            self.vs_list_items: list[ListItem] = []
+            config = WrestlerViewConfig(
+                show_avatar=True,
+                show_name=True,
+                show_stats=True,
+                show_description=False,
+                show_rivalry=True,
+                rivalry_compact=True,
+            )
+            list_items: list[ListItem] = []
+            for index in range(max_wrestlers):
+                view = WrestlerView(None, config)
+                self.wrestler_views.append(view)
+                wrestler_item = ListItem(view, id=f"field-wrestler-{index}")
+                self.wrestler_list_items.append(wrestler_item)
+                list_items.append(wrestler_item)
+                if index < max_wrestlers - 1:
+                    vs_item = ListItem(Static("vs", classes="wrestler-vs"), id=f"vs-{index}")
+                    self.vs_list_items.append(vs_item)
+                    list_items.append(vs_item)
+            self.fields = FilteredListView(
+                *list_items,
+                is_item_active=lambda item: item in self.wrestler_list_items
+                and item.styles.display != "none",
+                on_edge_prev=self.action_focus_prev,
+                on_edge_next=self.action_focus_next,
+            )
+            self.wrestler_container = Vertical(classes="match-wrestlers")
+            with self.wrestler_container:
+                yield self.fields
+
+            with Horizontal():
+                self.clear_button = Button("Clear Slot", id="clear")
+                self.confirm_button = Button("Confirm", id="confirm")
+                self.cancel_button = Button("Cancel", id="cancel")
+                yield self.clear_button
+                yield self.confirm_button
+                yield self.cancel_button
 
         yield Footer()
 
@@ -1260,67 +1453,67 @@ class MatchBookingScreen(Screen):
             self.draft.match_category_id = existing.match_category_id
         if self.initial_category_id is not None:
             self.draft.match_category_id = self.initial_category_id
+        if self.draft.match_category_id is None:
+            self.draft.match_category_id = constants.MATCH_CATEGORY_ORDER[0]
         self._apply_match_category_change()
+        self._refresh_match_category_options()
         self._refresh_match_type_options()
         self.refresh_view()
 
     def refresh_view(self) -> None:
         """Update field labels, buttons, and match summary."""
 
-        base_label = f"Book {slot_label(self.slot_index, 'match')}"
+        base_label = slot_label(self.slot_index, "match")
         selected_ids = [wrestler_id for wrestler_id in self.draft.wrestler_ids if wrestler_id]
-        emojis = self.app.state.rivalry_emojis_for_match(selected_ids)
-        header_text = f"{base_label}  {emojis}" if emojis else base_label
+        summary = self.app.state.rivalry_summary_for_match(selected_ids)
+        header_text = f"{base_label}  {summary}" if summary else base_label
         self.header.update(header_text)
-        self.detail.update(self.category_label())
 
         required_count = self.required_wrestler_count()
-        for index, item in enumerate(self.wrestler_items):
+        for index, view in enumerate(self.wrestler_views):
             list_item = self.wrestler_list_items[index]
             if index < required_count:
                 wrestler_id = self.draft.wrestler_ids[index]
-                item.update(self.wrestler_field_text(wrestler_id))
+                wrestler_view = (
+                    build_wrestler_view_data(self.app.state, wrestler_id)
+                    if wrestler_id
+                    else None
+                )
+                rivalries = self._rivalry_badges_for_wrestler(wrestler_id)
+                view.set_wrestler(wrestler_view, rivalries=rivalries)
                 list_item.styles.display = "block"
             else:
                 list_item.styles.display = "none"
+        for index, vs_item in enumerate(self.vs_list_items):
+            vs_item.styles.display = "block" if index < (required_count - 1) else "none"
 
-        if (
-            self.fields.index is not None
-            and self.fields.index < len(self.wrestler_list_items)
-            and self.fields.index >= required_count
-        ):
-            self.fields.index = 0 if required_count else len(self.wrestler_list_items)
+        if self.fields.index is not None:
+            current_item = self.fields.children[self.fields.index]
+            wrestler_index = self._wrestler_index_from_item(current_item)
+            if wrestler_index is None or wrestler_index >= required_count:
+                self._focus_first_wrestler(required_count)
 
         self.confirm_button.disabled = not self.draft.is_complete(required_count) or bool(
             self.validate_draft()
         )
         self.clear_button.disabled = self.app.state.show_card[self.slot_index] is None
 
-    def field_text(self, label: str, value_id: Optional[str], match_type: bool = False) -> str:
-        """Render the display text for a booking field."""
+    def _rivalry_badges_for_wrestler(self, wrestler_id: str | None) -> list[str]:
+        """Return compact rivalry emoji badges for a wrestler."""
 
-        if value_id is None:
-            return f"{label}\n[ Empty ]" if not match_type else f"{label}\n[ Unset ]"
-        if match_type:
-            match_type_def = self.app.state.match_types[value_id]
-            return f"{label}\n{match_type_def.name}"
-        wrestler = self.app.state.roster[value_id]
-        return f"{label}\n{build_name_cell(wrestler.name, wrestler.alignment)}"
-
-    def wrestler_field_text(self, wrestler_id: Optional[str]) -> str:
-        """Render the display text for a wrestler row."""
-
-        if wrestler_id is None:
-            return "[ Empty ]"
-        wrestler = self.app.state.roster[wrestler_id]
-        return build_name_cell(wrestler.name, wrestler.alignment)
-
-    def category_label(self) -> str:
-        """Return the current category label for the header detail."""
-
-        if self.draft.match_category_id is None:
-            return ""
-        return match_category_label(self.draft.match_category_id)
+        if not wrestler_id:
+            return []
+        participants = [wrestler for wrestler in self.draft.wrestler_ids if wrestler]
+        if len(participants) < 2:
+            return []
+        badges: list[str] = []
+        for wrestler_a_id, wrestler_b_id in combinations(participants, 2):
+            if wrestler_id not in (wrestler_a_id, wrestler_b_id):
+                continue
+            emoji = self.app.state.rivalry_emoji_for_pair(wrestler_a_id, wrestler_b_id)
+            if emoji:
+                badges.append(emoji)
+        return badges
 
     def required_wrestler_count(self) -> int:
         """Return the required wrestler count for the selected category."""
@@ -1375,6 +1568,25 @@ class MatchBookingScreen(Screen):
         if self.draft.match_type_id is not None:
             self.match_type_select.value = self.draft.match_type_id
 
+    def _match_category_options(self) -> list[tuple[str, str]]:
+        """Return the match category options as wrestler counts."""
+
+        return [
+            (str(constants.MATCH_CATEGORIES[category_id]["size"]), category_id)
+            for category_id in constants.MATCH_CATEGORY_ORDER
+        ]
+
+    def _refresh_match_category_options(self) -> None:
+        """Update the match category dropdown options."""
+
+        options = self._match_category_options()
+        self.match_category_select.disabled = not options
+        valid_ids = {value for _, value in options}
+        if self.draft.match_category_id not in valid_ids:
+            self.draft.match_category_id = options[0][1] if options else None
+        if self.draft.match_category_id is not None:
+            self.match_category_select.value = self.draft.match_category_id
+
     def validate_draft(self) -> list[str]:
         """Return validation errors for the current draft selection."""
 
@@ -1395,18 +1607,23 @@ class MatchBookingScreen(Screen):
         selected = self.fields.index
         if selected is None:
             return
+        item = self.fields.children[selected]
+        wrestler_index = self._wrestler_index_from_item(item)
         required_count = self.required_wrestler_count()
-        if selected >= required_count:
+        if wrestler_index is None or wrestler_index >= required_count:
             return
-        title = f"Select Wrestler ({slot_label(self.slot_index, 'match')} · {selected + 1})"
-        current_ids = self._current_ids(exclude_index=selected)
+        title = (
+            f"Select Wrestler ({slot_label(self.slot_index, 'match')} · "
+            f"{wrestler_index + 1})"
+        )
+        current_ids = self._current_ids(exclude_index=wrestler_index)
         self.app.push_screen(
             WrestlerSelectionScreen(
                 slot_index=self.slot_index,
                 title=title,
                 current_ids=current_ids,
                 booked_ids=self._booked_ids(),
-                on_select=lambda wrestler_id: self.set_wrestler(selected, wrestler_id),
+                on_select=lambda wrestler_id: self.set_wrestler(wrestler_index, wrestler_id),
             )
         )
 
@@ -1421,24 +1638,20 @@ class MatchBookingScreen(Screen):
     def on_select_changed(self, event: Select.Changed) -> None:
         """Update draft match type when selection changes."""
 
-        if event.select is self.match_type_select and event.value is not None:
+        if event.value is None:
+            return
+        if event.select is self.match_category_select:
+            self.draft.match_category_id = event.value
+            self._apply_match_category_change()
+            self._refresh_match_type_options()
+            self.refresh_view()
+        elif event.select is self.match_type_select:
             self.draft.match_type_id = event.value
             self.refresh_view()
 
     def action_cancel(self) -> None:
         """Discard changes and return to the booking hub."""
-        slot_index = self.slot_index
-        initial_category_id = self.draft.match_category_id or self.initial_category_id
         self.app.pop_screen()
-        self.app.push_screen(
-            MatchCategorySelectionScreen(
-                slot_index=slot_index,
-                initial_category_id=initial_category_id,
-                on_select=lambda category_id: self.app.push_screen(
-                    MatchBookingScreen(slot_index, category_id)
-                ),
-            )
-        )
 
     def action_focus_next(self) -> None:
         """Move focus to the next booking control."""
@@ -1455,6 +1668,7 @@ class MatchBookingScreen(Screen):
 
         focus_order = [
             self.fields,
+            self.match_category_select,
             self.match_type_select,
             self.confirm_button,
             self.clear_button,
@@ -1494,8 +1708,32 @@ class MatchBookingScreen(Screen):
         index = event.index
         if index is None:
             return
+        item = self.fields.children[index]
+        wrestler_index = self._wrestler_index_from_item(item)
+        if wrestler_index is None or wrestler_index >= self.required_wrestler_count():
+            return
         self.fields.index = index
         self.action_select_field()
+
+    def _wrestler_index_from_item(self, item: ListItem) -> int | None:
+        if item.id is None:
+            return None
+        item_id = str(item.id)
+        if not item_id.startswith("field-wrestler-"):
+            return None
+        try:
+            return int(item_id.split("-")[-1])
+        except ValueError:
+            return None
+
+    def _focus_first_wrestler(self, required_count: int) -> None:
+        if required_count <= 0:
+            return
+        for index, item in enumerate(self.fields.children):
+            wrestler_index = self._wrestler_index_from_item(item)
+            if wrestler_index is not None and wrestler_index < required_count:
+                self.fields.index = index
+                return
 
     def commit_booking(self) -> None:
         """Commit the draft match to the show card."""
@@ -1554,26 +1792,34 @@ class PromoBookingScreen(Screen):
         self.draft = PromoDraft()
 
     def compose(self) -> ComposeResult:
-        self.header = Static("", classes="section-title")
-        yield self.header
-        self.detail = Static("", classes="section-title")
-        yield self.detail
+        with Vertical(classes="booking-card"):
+            self.header = Static("", classes="match-booking-header")
+            yield self.header
 
-        self.field_item = Static("")
-        self.fields = EdgeAwareListView(
-            ListItem(self.field_item, id="field-wrestler"),
-            on_edge_prev=self.action_focus_prev,
-            on_edge_next=self.action_focus_next,
-        )
-        yield self.fields
+            yield Static("Performer", classes="booking-section-title")
 
-        with Vertical():
-            self.confirm_button = Button("Confirm", id="confirm")
-            self.clear_button = Button("Clear Slot", id="clear")
-            self.cancel_button = Button("Cancel", id="cancel")
-            yield self.confirm_button
-            yield self.clear_button
-            yield self.cancel_button
+            config = WrestlerViewConfig(
+                show_avatar=True,
+                show_name=True,
+                show_stats=True,
+                show_description=False,
+                show_rivalry=False,
+            )
+            self.wrestler_view = WrestlerView(None, config)
+            self.fields = EdgeAwareListView(
+                ListItem(self.wrestler_view, id="field-wrestler"),
+                on_edge_prev=self.action_focus_prev,
+                on_edge_next=self.action_focus_next,
+            )
+            yield self.fields
+
+            with Horizontal():
+                self.clear_button = Button("Clear Slot", id="clear")
+                self.confirm_button = Button("Confirm", id="confirm")
+                self.cancel_button = Button("Cancel", id="cancel")
+                yield self.clear_button
+                yield self.confirm_button
+                yield self.cancel_button
 
         yield Footer()
 
@@ -1586,24 +1832,17 @@ class PromoBookingScreen(Screen):
 
     def refresh_view(self) -> None:
         label = slot_label(self.slot_index, "promo")
-        self.header.update(f"Book {label}")
-        if self.draft.wrestler_id:
-            wrestler = self.app.state.roster[self.draft.wrestler_id]
-            self.detail.update(wrestler.name)
-        else:
-            self.detail.update("")
-
-        self.field_item.update(self.field_text("Wrestler", self.draft.wrestler_id))
+        self.header.update(label)
+        wrestler_view = (
+            build_wrestler_view_data(self.app.state, self.draft.wrestler_id)
+            if self.draft.wrestler_id
+            else None
+        )
+        self.wrestler_view.set_wrestler(wrestler_view, rivalries=[])
         self.confirm_button.disabled = not self.draft.is_complete() or bool(
             self.validate_draft()
         )
         self.clear_button.disabled = self.app.state.show_card[self.slot_index] is None
-
-    def field_text(self, label: str, value_id: Optional[str]) -> str:
-        if value_id is None:
-            return f"{label}\n[ Empty ]"
-        wrestler = self.app.state.roster[value_id]
-        return f"{label}\n{wrestler.name}"
 
     def validate_draft(self) -> list[str]:
         if not self.draft.is_complete():
@@ -1717,6 +1956,7 @@ class WrestlerSelectionScreen(Screen):
 
     BINDINGS = [
         ("enter", "select", "Select"),
+        ("i", "inspect", "Inspect"),
         ("up", "focus_prev", "Prev"),
         ("down", "focus_next", "Next"),
         ("escape", "cancel", "Cancel"),
@@ -1741,6 +1981,7 @@ class WrestlerSelectionScreen(Screen):
         self.on_select = on_select
         self.allow_low_stamina = allow_low_stamina
         self.message = Static("")
+        self._inspect_row: int | None = None
 
     def compose(self) -> ComposeResult:
         """Build the wrestler selection layout."""
@@ -1751,9 +1992,9 @@ class WrestlerSelectionScreen(Screen):
             on_edge_next=self.action_focus_next,
         )
         self.table.add_column("Name", key="name")
-        self.table.add_column("Sta", key="sta")
-        self.table.add_column("Mic", key="mic")
-        self.table.add_column("Pop", key="pop")
+        self.table.add_column("⭐", key="pop")
+        self.table.add_column("🔋", key="sta")
+        self.table.add_column("🎤", key="mic")
         for wrestler in self.app.state.roster.values():
             booked = self.app.state.is_wrestler_booked(
                 wrestler.id,
@@ -1764,9 +2005,9 @@ class WrestlerSelectionScreen(Screen):
             booked_marker = " 📅" if booked else ""
             self.table.add_row(
                 build_name_cell(wrestler.name, wrestler.alignment),
+                build_pop_cell(wrestler.popularity, wrestler.stamina, booked_marker),
                 f"{wrestler.stamina:>3}",
                 f"{wrestler.mic_skill:>3}",
-                build_pop_cell(wrestler.popularity, wrestler.stamina, booked_marker),
                 key=wrestler.id,
             )
         yield self.table
@@ -1789,6 +2030,24 @@ class WrestlerSelectionScreen(Screen):
         """Close the selection screen without changes."""
 
         self.app.pop_screen()
+
+    def action_inspect(self) -> None:
+        """Open the inspection modal for the highlighted wrestler."""
+
+        if self.table.cursor_row is None:
+            return
+        try:
+            row_key = self.table.ordered_rows[self.table.cursor_row]
+        except IndexError:
+            return
+        wrestler_id = row_key_to_id(row_key)
+        wrestler_view = build_wrestler_view_data(self.app.state, wrestler_id)
+        rivalries = self._build_rivalry_list(wrestler_id)
+        self._inspect_row = self.table.cursor_row
+        self.app.push_screen(
+            WrestlerInspectModal(wrestler_view, rivalries),
+            self._restore_focus_after_inspect,
+        )
 
     def action_focus_next(self) -> None:
         """Move focus to the next selection control."""
@@ -1816,6 +2075,26 @@ class WrestlerSelectionScreen(Screen):
         if next_focus is self.table and self.table.cursor_row is None and self.table.row_count:
             self.table.cursor_coordinate = (0, 0)
         next_focus.focus()
+
+    def _restore_focus_after_inspect(self, _: object | None = None) -> None:
+        """Restore focus to the table after closing the inspect modal."""
+
+        self.table.focus()
+        if self._inspect_row is not None and self.table.row_count:
+            row = min(self._inspect_row, self.table.row_count - 1)
+            self.table.cursor_coordinate = (row, 0)
+
+    def _build_rivalry_list(self, wrestler_id: str) -> list[str]:
+        """Build rivalry list entries for the inspected wrestler."""
+
+        entries: list[str] = []
+        for opponent_id, opponent in self.app.state.roster.items():
+            if opponent_id == wrestler_id:
+                continue
+            emoji = self.app.state.rivalry_emoji_for_pair(wrestler_id, opponent_id)
+            if emoji:
+                entries.append(f"{emoji} {opponent.name}")
+        return entries
 
     def action_select(self) -> None:
         """Select the highlighted wrestler if valid."""
@@ -1866,6 +2145,37 @@ class WrestlerSelectionScreen(Screen):
             self.action_select()
         elif event.button.id == "cancel":
             self.action_cancel()
+
+
+class WrestlerInspectModal(ModalScreen):
+    """Read-only Wrestler View modal for inspection."""
+
+    BINDINGS = [
+        ("escape", "close", "Close"),
+    ]
+
+    def __init__(self, wrestler: object, rivalries: list[str]) -> None:
+        super().__init__()
+        self.wrestler = wrestler
+        self.rivalries = rivalries
+
+    def compose(self) -> ComposeResult:
+        with Vertical(classes="panel inspect-panel"):
+            yield Static("Wrestler Details", classes="section-title")
+            config = WrestlerViewConfig(
+                show_avatar=True,
+                show_name=True,
+                show_stats=True,
+                show_description=True,
+                show_rivalry=True,
+                rivalry_compact=False,
+            )
+            yield WrestlerView(self.wrestler, config, rivalries=self.rivalries)
+            yield Static("[ Esc to close ]", classes="modal-hint")
+
+    def action_close(self) -> None:
+        self.dismiss(result=True)
+
 
 class MatchCategorySelectionScreen(Screen):
     """Match category picker for a slot.

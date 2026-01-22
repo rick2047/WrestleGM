@@ -35,13 +35,12 @@ class WrestlerViewDemo(App):
     .wrestler-view {
         height: auto;
         margin-bottom: 1;
-        align: center top;
+        align: left top;
         background: #111111;
         padding: 0 1;
     }
 
     .wrestler-avatar {
-        margin-right: 1;
         width: 48;
         text-align: center;
     }
@@ -50,7 +49,7 @@ class WrestlerViewDemo(App):
         width: 48;
         height: 24;
         align: center middle;
-        margin: 0 0 1 0;
+        margin: 0 1 0 0;
     }
 
     .wrestler-name,
@@ -63,12 +62,43 @@ class WrestlerViewDemo(App):
     }
 
     .wrestler-name-header {
-        text-style: bold underline;
+        text-style: bold;
         color: #f5f5f5;
         background: #222222;
         padding: 0 1;
         width: 100%;
-        text-align: center;
+    }
+
+    .wrestler-view-body {
+        width: 100%;
+        height: auto;
+    }
+
+    .wrestler-info {
+        width: 100%;
+        height: auto;
+    }
+
+    .wrestler-empty-label {
+        color: #dddddd;
+        text-style: bold;
+        padding: 0 1;
+    }
+
+    .wrestler-stats,
+    .wrestler-description,
+    .wrestler-rivalry,
+    .wrestler-rivalry-title {
+        padding: 0 1;
+    }
+
+    .wrestler-rivalry-title {
+        text-style: bold;
+        color: #cccccc;
+    }
+
+    .wrestler-rivalry-scroll {
+        height: 3;
     }
     """
 

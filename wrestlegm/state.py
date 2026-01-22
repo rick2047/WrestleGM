@@ -45,6 +45,7 @@ class GameState:
 
         self.engine = SimulationEngine(seed=seed)
         self.applier = ShowApplier()
+        self.wrestler_defs = {wrestler.id: wrestler for wrestler in wrestlers}
         self.roster = {
             wrestler.id: WrestlerState(
                 id=wrestler.id,
@@ -226,6 +227,16 @@ class GameState:
         """Return rivalry/cooldown emojis for the ordered wrestler pairs."""
 
         return self.rivalry_manager.rivalry_emojis_for_match(wrestler_ids)
+
+    def rivalry_summary_for_match(self, wrestler_ids: Iterable[str]) -> str:
+        """Return aggregated rivalry emoji counts for a match."""
+
+        return self.rivalry_manager.rivalry_summary_for_match(wrestler_ids)
+
+    def rivalry_emoji_for_pair(self, wrestler_a_id: str, wrestler_b_id: str) -> str:
+        """Return rivalry/cooldown emoji for a wrestler pair."""
+
+        return self.rivalry_manager.rivalry_emoji_for_pair(wrestler_a_id, wrestler_b_id)
 
 
 class ShowApplier:
