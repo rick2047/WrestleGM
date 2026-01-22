@@ -296,32 +296,31 @@ class WrestlerView(Vertical):
             self.empty_label_line = Static(self.empty_label, classes="wrestler-empty-label")
             yield self.name_line
             yield self.empty_label_line
-        with Horizontal(classes="wrestler-view-body"):
-            if self.config.show_avatar:
-                with Vertical(classes="wrestler-avatar-frame"):
-                    self.avatar = Static("", classes="wrestler-avatar")
-                    yield self.avatar
-            with Vertical(classes="wrestler-info"):
-                if self.config.show_stats:
-                    self.stats_line = Static("", classes="wrestler-stats")
-                    yield self.stats_line
-                if self.config.show_description:
-                    self.description_line = Static(
-                        "", classes="wrestler-description", expand=True
+        if self.config.show_avatar:
+            with Vertical(classes="wrestler-avatar-frame"):
+                self.avatar = Static("", classes="wrestler-avatar")
+                yield self.avatar
+        with Vertical(classes="wrestler-info"):
+            if self.config.show_stats:
+                self.stats_line = Static("", classes="wrestler-stats")
+                yield self.stats_line
+            if self.config.show_description:
+                self.description_line = Static(
+                    "", classes="wrestler-description", expand=True
+                )
+                yield self.description_line
+            if self.config.show_rivalry:
+                if self.config.rivalry_compact:
+                    self.rivalry_line = Static("", classes="wrestler-rivalry")
+                    yield self.rivalry_line
+                else:
+                    self.rivalry_title = Static(
+                        "Rivalries", classes="wrestler-rivalry-title"
                     )
-                    yield self.description_line
-                if self.config.show_rivalry:
-                    if self.config.rivalry_compact:
+                    yield self.rivalry_title
+                    with VerticalScroll(classes="wrestler-rivalry-scroll"):
                         self.rivalry_line = Static("", classes="wrestler-rivalry")
                         yield self.rivalry_line
-                    else:
-                        self.rivalry_title = Static(
-                            "Rivalries", classes="wrestler-rivalry-title"
-                        )
-                        yield self.rivalry_title
-                        with VerticalScroll(classes="wrestler-rivalry-scroll"):
-                            self.rivalry_line = Static("", classes="wrestler-rivalry")
-                            yield self.rivalry_line
 
     def on_mount(self) -> None:
         self.refresh_view()
@@ -666,8 +665,10 @@ class WrestleGMApp(App):
     }
 
     .match-booking-controls {
+        width: 100%;
         height: auto;
         margin: 0 0 1 0;
+        align: left top;
     }
 
     .booking-section-title {
@@ -2673,6 +2674,7 @@ class RosterScreen(Screen):
     """
 
     BINDINGS = [
+        ("i", "inspect", "Inspect"),
         ("up", "focus_prev", "Prev"),
         ("down", "focus_next", "Next"),
         ("escape", "back", "Back"),
@@ -2694,6 +2696,7 @@ class RosterScreen(Screen):
         self.back_button = Button("Back", id="back")
         yield self.back_button
         yield Footer()
+        self._inspect_row: int | None = None
 
     async def on_mount(self) -> None:
         """Populate the roster list and focus it."""
@@ -2721,6 +2724,24 @@ class RosterScreen(Screen):
 
         self.app.pop_screen()
 
+    def action_inspect(self) -> None:
+        """Open the inspection modal for the highlighted wrestler."""
+
+        if self.table.cursor_row is None:
+            return
+        try:
+            row_key = self.table.ordered_rows[self.table.cursor_row]
+        except IndexError:
+            return
+        wrestler_id = row_key_to_id(row_key)
+        wrestler_view = build_wrestler_view_data(self.app.state, wrestler_id)
+        rivalries = self._build_rivalry_list(wrestler_id)
+        self._inspect_row = self.table.cursor_row
+        self.app.push_screen(
+            WrestlerInspectModal(wrestler_view, rivalries),
+            self._restore_focus_after_inspect,
+        )
+
     def action_focus_next(self) -> None:
         """Move focus to the next roster control."""
 
@@ -2747,6 +2768,26 @@ class RosterScreen(Screen):
         if next_focus is self.table and self.table.cursor_row is None and self.table.row_count:
             self.table.cursor_coordinate = (0, 0)
         next_focus.focus()
+
+    def _restore_focus_after_inspect(self, _: object | None = None) -> None:
+        """Restore focus to the table after closing the inspect modal."""
+
+        self.table.focus()
+        if self._inspect_row is not None and self.table.row_count:
+            row = min(self._inspect_row, self.table.row_count - 1)
+            self.table.cursor_coordinate = (row, 0)
+
+    def _build_rivalry_list(self, wrestler_id: str) -> list[str]:
+        """Build rivalry list entries for the inspected wrestler."""
+
+        entries: list[str] = []
+        for opponent_id, opponent in self.app.state.roster.items():
+            if opponent_id == wrestler_id:
+                continue
+            emoji = self.app.state.rivalry_emoji_for_pair(wrestler_id, opponent_id)
+            if emoji:
+                entries.append(f"{emoji} {opponent.name}")
+        return entries
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle Back button presses."""
