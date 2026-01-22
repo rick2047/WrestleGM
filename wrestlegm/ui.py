@@ -564,7 +564,7 @@ class WrestleGMApp(App):
     }
 
     .panel {
-        width: 40;
+        width: 80%;
         height: auto;
         padding: 1 2;
         border: solid gray;
@@ -599,6 +599,7 @@ class WrestleGMApp(App):
 
     .wrestler-avatar {
         width: 48;
+        height: 24;
         text-align: center;
     }
 
@@ -635,7 +636,7 @@ class WrestleGMApp(App):
     }
 
     .booking-card {
-        width: 40;
+        width: 90%;
         height: auto;
         padding: 1 2;
         border: solid gray;
@@ -663,6 +664,20 @@ class WrestleGMApp(App):
         margin-bottom: 1;
     }
 
+    .match-wrestlers ListView {
+        height: auto;
+    }
+
+    .wrestler-list-item {
+        height: 24;
+        padding: 0 0;
+    }
+
+    .wrestler-vs-item {
+        height: 1;
+        padding: 0;
+    }
+
     .wrestler-vs {
         text-align: center;
         color: #cccccc;
@@ -675,7 +690,7 @@ class WrestleGMApp(App):
     }
 
     .inspect-panel {
-        width: 60;
+        width: 90%;
     }
 
     Button {
@@ -1414,11 +1429,17 @@ class MatchBookingScreen(Screen):
             for index in range(max_wrestlers):
                 view = WrestlerView(None, config)
                 self.wrestler_views.append(view)
-                wrestler_item = ListItem(view, id=f"field-wrestler-{index}")
+                wrestler_item = ListItem(
+                    view, id=f"field-wrestler-{index}", classes="wrestler-list-item"
+                )
                 self.wrestler_list_items.append(wrestler_item)
                 list_items.append(wrestler_item)
                 if index < max_wrestlers - 1:
-                    vs_item = ListItem(Static("vs", classes="wrestler-vs"), id=f"vs-{index}")
+                    vs_item = ListItem(
+                        Static("vs", classes="wrestler-vs"),
+                        id=f"vs-{index}",
+                        classes="wrestler-vs-item",
+                    )
                     self.vs_list_items.append(vs_item)
                     list_items.append(vs_item)
             self.fields = FilteredListView(
@@ -1807,7 +1828,9 @@ class PromoBookingScreen(Screen):
             )
             self.wrestler_view = WrestlerView(None, config)
             self.fields = EdgeAwareListView(
-                ListItem(self.wrestler_view, id="field-wrestler"),
+                ListItem(
+                    self.wrestler_view, id="field-wrestler", classes="wrestler-list-item"
+                ),
                 on_edge_prev=self.action_focus_prev,
                 on_edge_next=self.action_focus_next,
             )

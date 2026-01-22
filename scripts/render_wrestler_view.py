@@ -42,6 +42,7 @@ class WrestlerViewDemo(App):
 
     .wrestler-avatar {
         width: 48;
+        height: 24;
         text-align: center;
     }
 
