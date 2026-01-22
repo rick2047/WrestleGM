@@ -291,19 +291,17 @@ class WrestlerView(Vertical):
         self.add_class("wrestler-view")
 
     def compose(self) -> ComposeResult:
+        if self.config.show_name:
+            self.name_line = Static("", classes="wrestler-name-header")
+            self.empty_label_line = Static(self.empty_label, classes="wrestler-empty-label")
+            yield self.name_line
+            yield self.empty_label_line
         with Horizontal(classes="wrestler-view-body"):
             if self.config.show_avatar:
                 with Vertical(classes="wrestler-avatar-frame"):
                     self.avatar = Static("", classes="wrestler-avatar")
                     yield self.avatar
             with Vertical(classes="wrestler-info"):
-                if self.config.show_name:
-                    self.name_line = Static("", classes="wrestler-name-header")
-                    self.empty_label_line = Static(
-                        self.empty_label, classes="wrestler-empty-label"
-                    )
-                    yield self.name_line
-                    yield self.empty_label_line
                 if self.config.show_stats:
                     self.stats_line = Static("", classes="wrestler-stats")
                     yield self.stats_line
