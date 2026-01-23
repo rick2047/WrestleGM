@@ -1332,7 +1332,8 @@ class BookingHubScreen(Screen):
                 f"{category_name} · {match_type_name}"
             )
         wrestler = self.app.state.roster[slot.wrestler_id]
-        return f"{label}\n{wrestler.name}"
+        emoji = ALIGNMENT_EMOJI.get(wrestler.alignment, "")
+        return f"{label}\n{emoji} {wrestler.name}".strip()
 
     def action_edit_slot(self) -> None:
         """Open the booking screen for the selected slot."""
@@ -1432,6 +1433,7 @@ class MatchBookingScreen(Screen):
     """
 
     BINDINGS = [
+        ("enter", "select_field", "Select"),
         ("up", "focus_prev", "Prev"),
         ("down", "focus_next", "Next"),
         ("escape", "cancel", "Cancel"),
@@ -1685,6 +1687,8 @@ class MatchBookingScreen(Screen):
     def action_select_field(self) -> None:
         """Open the selection screen for the highlighted field."""
 
+        if self.app.focused is not self.fields:
+            return
         selected = self.fields.index
         if selected is None:
             return
@@ -1917,12 +1921,16 @@ class PromoBookingScreen(Screen):
 
     def refresh_view(self) -> None:
         label = slot_label(self.slot_index, "promo")
-        self.header.update(label)
         wrestler_view = (
             build_wrestler_view_data(self.app.state, self.draft.wrestler_id)
             if self.draft.wrestler_id
             else None
         )
+        if wrestler_view is None:
+            self.header.update(label)
+        else:
+            emoji = ALIGNMENT_EMOJI.get(wrestler_view.alignment, "")
+            self.header.update(f"{label}  {emoji}".strip())
         self.wrestler_view.set_wrestler(wrestler_view, rivalries=[])
         self.confirm_button.disabled = not self.draft.is_complete() or bool(
             self.validate_draft()
