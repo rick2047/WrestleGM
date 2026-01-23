@@ -148,7 +148,10 @@ def main() -> int:
     parser.add_argument("--server-url", required=True, help="GitHub server URL.")
     args = parser.parse_args()
 
-    base_url = f"{args.server_url}/{args.repo}/raw/{args.sha}"
+    if args.server_url.rstrip("/") == "https://github.com":
+        base_url = f"https://raw.githubusercontent.com/{args.repo}/{args.sha}"
+    else:
+        base_url = f"{args.server_url.rstrip('/')}/{args.repo}/raw/{args.sha}"
 
     if not os.path.exists(args.junit):
         note = "JUnit report not found; snapshot tests may have failed to run."
