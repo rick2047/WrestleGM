@@ -56,18 +56,16 @@ def parse_junit(path: str) -> list[dict[str, str]]:
         name = case.attrib.get("name", "")
         status = "passed"
         reason = ""
-        failure = case.find("failure")
-        error = case.find("error")
-        skipped = case.find("skipped")
-        if failure is not None:
-            status = "failed"
-            reason = short_reason(failure.text)
-        elif error is not None:
-            status = "error"
-            reason = short_reason(error.text)
-        elif skipped is not None:
-            status = "skipped"
-            reason = short_reason(skipped.text)
+        for status_name, tag in (
+            ("failed", "failure"),
+            ("error", "error"),
+            ("skipped", "skipped"),
+        ):
+            node = case.find(tag)
+            if node is not None:
+                status = status_name
+                reason = short_reason(node.text)
+                break
         cases.append({"name": name, "status": status, "reason": reason})
     return cases
 
@@ -111,7 +109,12 @@ def render_comment(
     elif not cases:
         status = "NO TESTS"
 
-    status_emoji = STATUS_EMOJI.get("passed") if status == "PASSED" else "❌" if status == "FAILED" else "⚠️"
+    if status == "PASSED":
+        status_emoji = STATUS_EMOJI["passed"]
+    elif status == "FAILED":
+        status_emoji = STATUS_EMOJI["failed"]
+    else:
+        status_emoji = STATUS_EMOJI["skipped"]
     lines: list[str] = ["<!-- pr-ui-snapshots -->", "## UI Snapshot Report"]
     lines.append(f"Status: {status_emoji} {status}")
     lines.append(f"Run: {run_url}")
