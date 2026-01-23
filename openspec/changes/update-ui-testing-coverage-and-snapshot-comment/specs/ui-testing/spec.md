@@ -29,7 +29,7 @@ The system SHALL generate deterministic SVG snapshots for canonical UI screens a
   - S5 Match Booking (empty slot)
   - S6 Match Booking (filled slot)
   - S7 Wrestler Selection (default)
-  - S8 Match Type Selection (default)
+  - S8 Match Category Selection (default)
   - S9 Match Booking Confirmation (modal visible)
   - S10 Show Results (default)
   - S11 Roster Overview (default)

@@ -6,8 +6,6 @@
 - [ ] Ensure snapshot images are always available by uploading artifacts on success for UI snapshot job.
 - [ ] Keep core test PR comment unchanged and only enhance the UI snapshot job output.
 - [ ] Update/extend `.github/scripts/pytest_comment.py` (or add a UI-specific script) to render snapshot tables and error details.
-- [ ] Validate: `pytest tests/ui_flows/` and `pytest tests/test_ui_snapshots.py`.
-
 ## Validation
 - `pytest tests/ui_flows/`
 - `pytest tests/test_ui_snapshots.py`

@@ -9,9 +9,9 @@ Improve UI test organization to reflect the screen/module structure and ensure n
 - Ensure each screen is covered by at least one flow test.
 
 ## Snapshot Comment Rendering
-- Extend `.github/scripts/pytest_comment.py` (or add a UI-specific variant) to emit a snapshot table.
-- The UI snapshot job should pass metadata (screen name + image path) to the script.
-- Render the snapshot table inside a `<details>` block with a succinct `<summary>`.
+- Add a UI-specific comment generator (separate from the core test comment) so core and UI snapshots remain distinct.
+- The UI snapshot job should pass metadata (screen name + image path) to the UI comment script.
+- Render the snapshot table inside a single `<details>` block; each image cell uses its own nested `<details>` so images are collapsed by default.
 - On failure, include error details above the table (or replace the table if no snapshots exist).
 
 ## Source of Snapshot Images
