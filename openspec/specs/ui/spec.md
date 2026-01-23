@@ -70,6 +70,13 @@ The system SHALL push and pop screens on a navigation stack, pop on Escape where
 - **WHEN** the player cancels a booking screen
 - **THEN** the in-progress draft is discarded without committing changes
 
+### Requirement: Centralized navigation routing
+The system SHALL centralize screen navigation in the app layer using named routes so screens do not import each other directly.
+
+#### Scenario: Screen transitions use the router
+- **WHEN** a screen triggers navigation (e.g., Main Menu → Save Slots, Booking Hub → Match Category)
+- **THEN** the transition is performed via a named route in the app router
+
 ### Requirement: Footer behavior
 The system SHALL render a footer on all screens that displays key bindings only, updates based on focus, shows only modal bindings when a modal is open, and hides internal or non-action bindings.
 
@@ -721,4 +728,3 @@ The system SHALL show a modal error message when loading a save fails due to mis
 #### Scenario: Load failure shows error
 - **WHEN** a load attempt fails
 - **THEN** an error modal explains the failure and returns the player to Save Slot Selection
-
