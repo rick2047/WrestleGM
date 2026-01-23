@@ -12,7 +12,6 @@ from wrestlegm.models import Match, MatchTypeDefinition
 
 from ..drafts import BookingDraft
 from ..formatting import build_name_cell, match_category_label, match_category_size, slot_label
-from ..routes import MATCH_BOOKING, MATCH_CATEGORY
 from ..widgets.list_views import FilteredListView
 from ..widgets.safe_select import SafeSelect
 from .modals import ConfirmBookingModal
@@ -260,11 +259,11 @@ class MatchBookingScreen(Screen):
         initial_category_id = self.draft.match_category_id or self.initial_category_id
         self.app.pop_screen()
         self.app.navigate(
-            MATCH_CATEGORY,
+            "match_category",
             slot_index=slot_index,
             initial_category_id=initial_category_id,
             on_select=lambda category_id: self.app.navigate(
-                MATCH_BOOKING,
+                "match_booking",
                 slot_index=slot_index,
                 match_category_id=category_id,
             ),

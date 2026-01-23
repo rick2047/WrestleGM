@@ -6,7 +6,6 @@ from textual.app import ComposeResult
 from textual.screen import Screen
 from textual.widgets import Footer, ListItem, ListView, Static
 
-from ..routes import BOOKING_HUB, MAIN_MENU, ROSTER
 from ..widgets.list_views import EdgeAwareListView
 
 
@@ -74,8 +73,8 @@ class GameHubScreen(Screen):
         """Route the selected menu option to the target screen."""
 
         if item_id == "current-show":
-            self.app.navigate(BOOKING_HUB)
+            self.app.navigate("booking_hub")
         elif item_id == "roster":
-            self.app.navigate(ROSTER)
+            self.app.navigate("roster")
         elif item_id == "exit":
-            self.app.navigate(MAIN_MENU)
+            self.app.navigate("main_menu")

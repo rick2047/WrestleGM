@@ -9,7 +9,6 @@ from textual.widgets import Button, Footer, Static
 from wrestlegm.models import Match
 
 from ..formatting import build_name_cell, format_stars, match_category_label, slot_label
-from ..routes import GAME_HUB
 
 
 class ResultsScreen(Screen):
@@ -92,7 +91,7 @@ class ResultsScreen(Screen):
         """Return to the game hub."""
         # Fail fast if the save state is invalid; inputs are validated upstream.
         self.app.session.save_current_slot(self.app.state)
-        self.app.navigate(GAME_HUB)
+        self.app.navigate("game_hub")
 
     def action_focus_next(self) -> None:
         """Move focus to the next results action."""

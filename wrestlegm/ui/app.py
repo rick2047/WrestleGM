@@ -13,18 +13,6 @@ from wrestlegm.data import load_match_types, load_wrestlers
 from wrestlegm.session import SessionManager
 from wrestlegm.state import GameState
 
-from .routes import (
-    BOOKING_HUB,
-    GAME_HUB,
-    MAIN_MENU,
-    MATCH_BOOKING,
-    MATCH_CATEGORY,
-    PROMO_BOOKING,
-    RESULTS,
-    ROSTER,
-    SAVE_SLOTS,
-    SIMULATING,
-)
 from .screens.booking_hub import BookingHubScreen
 from .screens.game_hub import GameHubScreen
 from .screens.main_menu import MainMenuScreen
@@ -39,6 +27,17 @@ from .screens.simulating import SimulatingScreen
 
 
 STYLES_PATH = Path(__file__).with_name("styles.tcss")
+
+MAIN_MENU = "main_menu"
+SAVE_SLOTS = "save_slots"
+GAME_HUB = "game_hub"
+BOOKING_HUB = "booking_hub"
+ROSTER = "roster"
+MATCH_CATEGORY = "match_category"
+MATCH_BOOKING = "match_booking"
+PROMO_BOOKING = "promo_booking"
+SIMULATING = "simulating"
+RESULTS = "results"
 
 
 class WrestleGMApp(App):
@@ -88,6 +87,16 @@ class WrestleGMApp(App):
             self.push_screen(ErrorModal(message=message))
             return
         self.navigate(GAME_HUB)
+
+    def navigate(self, route: str, **kwargs: object) -> None:
+        """Navigate to a registered screen route."""
+
+        target = ROUTES[route]
+        screen = target.factory(**kwargs)
+        if target.mode == "push":
+            self.push_screen(screen)
+        else:
+            self.switch_screen(screen)
 
     def navigate(self, route: str, **kwargs: object) -> None:
         """Navigate to a registered screen route."""
