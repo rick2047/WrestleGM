@@ -38,6 +38,7 @@ wrestlegm/
 ## Responsibilities & Boundaries
 - `app.py` owns app lifecycle, data/session initialization, and screen routing.
 - `screens/` modules contain only the UI logic for that screen or modal.
+- Modals tied to a single screen are co-located with that screen; shared modals live in `wrestlegm/ui/screens/modals.py`.
 - `widgets/` contains reusable custom widgets with no game-state knowledge.
 - `formatting.py` encapsulates UI string formatting (icons, star ratings, labels).
 - `drafts.py` holds state-only draft objects used by booking screens.
