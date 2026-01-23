@@ -30,6 +30,4 @@ class SimulatingScreen(Screen):
     def advance(self) -> None:
         """Advance to the results screen."""
 
-        from .results import ResultsScreen
-
-        self.app.switch_screen(ResultsScreen())
+        self.app.show_results()

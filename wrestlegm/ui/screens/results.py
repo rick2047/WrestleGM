@@ -91,9 +91,7 @@ class ResultsScreen(Screen):
         """Return to the game hub."""
         # Fail fast if the save state is invalid; inputs are validated upstream.
         self.app.session.save_current_slot(self.app.state)
-        from .game_hub import GameHubScreen
-
-        self.app.switch_screen(GameHubScreen())
+        self.app.show_game_hub()
 
     def action_focus_next(self) -> None:
         """Move focus to the next results action."""

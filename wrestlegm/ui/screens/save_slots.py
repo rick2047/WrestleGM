@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from textual.app import ComposeResult
+from textual.containers import Vertical
 from textual.screen import ModalScreen, Screen
 from textual.widgets import Button, Footer, Input, ListItem, ListView, Static
 
@@ -170,9 +171,7 @@ class SaveSlotSelectionScreen(Screen):
     def action_back(self) -> None:
         """Return to the main menu."""
 
-        from .main_menu import MainMenuScreen
-
-        self.app.switch_screen(MainMenuScreen())
+        self.app.show_main_menu()
 
 
 class NameSaveSlotModal(ModalScreen):
@@ -191,8 +190,6 @@ class NameSaveSlotModal(ModalScreen):
 
     def compose(self) -> ComposeResult:
         """Build the name slot modal layout."""
-
-        from textual.containers import Vertical
 
         with Vertical(classes="panel"):
             yield Static("Name Save Slot")

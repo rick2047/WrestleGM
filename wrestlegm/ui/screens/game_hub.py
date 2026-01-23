@@ -73,14 +73,8 @@ class GameHubScreen(Screen):
         """Route the selected menu option to the target screen."""
 
         if item_id == "current-show":
-            from .booking_hub import BookingHubScreen
-
-            self.app.switch_screen(BookingHubScreen())
+            self.app.show_booking_hub()
         elif item_id == "roster":
-            from .roster import RosterScreen
-
-            self.app.push_screen(RosterScreen())
+            self.app.show_roster()
         elif item_id == "exit":
-            from .main_menu import MainMenuScreen
-
-            self.app.switch_screen(MainMenuScreen())
+            self.app.show_main_menu()

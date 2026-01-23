@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from textual.app import ComposeResult
+from textual.containers import Vertical
 from textual.screen import ModalScreen
 from textual.widgets import Button, Static
 
@@ -24,8 +25,6 @@ class ConfirmBookingModal(ModalScreen):
 
     def compose(self) -> ComposeResult:
         """Build the confirmation modal layout."""
-
-        from textual.containers import Vertical
 
         with Vertical(classes="panel"):
             yield Static("Confirm booking?")
@@ -97,8 +96,6 @@ class ErrorModal(ModalScreen):
 
     def compose(self) -> ComposeResult:
         """Build the error modal layout."""
-
-        from textual.containers import Vertical
 
         with Vertical(classes="panel"):
             yield Static("Error")

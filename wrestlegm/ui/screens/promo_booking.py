@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from textual.app import ComposeResult
+from textual.containers import Vertical
 from textual.screen import Screen
 from textual.widgets import Button, Footer, ListItem, ListView, Static
 
@@ -43,8 +44,6 @@ class PromoBookingScreen(Screen):
             on_edge_next=self.action_focus_next,
         )
         yield self.fields
-
-        from textual.containers import Vertical
 
         with Vertical():
             self.confirm_button = Button("Confirm", id="confirm")

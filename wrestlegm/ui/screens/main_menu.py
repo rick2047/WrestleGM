@@ -43,12 +43,8 @@ class MainMenuScreen(Screen):
         """Handle selection of menu options."""
 
         if event.item.id == "new-game":
-            from .save_slots import SaveSlotSelectionScreen
-
-            self.app.switch_screen(SaveSlotSelectionScreen(mode="new"))
+            self.app.show_save_slot_selection("new")
         elif event.item.id == "load-game":
-            from .save_slots import SaveSlotSelectionScreen
-
-            self.app.switch_screen(SaveSlotSelectionScreen(mode="load"))
+            self.app.show_save_slot_selection("load")
         elif event.item.id == "quit":
             self.app.exit()

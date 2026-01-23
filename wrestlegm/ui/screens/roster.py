@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from textual.app import ComposeResult
 from textual.screen import Screen
-from textual.widgets import Button, Footer
+from textual.widgets import Button, Footer, Static
 
 from ..formatting import build_name_cell, build_pop_cell
 from ..widgets.data_table import EdgeAwareDataTable
@@ -26,8 +26,6 @@ class RosterScreen(Screen):
 
     def compose(self) -> ComposeResult:
         """Build the roster screen layout."""
-
-        from textual.widgets import Static
 
         yield Static("Roster Overview", classes="section-title")
         self.table = EdgeAwareDataTable(

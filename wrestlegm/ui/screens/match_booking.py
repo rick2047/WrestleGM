@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from textual.app import ComposeResult
+from textual.containers import Vertical
 from textual.screen import Screen
 from textual.widgets import Button, Footer, ListItem, ListView, Select, Static
 
@@ -10,7 +11,7 @@ from wrestlegm import constants
 from wrestlegm.models import Match, MatchTypeDefinition
 
 from ..drafts import BookingDraft
-from ..formatting import match_category_label, match_category_size, slot_label
+from ..formatting import build_name_cell, match_category_label, match_category_size, slot_label
 from ..widgets.list_views import FilteredListView
 from ..widgets.safe_select import SafeSelect
 from .modals import ConfirmBookingModal
@@ -76,8 +77,6 @@ class MatchBookingScreen(Screen):
         )
         yield self.match_type_select
 
-        from textual.containers import Vertical
-
         with Vertical():
             self.confirm_button = Button("Confirm", id="confirm")
             self.clear_button = Button("Clear Slot", id="clear")
@@ -137,8 +136,6 @@ class MatchBookingScreen(Screen):
 
     def wrestler_field_text(self, wrestler_id: str | None) -> str:
         """Render the display text for a wrestler row."""
-
-        from ..formatting import build_name_cell
 
         if wrestler_id is None:
             return "[ Empty ]"
@@ -258,19 +255,13 @@ class MatchBookingScreen(Screen):
     def action_cancel(self) -> None:
         """Discard changes and return to the booking hub."""
 
-        from .match_category_selection import MatchCategorySelectionScreen
-
         slot_index = self.slot_index
         initial_category_id = self.draft.match_category_id or self.initial_category_id
         self.app.pop_screen()
-        self.app.push_screen(
-            MatchCategorySelectionScreen(
-                slot_index=slot_index,
-                initial_category_id=initial_category_id,
-                on_select=lambda category_id: self.app.push_screen(
-                    MatchBookingScreen(slot_index, category_id)
-                ),
-            )
+        self.app.open_match_category_selection(
+            slot_index,
+            initial_category_id,
+            on_select=lambda category_id: self.app.open_match_booking(slot_index, category_id),
         )
 
     def action_focus_next(self) -> None:

@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Callable
 
 from textual.app import ComposeResult
+from textual.containers import Horizontal
 from textual.screen import Screen
 from textual.widgets import Button, DataTable, Footer, Static
 
@@ -79,8 +80,6 @@ class WrestlerSelectionScreen(Screen):
             )
         yield self.table
         yield self.message
-        from textual.containers import Horizontal
-
         with Horizontal():
             self.select_button = Button("Select", id="select")
             self.cancel_button = Button("Cancel", id="cancel")

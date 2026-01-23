@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from textual.app import ComposeResult
+from textual.containers import Vertical
 from textual.screen import Screen
 from textual.widgets import Button, Footer, ListItem, ListView, Static
 
@@ -49,8 +50,6 @@ class BookingHubScreen(Screen):
             on_edge_next=self.action_focus_next,
         )
         yield self.slot_list
-
-        from textual.containers import Vertical
 
         with Vertical():
             self.run_button = Button("Run Show", id="run-show")
@@ -106,9 +105,7 @@ class BookingHubScreen(Screen):
         if self.app.state.slot_type(index) == "match":
             self.open_match_category_selection(index)
         else:
-            from .promo_booking import PromoBookingScreen
-
-            self.app.push_screen(PromoBookingScreen(index))
+            self.app.open_promo_booking(index)
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
         """Handle slot selection from the list view."""
@@ -121,51 +118,37 @@ class BookingHubScreen(Screen):
         if self.app.state.slot_type(index) == "match":
             self.open_match_category_selection(index)
         else:
-            from .promo_booking import PromoBookingScreen
-
-            self.app.push_screen(PromoBookingScreen(index))
+            self.app.open_promo_booking(index)
 
     def open_match_category_selection(self, slot_index: int) -> None:
         """Open match category selection before booking a match slot."""
-
-        from .match_category_selection import MatchCategorySelectionScreen
 
         existing = self.app.state.show_card[slot_index]
         initial_category_id = None
         if isinstance(existing, Match):
             initial_category_id = existing.match_category_id
-        self.app.push_screen(
-            MatchCategorySelectionScreen(
-                slot_index=slot_index,
-                initial_category_id=initial_category_id,
-                on_select=lambda category_id: self.open_match_booking(
-                    slot_index, category_id
-                ),
-            )
+        self.app.open_match_category_selection(
+            slot_index,
+            initial_category_id,
+            on_select=lambda category_id: self.open_match_booking(slot_index, category_id),
         )
 
     def open_match_booking(self, slot_index: int, match_category_id: str) -> None:
         """Open match booking with a preselected match category."""
 
-        from .match_booking import MatchBookingScreen
-
-        self.app.push_screen(MatchBookingScreen(slot_index, match_category_id))
+        self.app.open_match_booking(slot_index, match_category_id)
 
     def action_run_show(self) -> None:
         """Run the show if the current card is valid."""
 
         if self.app.state.validate_show():
             return
-        from .simulating import SimulatingScreen
-
-        self.app.switch_screen(SimulatingScreen())
+        self.app.show_simulating()
 
     def action_back(self) -> None:
         """Return to the game hub."""
 
-        from .game_hub import GameHubScreen
-
-        self.app.switch_screen(GameHubScreen())
+        self.app.show_game_hub()
 
     def action_focus_next(self) -> None:
         """Move focus to the next booking hub control."""

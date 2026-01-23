@@ -32,7 +32,7 @@ wrestlegm/
       results.py
       simulating.py
       roster.py
-      modals.py          # ConfirmBookingModal, ErrorModal (optional split)
+      modals.py          # ConfirmBookingModal, ErrorModal
 ```
 
 ## Responsibilities & Boundaries
