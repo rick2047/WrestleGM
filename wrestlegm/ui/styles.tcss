@@ -1,0 +1,27 @@
+Screen {
+    align: center middle;
+}
+
+.panel {
+    width: 40;
+    height: auto;
+    padding: 1 2;
+    border: solid gray;
+}
+
+.section-title {
+    text-style: bold;
+    margin-bottom: 1;
+}
+
+Button {
+    width: 18;
+}
+
+ListView {
+    height: auto;
+}
+
+.spacer {
+    height: 1;
+}

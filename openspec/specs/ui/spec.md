@@ -70,6 +70,13 @@ The system SHALL push and pop screens on a navigation stack, pop on Escape where
 - **WHEN** the player cancels a booking screen
 - **THEN** the in-progress draft is discarded without committing changes
 
+### Requirement: Centralized navigation routing
+The system SHALL centralize screen navigation in the app layer using named routes so screens do not import each other directly.
+
+#### Scenario: Screen transitions use the router
+- **WHEN** a screen triggers navigation (e.g., Main Menu → Save Slots, Booking Hub → Match Category)
+- **THEN** the transition is performed via a named route in the app router
+
 ### Requirement: Footer behavior
 The system SHALL render a footer on all screens that displays key bindings only, updates based on focus, shows only modal bindings when a modal is open, and hides internal or non-action bindings.
 
@@ -721,4 +728,26 @@ The system SHALL show a modal error message when loading a save fails due to mis
 #### Scenario: Load failure shows error
 - **WHEN** a load attempt fails
 - **THEN** an error modal explains the failure and returns the player to Save Slot Selection
+
+### Requirement: Modular UI organization
+The UI implementation SHALL be organized into a package that separates the app entry point, screen modules, reusable widgets, and shared formatting helpers.
+
+#### Scenario: Screen modules are isolated
+- **WHEN** a developer opens a specific screen implementation
+- **THEN** the screen logic lives in a dedicated module under `wrestlegm/ui/screens/`
+
+#### Scenario: Widgets are reusable and screen-agnostic
+- **WHEN** a custom widget is shared across multiple screens
+- **THEN** it lives under `wrestlegm/ui/widgets/` and does not depend on game-state globals
+
+#### Scenario: Stable public imports
+- **WHEN** external code imports `WrestleGMApp` or screen classes from `wrestlegm.ui`
+- **THEN** those imports remain valid via package re-exports
+
+### Requirement: Externalized UI styling
+The Textual app SHALL load its CSS from a `.tcss` file to keep styling separate from screen logic.
+
+#### Scenario: CSS path configuration
+- **WHEN** the app starts
+- **THEN** `WrestleGMApp` loads styling via `CSS_PATH` pointing at the UI stylesheet
 
