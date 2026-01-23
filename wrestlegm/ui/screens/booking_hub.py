@@ -11,6 +11,13 @@ from wrestlegm import constants
 from wrestlegm.models import Match
 
 from ..formatting import build_match_participants, match_category_label, slot_label
+from ..routes import (
+    GAME_HUB,
+    MATCH_BOOKING,
+    MATCH_CATEGORY,
+    PROMO_BOOKING,
+    SIMULATING,
+)
 from ..widgets.list_views import EdgeAwareListView
 
 
@@ -105,7 +112,7 @@ class BookingHubScreen(Screen):
         if self.app.state.slot_type(index) == "match":
             self.open_match_category_selection(index)
         else:
-            self.app.open_promo_booking(index)
+            self.app.navigate(PROMO_BOOKING, slot_index=index)
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
         """Handle slot selection from the list view."""
@@ -118,7 +125,7 @@ class BookingHubScreen(Screen):
         if self.app.state.slot_type(index) == "match":
             self.open_match_category_selection(index)
         else:
-            self.app.open_promo_booking(index)
+            self.app.navigate(PROMO_BOOKING, slot_index=index)
 
     def open_match_category_selection(self, slot_index: int) -> None:
         """Open match category selection before booking a match slot."""
@@ -127,28 +134,33 @@ class BookingHubScreen(Screen):
         initial_category_id = None
         if isinstance(existing, Match):
             initial_category_id = existing.match_category_id
-        self.app.open_match_category_selection(
-            slot_index,
-            initial_category_id,
+        self.app.navigate(
+            MATCH_CATEGORY,
+            slot_index=slot_index,
+            initial_category_id=initial_category_id,
             on_select=lambda category_id: self.open_match_booking(slot_index, category_id),
         )
 
     def open_match_booking(self, slot_index: int, match_category_id: str) -> None:
         """Open match booking with a preselected match category."""
 
-        self.app.open_match_booking(slot_index, match_category_id)
+        self.app.navigate(
+            MATCH_BOOKING,
+            slot_index=slot_index,
+            match_category_id=match_category_id,
+        )
 
     def action_run_show(self) -> None:
         """Run the show if the current card is valid."""
 
         if self.app.state.validate_show():
             return
-        self.app.show_simulating()
+        self.app.navigate(SIMULATING)
 
     def action_back(self) -> None:
         """Return to the game hub."""
 
-        self.app.show_game_hub()
+        self.app.navigate(GAME_HUB)
 
     def action_focus_next(self) -> None:
         """Move focus to the next booking hub control."""

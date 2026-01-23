@@ -6,6 +6,8 @@ from textual.app import ComposeResult
 from textual.screen import Screen
 from textual.widgets import Footer, Static
 
+from ..routes import RESULTS
+
 
 class SimulatingScreen(Screen):
     """Simulating screen that runs the show and auto-advances.
@@ -30,4 +32,4 @@ class SimulatingScreen(Screen):
     def advance(self) -> None:
         """Advance to the results screen."""
 
-        self.app.show_results()
+        self.app.navigate(RESULTS)
