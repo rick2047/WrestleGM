@@ -6,6 +6,7 @@ from textual.app import ComposeResult
 from textual.screen import Screen
 from textual.widgets import Footer, ListItem, ListView, Static
 
+from ..routes import SAVE_SLOTS
 from ..widgets.list_views import EdgeAwareListView
 
 
@@ -43,8 +44,8 @@ class MainMenuScreen(Screen):
         """Handle selection of menu options."""
 
         if event.item.id == "new-game":
-            self.app.navigate("save_slots", mode="new")
+            self.app.navigate(SAVE_SLOTS, mode="new")
         elif event.item.id == "load-game":
-            self.app.navigate("save_slots", mode="load")
+            self.app.navigate(SAVE_SLOTS, mode="load")
         elif event.item.id == "quit":
             self.app.exit()

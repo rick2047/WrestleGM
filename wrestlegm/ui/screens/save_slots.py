@@ -9,6 +9,7 @@ from textual.widgets import Button, Footer, Input, ListItem, ListView, Static
 
 from wrestlegm import persistence
 
+from ..routes import MAIN_MENU
 from ..widgets.list_views import FilteredListView
 
 
@@ -171,7 +172,7 @@ class SaveSlotSelectionScreen(Screen):
     def action_back(self) -> None:
         """Return to the main menu."""
 
-        self.app.navigate("main_menu")
+        self.app.navigate(MAIN_MENU)
 
 
 class NameSaveSlotModal(ModalScreen):

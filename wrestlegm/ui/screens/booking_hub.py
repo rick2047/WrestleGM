@@ -11,6 +11,13 @@ from wrestlegm import constants
 from wrestlegm.models import Match
 
 from ..formatting import build_match_participants, match_category_label, slot_label
+from ..routes import (
+    GAME_HUB,
+    MATCH_BOOKING,
+    MATCH_CATEGORY,
+    PROMO_BOOKING,
+    SIMULATING,
+)
 from ..widgets.list_views import EdgeAwareListView
 
 
@@ -105,7 +112,7 @@ class BookingHubScreen(Screen):
         if self.app.state.slot_type(index) == "match":
             self.open_match_category_selection(index)
         else:
-            self.app.navigate("promo_booking", slot_index=index)
+            self.app.navigate(PROMO_BOOKING, slot_index=index)
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
         """Handle slot selection from the list view."""
@@ -118,7 +125,7 @@ class BookingHubScreen(Screen):
         if self.app.state.slot_type(index) == "match":
             self.open_match_category_selection(index)
         else:
-            self.app.navigate("promo_booking", slot_index=index)
+            self.app.navigate(PROMO_BOOKING, slot_index=index)
 
     def open_match_category_selection(self, slot_index: int) -> None:
         """Open match category selection before booking a match slot."""
@@ -128,7 +135,7 @@ class BookingHubScreen(Screen):
         if isinstance(existing, Match):
             initial_category_id = existing.match_category_id
         self.app.navigate(
-            "match_category",
+            MATCH_CATEGORY,
             slot_index=slot_index,
             initial_category_id=initial_category_id,
             on_select=lambda category_id: self.open_match_booking(slot_index, category_id),
@@ -138,7 +145,7 @@ class BookingHubScreen(Screen):
         """Open match booking with a preselected match category."""
 
         self.app.navigate(
-            "match_booking",
+            MATCH_BOOKING,
             slot_index=slot_index,
             match_category_id=match_category_id,
         )
@@ -148,12 +155,12 @@ class BookingHubScreen(Screen):
 
         if self.app.state.validate_show():
             return
-        self.app.navigate("simulating")
+        self.app.navigate(SIMULATING)
 
     def action_back(self) -> None:
         """Return to the game hub."""
 
-        self.app.navigate("game_hub")
+        self.app.navigate(GAME_HUB)
 
     def action_focus_next(self) -> None:
         """Move focus to the next booking hub control."""
