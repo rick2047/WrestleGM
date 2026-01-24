@@ -5,9 +5,9 @@ from __future__ import annotations
 from itertools import combinations
 
 from textual.app import ComposeResult
-from textual.containers import Horizontal, Vertical, VerticalScroll
+from textual.containers import Grid, Horizontal, Vertical, VerticalScroll
 from textual.screen import Screen
-from textual.widgets import Button, Footer, ListItem, ListView, Select, Static
+from textual.widgets import Button, Footer, Label, ListItem, ListView, Select, Static
 
 from wrestlegm import constants
 from wrestlegm.models import Match, MatchTypeDefinition
@@ -59,13 +59,13 @@ class MatchBookingScreen(Screen):
                 yield self.header
 
                 with Vertical(classes="match-booking-controls"):
-                    with Horizontal(classes="match-booking-controls-row"):
+                    with Grid(classes="match-booking-controls-row"):
                         category_options = self._match_category_options()
                         initial_category = (
                             self.draft.match_category_id
                             or (category_options[0][1] if category_options else None)
                         )
-                        yield Static("Wrestlers:", classes="inline-label")
+                        yield Label("Wrestlers:", classes="inline-label")
                         self.match_category_select = Select(
                             category_options,
                             value=initial_category,
@@ -74,22 +74,10 @@ class MatchBookingScreen(Screen):
                             classes="match-category-select",
                         )
                         yield self.match_category_select
-                        if self.draft.match_category_id:
-                            category_label = str(
-                                constants.MATCH_CATEGORIES[self.draft.match_category_id][
-                                    "size"
-                                ]
-                            )
-                        else:
-                            category_label = ""
-                        self.match_category_value = Static(
-                            category_label,
-                            classes="inline-value",
-                            id="match-category-value",
-                        )
-                        yield self.match_category_value
-                    with Horizontal(classes="match-booking-controls-row"):
-                        yield Static("Stip:", classes="inline-label")
+                    with Grid(
+                        classes="match-booking-controls-row stipulation-row"
+                    ):
+                        yield Label("Stip:", classes="inline-label")
                         match_type_options = self._match_type_options_for_category(
                             self.initial_category_id
                         )
@@ -103,26 +91,6 @@ class MatchBookingScreen(Screen):
                             classes="match-type-select",
                         )
                         yield self.match_type_select
-                        match_type_label = ""
-                        if initial_match_type:
-                            match_type = self.app.state.match_types.get(initial_match_type)
-                            if match_type is not None:
-                                match_type_label = match_type.name
-                            else:
-                                match_type_label = str(initial_match_type)
-                        self.match_type_value = Static(
-                            match_type_label,
-                            classes="inline-value",
-                            id="match-type-value",
-                        )
-                        yield self.match_type_value
-
-                self.controls_fallback = Static(
-                    "Wrestlers: -  Stip: -",
-                    classes="match-booking-controls-fallback",
-                    markup=False,
-                )
-                yield self.controls_fallback
 
                 yield Static("Wrestlers", classes="booking-section-title")
 
@@ -190,25 +158,6 @@ class MatchBookingScreen(Screen):
         summary = self.app.state.rivalry_summary_for_match(selected_ids)
         header_text = f"{base_label}  {summary}" if summary else base_label
         self.header.update(header_text)
-
-        category_label = ""
-        if self.draft.match_category_id:
-            category_label = str(
-                constants.MATCH_CATEGORIES[self.draft.match_category_id]["size"]
-            )
-        self.match_category_value.update(category_label)
-        match_type_label = ""
-        if self.draft.match_type_id:
-            match_type = self.app.state.match_types.get(self.draft.match_type_id)
-            if match_type is not None:
-                match_type_label = match_type.name
-            else:
-                match_type_label = str(self.draft.match_type_id)
-        self.match_type_value.update(match_type_label)
-        fallback_line = (
-            f"Wrestlers: {category_label or '-'}  Stip: {match_type_label or '-'}"
-        )
-        self.controls_fallback.update(fallback_line)
 
         required_count = self.required_wrestler_count()
         for index, view in enumerate(self.wrestler_views):

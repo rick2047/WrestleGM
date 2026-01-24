@@ -52,16 +52,24 @@ ListView {
 
 .match-booking-controls-row {
     height: 3;
+    layout: grid;
+    grid-size: 2 1;
+    grid-columns: auto 8;
+    grid-rows: 1;
+    grid-gutter: 1;
     align: left middle;
 }
 
+.match-booking-controls-row.stipulation-row {
+    grid-columns: auto 18;
+}
+
 .inline-label {
-    margin-right: 1;
+    width: auto;
 }
 
 #match-category {
     width: 8;
-    margin-right: 2;
 }
 
 #match-type {
@@ -78,15 +86,6 @@ ListView {
     content-align: center middle;
 }
 
-.match-booking-controls-fallback {
-    margin-bottom: 1;
-    text-style: bold;
-}
-
-.inline-value {
-    margin-right: 2;
-    text-style: bold;
-}
 
 .match-wrestlers-scroll {
     height: 1fr;
