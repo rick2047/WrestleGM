@@ -10,18 +10,35 @@ from textual.widgets import Footer, Static
 class GuardScreen(Screen):
     """Non-interactive guard screen when terminal is too small."""
 
+    MIN_COLUMNS = 70
+    MIN_ROWS = 40
+
     BINDINGS = [
         ("q", "quit", "Quit"),
     ]
 
     def compose(self) -> ComposeResult:
-        yield Static(
-            "Terminal size too small (need 70x40).\n"
-            "Resize your terminal and restart the app.\n\n"
-            "[ Q ] Quit",
-            classes="guard-message",
-        )
+        self.message = Static("", classes="guard-message")
+        yield self.message
         yield Footer()
+
+    def on_mount(self) -> None:
+        self._update_message()
+
+    def on_resize(self) -> None:
+        self._update_message()
 
     def action_quit(self) -> None:
         self.app.exit()
+
+    def _update_message(self) -> None:
+        size = self.app.size
+        cols = size.width
+        rows = size.height
+        self.message.update(
+            "Terminal size too small "
+            f"(need {self.MIN_COLUMNS}x{self.MIN_ROWS}).\n"
+            f"Current size: {cols}x{rows}.\n"
+            "Resize your terminal and restart the app.\n\n"
+            "[ Q ] Quit"
+        )
