@@ -27,12 +27,16 @@ ListView {
 }
 
 .booking-shell {
-    width: 70;
+    width: 1fr;
+    height: 1fr;
+    padding: 1 2;
 }
 
 .booking-card {
     border: solid gray;
     padding: 1 2;
+    width: 1fr;
+    height: 1fr;
 }
 
 .match-booking-header {
@@ -43,6 +47,12 @@ ListView {
 .match-booking-controls {
     height: auto;
     margin-bottom: 1;
+    align: left middle;
+}
+
+.match-booking-controls-row {
+    height: 3;
+    align: left middle;
 }
 
 .inline-label {
@@ -58,12 +68,36 @@ ListView {
     width: 18;
 }
 
+.match-booking-controls Select {
+    border: round gray;
+    display: block;
+    height: 3;
+    min-height: 3;
+    min-width: 8;
+    padding: 0 1;
+    content-align: center middle;
+}
+
+.match-booking-controls-fallback {
+    margin-bottom: 1;
+    text-style: bold;
+}
+
+.inline-value {
+    margin-right: 2;
+    text-style: bold;
+}
+
 .match-wrestlers-scroll {
     height: 1fr;
 }
 
 .booking-actions {
     margin-top: 1;
+}
+
+.booking-screen {
+    align: left top;
 }
 
 .booking-section-title {

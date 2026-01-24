@@ -15,7 +15,6 @@ from wrestlegm.models import Match, MatchTypeDefinition
 from ..drafts import BookingDraft
 from ..formatting import match_category_size, slot_label
 from ..widgets.list_views import FilteredListView
-from ..widgets.safe_select import SafeSelect
 from ..widgets.wrestler_view import (
     WrestlerView,
     WrestlerViewConfig,
@@ -59,19 +58,73 @@ class MatchBookingScreen(Screen):
                 self.header = Static("", classes="match-booking-header")
                 yield self.header
 
-                with Horizontal(classes="match-booking-controls"):
-                    yield Static("Wrestlers:", classes="inline-label")
-                    self.match_category_select = SafeSelect(
-                        self._match_category_options(),
-                        id="match-category",
-                    )
-                    yield self.match_category_select
-                    yield Static("Stip:", classes="inline-label")
-                    self.match_type_select = SafeSelect(
-                        self._match_type_options_for_category(self.initial_category_id),
-                        id="match-type",
-                    )
-                    yield self.match_type_select
+                with Vertical(classes="match-booking-controls"):
+                    with Horizontal(classes="match-booking-controls-row"):
+                        category_options = self._match_category_options()
+                        initial_category = (
+                            self.draft.match_category_id
+                            or (category_options[0][1] if category_options else None)
+                        )
+                        yield Static("Wrestlers:", classes="inline-label")
+                        self.match_category_select = Select(
+                            category_options,
+                            value=initial_category,
+                            allow_blank=False,
+                            id="match-category",
+                            classes="match-category-select",
+                        )
+                        yield self.match_category_select
+                        if self.draft.match_category_id:
+                            category_label = str(
+                                constants.MATCH_CATEGORIES[self.draft.match_category_id][
+                                    "size"
+                                ]
+                            )
+                        else:
+                            category_label = ""
+                        self.match_category_value = Static(
+                            category_label,
+                            classes="inline-value",
+                            id="match-category-value",
+                        )
+                        yield self.match_category_value
+                    with Horizontal(classes="match-booking-controls-row"):
+                        yield Static("Stip:", classes="inline-label")
+                        match_type_options = self._match_type_options_for_category(
+                            self.initial_category_id
+                        )
+                        initial_match_type = (
+                            match_type_options[0][1] if match_type_options else None
+                        )
+                        self.match_type_select = Select(
+                            match_type_options,
+                            value=initial_match_type,
+                            id="match-type",
+                            classes="match-type-select",
+                        )
+                        yield self.match_type_select
+                        match_type_label = ""
+                        if initial_match_type:
+                            match_type = self.app.state.match_types.get(initial_match_type)
+                            if match_type is not None:
+                                match_type_label = match_type.name
+                            else:
+                                match_type_label = str(initial_match_type)
+                        self.match_type_value = Static(
+                            match_type_label,
+                            classes="inline-value",
+                            id="match-type-value",
+                        )
+                        yield self.match_type_value
+
+                self.controls_fallback = Static(
+                    "Wrestlers: -  Stip: -",
+                    classes="match-booking-controls-fallback",
+                    markup=False,
+                )
+                yield self.controls_fallback
+
+                yield Static("Wrestlers", classes="booking-section-title")
 
                 max_wrestlers = max(
                     (category["size"] for category in constants.MATCH_CATEGORIES.values()),
@@ -137,6 +190,25 @@ class MatchBookingScreen(Screen):
         summary = self.app.state.rivalry_summary_for_match(selected_ids)
         header_text = f"{base_label}  {summary}" if summary else base_label
         self.header.update(header_text)
+
+        category_label = ""
+        if self.draft.match_category_id:
+            category_label = str(
+                constants.MATCH_CATEGORIES[self.draft.match_category_id]["size"]
+            )
+        self.match_category_value.update(category_label)
+        match_type_label = ""
+        if self.draft.match_type_id:
+            match_type = self.app.state.match_types.get(self.draft.match_type_id)
+            if match_type is not None:
+                match_type_label = match_type.name
+            else:
+                match_type_label = str(self.draft.match_type_id)
+        self.match_type_value.update(match_type_label)
+        fallback_line = (
+            f"Wrestlers: {category_label or '-'}  Stip: {match_type_label or '-'}"
+        )
+        self.controls_fallback.update(fallback_line)
 
         required_count = self.required_wrestler_count()
         for index, view in enumerate(self.wrestler_views):
@@ -214,6 +286,7 @@ class MatchBookingScreen(Screen):
         """Update the match category dropdown options."""
 
         options = self._match_category_options()
+        self.match_category_select.set_options(options)
         self.match_category_select.disabled = not options
         valid_ids = {value for _, value in options}
         if self.draft.match_category_id not in valid_ids:
@@ -225,6 +298,7 @@ class MatchBookingScreen(Screen):
         """Update match type dropdown options based on the category."""
 
         options = self._match_type_options_for_category(self.draft.match_category_id)
+        self.match_type_select.set_options(options)
         self.match_type_select.disabled = not options
         valid_ids = {value for _, value in options}
         if self.draft.match_type_id not in valid_ids:
@@ -249,6 +323,12 @@ class MatchBookingScreen(Screen):
     def action_select_field(self) -> None:
         """Open the selection screen for the highlighted field."""
 
+        if self.app.focused is self.match_category_select:
+            self.match_category_select.expanded = True
+            return
+        if self.app.focused is self.match_type_select:
+            self.match_type_select.expanded = True
+            return
         if self.app.focused is not self.fields:
             return
         selected = self.fields.index
