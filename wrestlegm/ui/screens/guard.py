@@ -10,8 +10,8 @@ from textual.widgets import Footer, Static
 class GuardScreen(Screen):
     """Non-interactive guard screen when terminal is too small."""
 
-    MIN_COLUMNS = 70
-    MIN_ROWS = 40
+    MIN_COLUMNS = 60
+    MIN_ROWS = 30
 
     BINDINGS = [
         ("q", "quit", "Quit"),

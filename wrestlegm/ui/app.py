@@ -62,7 +62,7 @@ class WrestleGMApp(App):
 
     def on_mount(self) -> None:
         """Show the main menu at startup."""
-        if self.size.width < 70 or self.size.height < 40:
+        if self.size.width < 60 or self.size.height < 30:
             self.push_screen(GuardScreen())
             return
         self.push_screen(MainMenuScreen())
