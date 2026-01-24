@@ -1,6 +1,7 @@
 """Screens for the WrestleGM Textual UI."""
 
 from .booking_hub import BookingHubScreen
+from .guard import GuardScreen
 from .game_hub import GameHubScreen
 from .main_menu import MainMenuScreen
 from .match_booking import MatchBookingScreen
@@ -17,6 +18,7 @@ __all__ = [
     "BookingHubScreen",
     "ConfirmBookingModal",
     "ErrorModal",
+    "GuardScreen",
     "GameHubScreen",
     "MainMenuScreen",
     "MatchBookingScreen",

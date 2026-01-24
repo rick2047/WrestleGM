@@ -18,7 +18,6 @@ from .routes import (
     GAME_HUB,
     MAIN_MENU,
     MATCH_BOOKING,
-    MATCH_CATEGORY,
     PROMO_BOOKING,
     RESULTS,
     ROSTER,
@@ -26,10 +25,10 @@ from .routes import (
     SIMULATING,
 )
 from .screens.booking_hub import BookingHubScreen
+from .screens.guard import GuardScreen
 from .screens.game_hub import GameHubScreen
 from .screens.main_menu import MainMenuScreen
 from .screens.match_booking import MatchBookingScreen
-from .screens.match_category_selection import MatchCategorySelectionScreen
 from .screens.modals import ErrorModal
 from .screens.promo_booking import PromoBookingScreen
 from .screens.results import ResultsScreen
@@ -63,7 +62,9 @@ class WrestleGMApp(App):
 
     def on_mount(self) -> None:
         """Show the main menu at startup."""
-
+        if self.size.width < 70 or self.size.height < 40:
+            self.push_screen(GuardScreen())
+            return
         self.push_screen(MainMenuScreen())
 
     def new_game(self, slot_index: int, slot_name: str) -> None:
@@ -112,14 +113,6 @@ ROUTES: dict[str, Route] = {
     GAME_HUB: Route("switch", lambda **_: GameHubScreen()),
     BOOKING_HUB: Route("switch", lambda **_: BookingHubScreen()),
     ROSTER: Route("push", lambda **_: RosterScreen()),
-    MATCH_CATEGORY: Route(
-        "push",
-        lambda slot_index, initial_category_id, on_select: MatchCategorySelectionScreen(
-            on_select=on_select,
-            slot_index=slot_index,
-            initial_category_id=initial_category_id,
-        ),
-    ),
     MATCH_BOOKING: Route(
         "push",
         lambda slot_index, match_category_id: MatchBookingScreen(

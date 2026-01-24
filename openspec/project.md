@@ -7,7 +7,7 @@ Create a fun wrestling manager sim where the core enjoyment comes from managing 
 - Show-driven progression: book, simulate, and advance one show at a time.
 - Deterministic but expressive outcomes driven by roster stats and match types.
 - Long-term roster evolution is the core reward loop.
-- Keyboard-only experience suitable for narrow terminals (target <= 40 columns).
+- Keyboard-only experience suitable for narrow terminals (target >= 70x40).
 - Systemic, not scripted: outcomes are explained by numbers, not hidden scripts.
 
 Success criterion:

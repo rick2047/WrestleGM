@@ -14,7 +14,6 @@ from ..formatting import build_match_participants, match_category_label, slot_la
 from ..routes import (
     GAME_HUB,
     MATCH_BOOKING,
-    MATCH_CATEGORY,
     PROMO_BOOKING,
     SIMULATING,
 )
@@ -110,7 +109,7 @@ class BookingHubScreen(Screen):
         if index is None:
             return
         if self.app.state.slot_type(index) == "match":
-            self.open_match_category_selection(index)
+            self.open_match_booking(index)
         else:
             self.app.navigate(PROMO_BOOKING, slot_index=index)
 
@@ -123,27 +122,18 @@ class BookingHubScreen(Screen):
         if index is None:
             return
         if self.app.state.slot_type(index) == "match":
-            self.open_match_category_selection(index)
+            self.open_match_booking(index)
         else:
             self.app.navigate(PROMO_BOOKING, slot_index=index)
 
-    def open_match_category_selection(self, slot_index: int) -> None:
-        """Open match category selection before booking a match slot."""
+    def open_match_booking(self, slot_index: int) -> None:
+        """Open match booking with the existing or default category."""
 
         existing = self.app.state.show_card[slot_index]
-        initial_category_id = None
         if isinstance(existing, Match):
-            initial_category_id = existing.match_category_id
-        self.app.navigate(
-            MATCH_CATEGORY,
-            slot_index=slot_index,
-            initial_category_id=initial_category_id,
-            on_select=lambda category_id: self.open_match_booking(slot_index, category_id),
-        )
-
-    def open_match_booking(self, slot_index: int, match_category_id: str) -> None:
-        """Open match booking with a preselected match category."""
-
+            match_category_id = existing.match_category_id
+        else:
+            match_category_id = constants.MATCH_CATEGORY_ORDER[0]
         self.app.navigate(
             MATCH_BOOKING,
             slot_index=slot_index,

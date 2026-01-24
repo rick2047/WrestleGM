@@ -271,7 +271,7 @@ Focus behavior:
 
 ### Flow Tests
 
-- Use Textual's `App.run_test` with a fixed viewport of 100x30.
+- Use Textual's `App.run_test` with a fixed viewport of 80x40.
 - Load deterministic fixtures from `tests/fixtures/ui/`.
 - Core journeys live in `tests/test_ui_flows.py` and exercise keyboard-only navigation.
 
@@ -283,3 +283,8 @@ Focus behavior:
   ```bash
   uv run pytest tests/test_ui_snapshots.py --snapshot-update
   ```
+
+## Viewport Guard
+
+- Minimum supported viewport is 70x40 at startup.
+- If the terminal is smaller than 70x40, the app shows a guard screen with a Quit option.

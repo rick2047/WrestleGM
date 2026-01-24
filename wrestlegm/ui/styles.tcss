@@ -25,3 +25,105 @@ ListView {
 .spacer {
     height: 1;
 }
+
+.booking-shell {
+    width: 70;
+}
+
+.booking-card {
+    border: solid gray;
+    padding: 1 2;
+}
+
+.match-booking-header {
+    text-style: bold;
+    margin-bottom: 1;
+}
+
+.match-booking-controls {
+    height: auto;
+    margin-bottom: 1;
+}
+
+.inline-label {
+    margin-right: 1;
+}
+
+#match-category {
+    width: 8;
+    margin-right: 2;
+}
+
+#match-type {
+    width: 18;
+}
+
+.match-wrestlers-scroll {
+    height: 1fr;
+}
+
+.booking-actions {
+    margin-top: 1;
+}
+
+.booking-section-title {
+    text-style: bold;
+    margin-bottom: 1;
+}
+
+.wrestler-view {
+    border: solid gray;
+    padding: 1 2;
+    margin-bottom: 1;
+}
+
+.wrestler-name-header {
+    text-style: bold;
+    margin-bottom: 1;
+}
+
+.wrestler-empty-label {
+    text-style: bold;
+    margin-bottom: 1;
+}
+
+.wrestler-avatar-frame {
+    height: 8;
+    width: 16;
+    margin-bottom: 1;
+}
+
+.wrestler-avatar {
+    height: 8;
+    width: 16;
+}
+
+.wrestler-stats {
+    margin-bottom: 1;
+}
+
+.wrestler-description {
+    margin-bottom: 1;
+}
+
+.wrestler-rivalry-title {
+    text-style: bold;
+    margin-bottom: 1;
+}
+
+.wrestler-rivalry-scroll {
+    height: 5;
+}
+
+.guard-message {
+    text-align: center;
+}
+
+.inspect-panel {
+    width: 60;
+}
+
+.modal-hint {
+    text-align: center;
+    margin-top: 1;
+}

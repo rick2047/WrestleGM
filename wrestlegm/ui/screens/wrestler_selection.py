@@ -5,14 +5,21 @@ from __future__ import annotations
 from typing import Callable
 
 from textual.app import ComposeResult
-from textual.containers import Horizontal
-from textual.screen import Screen
+from textual.containers import Horizontal, Vertical
+from textual.screen import ModalScreen, Screen
 from textual.widgets import Button, DataTable, Footer, Static
 
 from wrestlegm import constants
 
-from ..formatting import BLOCK_ICON, build_name_cell, build_pop_cell, row_key_to_id
+from ..formatting import (
+    ALIGNMENT_EMOJI,
+    BLOCK_ICON,
+    build_pop_cell,
+    row_key_to_id,
+    truncate_name,
+)
 from ..widgets.data_table import EdgeAwareDataTable
+from ..widgets.wrestler_view import WrestlerView, WrestlerViewConfig, build_wrestler_view_data
 
 
 class WrestlerSelectionScreen(Screen):
@@ -26,6 +33,7 @@ class WrestlerSelectionScreen(Screen):
 
     BINDINGS = [
         ("enter", "select", "Select"),
+        ("i", "inspect", "Inspect"),
         ("up", "focus_prev", "Prev"),
         ("down", "focus_next", "Next"),
         ("escape", "cancel", "Cancel"),
@@ -50,6 +58,7 @@ class WrestlerSelectionScreen(Screen):
         self.on_select = on_select
         self.allow_low_stamina = allow_low_stamina
         self.message = Static("")
+        self._inspect_row: int | None = None
 
     def compose(self) -> ComposeResult:
         """Build the wrestler selection layout."""
@@ -60,9 +69,10 @@ class WrestlerSelectionScreen(Screen):
             on_edge_next=self.action_focus_next,
         )
         self.table.add_column("Name", key="name")
-        self.table.add_column("Sta", key="sta")
-        self.table.add_column("Mic", key="mic")
-        self.table.add_column("Pop", key="pop")
+        self.table.add_column("⭐", key="pop")
+        self.table.add_column("🔋", key="sta")
+        self.table.add_column("🎤", key="mic")
+        self.table.add_column("Align", key="align")
         for wrestler in self.app.state.roster.values():
             booked = self.app.state.is_wrestler_booked(
                 wrestler.id,
@@ -72,10 +82,11 @@ class WrestlerSelectionScreen(Screen):
                 booked = True
             booked_marker = " 📅" if booked else ""
             self.table.add_row(
-                build_name_cell(wrestler.name, wrestler.alignment),
+                truncate_name(wrestler.name),
+                build_pop_cell(wrestler.popularity, wrestler.stamina, booked_marker),
                 f"{wrestler.stamina:>3}",
                 f"{wrestler.mic_skill:>3}",
-                build_pop_cell(wrestler.popularity, wrestler.stamina, booked_marker),
+                ALIGNMENT_EMOJI.get(wrestler.alignment, ""),
                 key=wrestler.id,
             )
         yield self.table
@@ -98,6 +109,24 @@ class WrestlerSelectionScreen(Screen):
         """Close the selection screen without changes."""
 
         self.app.pop_screen()
+
+    def action_inspect(self) -> None:
+        """Open the inspection modal for the highlighted wrestler."""
+
+        if self.table.cursor_row is None:
+            return
+        try:
+            row_key = self.table.ordered_rows[self.table.cursor_row]
+        except IndexError:
+            return
+        wrestler_id = row_key_to_id(row_key)
+        wrestler_view = build_wrestler_view_data(self.app.state, wrestler_id)
+        rivalries = self._build_rivalry_list(wrestler_id)
+        self._inspect_row = self.table.cursor_row
+        self.app.push_screen(
+            WrestlerInspectModal(wrestler_view, rivalries),
+            self._restore_focus_after_inspect,
+        )
 
     def action_focus_next(self) -> None:
         """Move focus to the next selection control."""
@@ -125,6 +154,26 @@ class WrestlerSelectionScreen(Screen):
         if next_focus is self.table and self.table.cursor_row is None and self.table.row_count:
             self.table.cursor_coordinate = (0, 0)
         next_focus.focus()
+
+    def _restore_focus_after_inspect(self, _: object | None = None) -> None:
+        """Restore focus to the table after closing the inspect modal."""
+
+        self.table.focus()
+        if self._inspect_row is not None and self.table.row_count:
+            row = min(self._inspect_row, self.table.row_count - 1)
+            self.table.cursor_coordinate = (row, 0)
+
+    def _build_rivalry_list(self, wrestler_id: str) -> list[str]:
+        """Build rivalry list entries for the inspected wrestler."""
+
+        entries: list[str] = []
+        for opponent_id, opponent in self.app.state.roster.items():
+            if opponent_id == wrestler_id:
+                continue
+            emoji = self.app.state.rivalry_emoji_for_pair(wrestler_id, opponent_id)
+            if emoji:
+                entries.append(f"{emoji} {opponent.name}")
+        return entries
 
     def action_select(self) -> None:
         """Select the highlighted wrestler if valid."""
@@ -175,3 +224,33 @@ class WrestlerSelectionScreen(Screen):
             self.action_select()
         elif event.button.id == "cancel":
             self.action_cancel()
+
+
+class WrestlerInspectModal(ModalScreen):
+    """Read-only Wrestler View modal for inspection."""
+
+    BINDINGS = [
+        ("escape", "close", "Close"),
+    ]
+
+    def __init__(self, wrestler: object, rivalries: list[str]) -> None:
+        super().__init__()
+        self.wrestler = wrestler
+        self.rivalries = rivalries
+
+    def compose(self) -> ComposeResult:
+        with Vertical(classes="panel inspect-panel"):
+            yield Static("Wrestler Details", classes="section-title")
+            config = WrestlerViewConfig(
+                show_avatar=True,
+                show_name=True,
+                show_stats=True,
+                show_description=True,
+                show_rivalry=True,
+                rivalry_compact=False,
+            )
+            yield WrestlerView(self.wrestler, config, rivalries=self.rivalries)
+            yield Static("[ Esc to close ]", classes="modal-hint")
+
+    def action_close(self) -> None:
+        self.dismiss(result=True)

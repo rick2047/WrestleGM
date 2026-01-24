@@ -3,15 +3,16 @@
 from __future__ import annotations
 
 from textual.app import ComposeResult
-from textual.containers import Vertical
+from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.screen import Screen
 from textual.widgets import Button, Footer, ListItem, ListView, Static
 
 from wrestlegm.models import Match, Promo
 
 from ..drafts import PromoDraft
-from ..formatting import slot_label
+from ..formatting import ALIGNMENT_EMOJI, slot_label
 from ..widgets.list_views import EdgeAwareListView
+from ..widgets.wrestler_view import WrestlerView, WrestlerViewConfig, build_wrestler_view_data
 from .modals import ConfirmBookingModal
 from .wrestler_selection import WrestlerSelectionScreen
 
@@ -32,30 +33,41 @@ class PromoBookingScreen(Screen):
         self.draft = PromoDraft()
 
     def compose(self) -> ComposeResult:
-        self.header = Static("", classes="section-title")
-        yield self.header
-        self.detail = Static("", classes="section-title")
-        yield self.detail
+        with Vertical(classes="booking-shell"):
+            with Vertical(classes="booking-card"):
+                self.header = Static("", classes="match-booking-header")
+                yield self.header
 
-        self.field_item = Static("")
-        self.fields = EdgeAwareListView(
-            ListItem(self.field_item, id="field-wrestler"),
-            on_edge_prev=self.action_focus_prev,
-            on_edge_next=self.action_focus_next,
-        )
-        yield self.fields
+                yield Static("Performer", classes="booking-section-title")
 
-        with Vertical():
-            self.confirm_button = Button("Confirm", id="confirm")
-            self.clear_button = Button("Clear Slot", id="clear")
-            self.cancel_button = Button("Cancel", id="cancel")
-            yield self.confirm_button
-            yield self.clear_button
-            yield self.cancel_button
+                config = WrestlerViewConfig(
+                    show_avatar=True,
+                    show_name=True,
+                    show_stats=True,
+                    show_description=False,
+                    show_rivalry=False,
+                )
+                self.wrestler_view = WrestlerView(None, config)
+                self.fields = EdgeAwareListView(
+                    ListItem(self.wrestler_view, id="field-wrestler"),
+                    on_edge_prev=self.action_focus_prev,
+                    on_edge_next=self.action_focus_next,
+                )
+                with VerticalScroll(classes="match-wrestlers-scroll"):
+                    yield self.fields
+
+            with Horizontal(classes="booking-actions"):
+                self.clear_button = Button("Clear Slot", id="clear")
+                self.confirm_button = Button("Confirm", id="confirm")
+                self.cancel_button = Button("Cancel", id="cancel")
+                yield self.clear_button
+                yield self.confirm_button
+                yield self.cancel_button
 
         yield Footer()
 
     def on_mount(self) -> None:
+        self.add_class("booking-screen")
         self.fields.focus()
         existing = self.app.state.show_card[self.slot_index]
         if isinstance(existing, Promo):
@@ -64,24 +76,21 @@ class PromoBookingScreen(Screen):
 
     def refresh_view(self) -> None:
         label = slot_label(self.slot_index, "promo")
-        self.header.update(f"Book {label}")
-        if self.draft.wrestler_id:
-            wrestler = self.app.state.roster[self.draft.wrestler_id]
-            self.detail.update(wrestler.name)
+        wrestler_view = (
+            build_wrestler_view_data(self.app.state, self.draft.wrestler_id)
+            if self.draft.wrestler_id
+            else None
+        )
+        if wrestler_view is None:
+            self.header.update(label)
         else:
-            self.detail.update("")
-
-        self.field_item.update(self.field_text("Wrestler", self.draft.wrestler_id))
+            emoji = ALIGNMENT_EMOJI.get(wrestler_view.alignment, "")
+            self.header.update(f"{label}  {emoji}".strip())
+        self.wrestler_view.set_wrestler(wrestler_view, rivalries=[])
         self.confirm_button.disabled = not self.draft.is_complete() or bool(
             self.validate_draft()
         )
         self.clear_button.disabled = self.app.state.show_card[self.slot_index] is None
-
-    def field_text(self, label: str, value_id: str | None) -> str:
-        if value_id is None:
-            return f"{label}\n[ Empty ]"
-        wrestler = self.app.state.roster[value_id]
-        return f"{label}\n{wrestler.name}"
 
     def validate_draft(self) -> list[str]:
         if not self.draft.is_complete():

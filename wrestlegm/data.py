@@ -16,7 +16,13 @@ def load_wrestlers(path: Path | None = None) -> List[WrestlerDefinition]:
 
     file_path = path or DATA_DIR / "wrestlers.json"
     data = json.loads(file_path.read_text(encoding="utf-8"))
-    return [WrestlerDefinition(**entry) for entry in data]
+    normalized = []
+    for entry in data:
+        entry = dict(entry)
+        entry.setdefault("description", "")
+        entry.setdefault("avatar_path", "")
+        normalized.append(entry)
+    return [WrestlerDefinition(**entry) for entry in normalized]
 
 
 def load_match_types(path: Path | None = None) -> List[MatchTypeDefinition]:
