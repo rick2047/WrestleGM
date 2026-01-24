@@ -393,7 +393,7 @@ class MatchBookingScreen(Screen):
 
         self._move_focus(-1)
 
-    def _move_focus(self, delta: int) -> None:
+    def _move_focus(self, delta: int, selector: str | None = None) -> None:
         """Cycle focus between fields and action buttons."""
 
         focus_order = [
