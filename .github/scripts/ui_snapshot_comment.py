@@ -74,9 +74,6 @@ def render_snapshot_table(base_url: str) -> str:
     """Render the snapshot table with collapsed images."""
 
     lines = []
-    lines.append("<details>")
-    lines.append("<summary>UI Snapshots (latest)</summary>")
-    lines.append("")
     lines.append("| Snapshot | Image |")
     lines.append("| --- | --- |")
     for label, path in SNAPSHOT_ENTRIES:
@@ -89,8 +86,6 @@ def render_snapshot_table(base_url: str) -> str:
         else:
             image_cell = "Missing"
         lines.append(f"| {label} | {image_cell} |")
-    lines.append("")
-    lines.append("</details>")
     return "\n".join(lines)
 
 
@@ -109,12 +104,11 @@ def render_comment(
     elif not cases:
         status = "NO TESTS"
 
-    if status == "PASSED":
-        status_emoji = STATUS_EMOJI["passed"]
-    elif status == "FAILED":
-        status_emoji = STATUS_EMOJI["failed"]
-    else:
-        status_emoji = STATUS_EMOJI["skipped"]
+    status_emoji = {
+        "PASSED": STATUS_EMOJI["passed"],
+        "FAILED": STATUS_EMOJI["failed"],
+        "NO TESTS": STATUS_EMOJI["skipped"],
+    }.get(status, STATUS_EMOJI["skipped"])
     lines: list[str] = ["<!-- pr-ui-snapshots -->", "## UI Snapshot Report"]
     lines.append(f"Status: {status_emoji} {status}")
     lines.append(f"Run: {run_url}")
