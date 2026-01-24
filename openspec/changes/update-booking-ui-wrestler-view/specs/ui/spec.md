@@ -105,14 +105,14 @@ The system SHALL reuse the wrestler selection screen for promo booking with cont
 - **THEN** the table layout, columns, indicators, and inspection modal match match-booking selection behavior
 
 ### Requirement: Wrestler selection screen layout
-The system SHALL render a wrestler selection table with Name/Sta/Mic/Pop columns, an inline message row for blocking errors, Select/Cancel actions, and an inspect hint for the `i` key.
+The system SHALL render a wrestler selection table with Name, Pop, Sta, Mic, and Align columns, an inline message row for blocking errors, Select/Cancel actions, and an inspect hint for the `i` key.
 
 #### Scenario: Wrestler selection components
 - **WHEN** the wrestler selection screen renders
 - **THEN** it shows the table, inline message row, Select/Cancel actions, and an inspect hint
 
 ### Requirement: Rivalry and cooldown emoji display
-The system SHALL display rivalry and cooldown emojis on the match name line in the Booking Hub, and SHALL display an aggregated rivalry summary in the Match Booking header along with compact rivalry badges within Wrestler Views.
+The system SHALL display rivalry and cooldown emojis on the match name line in the Booking Hub, and SHALL display an aggregated rivalry summary in the Match Booking header along with compact rivalry badges within Wrestler Views. Wrestler View rivalry badges SHALL reflect only rivalries between the displayed wrestler and other participants in the current match.
 
 #### Scenario: Booking hub emojis
 - **WHEN** a match slot is rendered in the Booking Hub
@@ -170,7 +170,7 @@ The system SHALL match the following ASCII mockups for the MVP screens relevant 
 
 ```
 ┌──────────────────────────────────────────────┐
-│ Match #1        💥 x1  ⚔️ x1                  │
+│ Match #1        🔥 x1                         │
 ├──────────────────────────────────────────────┤
 │ Wrestlers: [ 2 ▾ ]    Stip: [ Singles ▾ ]     │
 │                                              │
@@ -181,7 +181,7 @@ The system SHALL match the following ASCII mockups for the MVP screens relevant 
 │    │ (half render) │                         │
 │    └───────────────┘                         │
 │    ⭐92  🔋28  🎤88                            │
-│    💥 ⚔️ 🔥                                   │
+│    🔥                                        │
 │                                              │
 │    😈 Jay White                               │
 │    ┌───────────────┐                         │
@@ -189,7 +189,7 @@ The system SHALL match the following ASCII mockups for the MVP screens relevant 
 │    │ (half render) │                         │
 │    └───────────────┘                         │
 │    ⭐85  🔋40  🎤70                            │
-│    💥 🔥                                      │
+│    🔥                                        │
 │                                              │
 │ [ Clear Slot ]   [ Confirm ]   [ Back ]       │
 └──────────────────────────────────────────────┘
