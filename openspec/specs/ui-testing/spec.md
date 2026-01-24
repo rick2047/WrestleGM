@@ -19,7 +19,7 @@ The system SHALL provide dedicated UI test fixtures for roster and match type in
 - **THEN** they load roster and match type data from `tests/fixtures/ui/`
 
 ### Requirement: UI flow tests
-The system SHALL include UI flow tests that validate keyboard-only navigation and state progression across core gameplay screens.
+The system SHALL include UI flow tests that validate keyboard-only navigation and state progression across core gameplay screens, and SHALL organize them into modules that reflect the UI screen structure.
 
 #### Scenario: Flow coverage for core gameplay
 - **WHEN** UI flow tests run
@@ -30,8 +30,12 @@ The system SHALL include UI flow tests that validate keyboard-only navigation an
   - Booking Hub -> Run Show (after all slots booked) -> Results -> Continue -> Game Hub
   - Game Hub -> Roster Overview -> Back
 
+#### Scenario: Screen-aligned flow modules
+- **WHEN** UI flow tests are organized
+- **THEN** they are split into modules that mirror `wrestlegm/ui/screens/*` and each screen has at least one navigation flow test
+
 ### Requirement: UI snapshot tests
-The system SHALL generate deterministic SVG snapshots for canonical UI screens and stable end states only using `pytest-textual-snapshot`.
+The system SHALL generate deterministic SVG snapshots for canonical UI screens and stable end states only using `pytest-textual-snapshot`, and SHALL publish a stable list of snapshot names for CI reporting.
 
 #### Scenario: Canonical snapshot registry
 - **WHEN** snapshot tests run
@@ -43,10 +47,17 @@ The system SHALL generate deterministic SVG snapshots for canonical UI screens a
   - S5 Match Booking (empty slot)
   - S6 Match Booking (filled slot)
   - S7 Wrestler Selection (default)
-  - S8 Match Type Selection (default)
+  - S8 Match Category Selection (default)
   - S9 Match Booking Confirmation (modal visible)
   - S10 Show Results (default)
   - S11 Roster Overview (default)
+  - S12 Booking Hub (rivalry emojis)
+  - S13 Booking Hub (cooldown emojis)
+  - S14 Match Booking (rivalry emojis)
+  - S15 Save Slot Selection (empty)
+  - S16 Save Slot Selection (mixed)
+  - S17 Name Save Slot Modal
+  - S18 Overwrite Save Slot Modal
 
 ### Requirement: Snapshot baseline management
 The system SHALL store SVG snapshot baselines in-repo using the `pytest-textual-snapshot` naming conventions.
@@ -62,3 +73,4 @@ The system SHALL fail tests when snapshot output does not match baselines.
 #### Scenario: Snapshot mismatch handling
 - **WHEN** a generated snapshot differs from its baseline
 - **THEN** the test run fails
+
