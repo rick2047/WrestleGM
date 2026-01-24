@@ -88,14 +88,14 @@ ListView {
 }
 
 .wrestler-avatar-frame {
-    height: 8;
-    width: 16;
+    height: 24;
+    width: 48;
     margin-bottom: 1;
 }
 
 .wrestler-avatar {
-    height: 8;
-    width: 16;
+    height: 24;
+    width: 48;
 }
 
 .wrestler-stats {
