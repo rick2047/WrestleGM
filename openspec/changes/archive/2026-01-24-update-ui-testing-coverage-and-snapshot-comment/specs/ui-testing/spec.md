@@ -1,22 +1,4 @@
-# ui-testing Specification
-
-## Purpose
-TBD - created by archiving change add-ui-testing. Update Purpose after archive.
-## Requirements
-### Requirement: Textual UI test harness
-The system SHALL provide a Textual UI test harness that uses Textual test utilities to drive keyboard-only interactions in a deterministic environment.
-
-#### Scenario: Deterministic UI test setup
-- **WHEN** UI tests run
-- **THEN** they use a fixed RNG seed of 2047
-- **AND THEN** they use a fixed viewport size of 100x30
-
-### Requirement: UI test fixtures
-The system SHALL provide dedicated UI test fixtures for roster and match type inputs to ensure deterministic flows and snapshots.
-
-#### Scenario: Fixture-based UI data
-- **WHEN** UI tests run
-- **THEN** they load roster and match type data from `tests/fixtures/ui/`
+## MODIFIED Requirements
 
 ### Requirement: UI flow tests
 The system SHALL include UI flow tests that validate keyboard-only navigation and state progression across core gameplay screens, and SHALL organize them into modules that reflect the UI screen structure.
@@ -58,19 +40,3 @@ The system SHALL generate deterministic SVG snapshots for canonical UI screens a
   - S16 Save Slot Selection (mixed)
   - S17 Name Save Slot Modal
   - S18 Overwrite Save Slot Modal
-
-### Requirement: Snapshot baseline management
-The system SHALL store SVG snapshot baselines in-repo using the `pytest-textual-snapshot` naming conventions.
-
-#### Scenario: Baseline location and naming
-- **WHEN** baselines are committed
-- **THEN** they live under `tests/snapshots/`
-- **AND THEN** filenames are derived from snapshot test function names and stored with the `.svg` extension
-
-### Requirement: Snapshot enforcement
-The system SHALL fail tests when snapshot output does not match baselines.
-
-#### Scenario: Snapshot mismatch handling
-- **WHEN** a generated snapshot differs from its baseline
-- **THEN** the test run fails
-

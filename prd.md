@@ -1188,7 +1188,7 @@ The system SHALL store SVG snapshot baselines in-repo using the `pytest-textual-
 #### Scenario: Baseline location and naming
 - **WHEN** baselines are committed
 - **THEN** they live under `tests/snapshots/`
-- **AND THEN** filenames are derived from snapshot test function names and stored with the `.raw` extension
+- **AND THEN** filenames are derived from snapshot test function names and stored with the `.svg` extension
 
 ### Requirement: Snapshot enforcement
 The system SHALL fail tests when snapshot output does not match baselines.

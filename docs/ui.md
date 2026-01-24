@@ -277,7 +277,7 @@ Focus behavior:
 
 ### Snapshot Tests
 
-- SVG baselines live under `tests/snapshots/test_ui_snapshots/` (stored as `.raw` files by `pytest-textual-snapshot`).
+- SVG baselines live under `tests/snapshots/test_ui_snapshots/` (stored as `.svg` files by `pytest-textual-snapshot`).
 - Snapshot tests live in `tests/test_ui_snapshots.py` and use `pytest-textual-snapshot`.
 - Update baselines intentionally with:
   ```bash
