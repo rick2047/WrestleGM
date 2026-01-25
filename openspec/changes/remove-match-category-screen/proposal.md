@@ -12,4 +12,4 @@ The match category selection screen is no longer part of the booking flow now th
 ## Impact
 - Affected specs: `ui`
 - Affected docs: `docs/ui.md`
-- Affected code: `wrestlegm/ui/screens/match_category_selection.py`, `wrestlegm/ui/screens/__init__.py`, `wrestlegm/ui/__init__.py`
+- Affected code: `wrestlegm/ui/screens/booking_hub.py`, `wrestlegm/ui/screens/match_category_selection.py`, `wrestlegm/ui/screens/__init__.py`, `wrestlegm/ui/__init__.py`

@@ -5,7 +5,6 @@ from .guard import GuardScreen
 from .game_hub import GameHubScreen
 from .main_menu import MainMenuScreen
 from .match_booking import MatchBookingScreen
-from .match_category_selection import MatchCategorySelectionScreen
 from .modals import ConfirmBookingModal, ErrorModal
 from .promo_booking import PromoBookingScreen
 from .results import ResultsScreen
@@ -22,7 +21,6 @@ __all__ = [
     "GameHubScreen",
     "MainMenuScreen",
     "MatchBookingScreen",
-    "MatchCategorySelectionScreen",
     "NameSaveSlotModal",
     "OverwriteSaveSlotModal",
     "PromoBookingScreen",
