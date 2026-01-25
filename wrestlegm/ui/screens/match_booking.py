@@ -120,8 +120,8 @@ class MatchBookingScreen(Screen):
                     on_edge_prev=self.action_focus_prev,
                     on_edge_next=self.action_focus_next,
                 )
-                with VerticalScroll(classes="match-wrestlers-scroll"):
-                    yield self.fields
+                self.fields.add_class("match-wrestlers-scroll")
+                yield self.fields
 
             with Horizontal(classes="booking-actions"):
                 self.clear_button = Button("Clear Slot", id="clear")
