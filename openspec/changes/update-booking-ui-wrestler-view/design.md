@@ -4,7 +4,7 @@ The booking UI currently renders text-first lists and uses separate selection sc
 ## Goals / Non-Goals
 - Goals:
   - Introduce a reusable Wrestler View widget with configurable blocks per context.
-  - Keep booking layouts stable within the 70x40 minimum viewport.
+  - Keep booking layouts stable within the 60x30 minimum viewport.
   - Ensure avatar rendering never crashes the UI and has reliable fallbacks.
   - Maintain keyboard-only navigation and deterministic UI tests.
 - Non-Goals:
@@ -35,7 +35,7 @@ The booking UI currently renders text-first lists and uses separate selection sc
 - Risk: Large layout changes will require snapshot and flow test updates.
   - Mitigation: Update snapshots and add targeted UI tests during implementation.
 - Risk: Minimum viewport change conflicts with prior project guidance.
-  - Mitigation: Update documentation and UI spec to reflect 70x40 baseline.
+  - Mitigation: Update documentation and UI spec to reflect 60x30 baseline.
 
 ## Migration Plan
 1) Add spec deltas for UI/data/test/docs.

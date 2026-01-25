@@ -8,7 +8,7 @@ Booking screens are currently list-first and information-light. A richer, consis
 - Redesign Match Booking into a single card layout with inline wrestler-count selection and a rivalry summary header.
 - Update Promo Booking to use a single Wrestler View (no rivalry block in this context).
 - Add a wrestler inspection modal in selection screens.
-- Add a startup viewport guard screen for terminals smaller than 70x40 (check once on launch).
+- Add a startup viewport guard screen for terminals smaller than 60x30 (check once on launch).
 - Extend wrestler data definitions with optional description and avatar_path fields; render avatars via rich-pixels with robust fallbacks.
 - Update UI snapshots, flow tests, and viewport tests to cover the new layouts.
 - Update documentation to reflect the new minimum viewport target and booking UI behavior.

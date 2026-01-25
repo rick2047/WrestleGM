@@ -1,9 +1,9 @@
 ## ADDED Requirements
 ### Requirement: Viewport guard tests
-The system SHALL include UI tests that validate the startup viewport guard behavior for terminals smaller than 70x40.
+The system SHALL include UI tests that validate the startup viewport guard behavior for terminals smaller than 60x30.
 
 #### Scenario: Guard screen validation
-- **WHEN** the app starts with a viewport smaller than 70x40
+- **WHEN** the app starts with a viewport smaller than 60x30
 - **THEN** the guard screen is shown and only the Quit action is available
 
 ## MODIFIED Requirements

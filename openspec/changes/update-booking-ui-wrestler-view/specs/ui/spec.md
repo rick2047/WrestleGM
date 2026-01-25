@@ -1,9 +1,9 @@
 ## ADDED Requirements
 ### Requirement: Minimum viewport guard screen
-The system SHALL enforce a minimum terminal viewport of 70 columns by 40 rows at startup. If the terminal is smaller than 70x40 at startup, the system SHALL replace the normal UI with a non-interactive guard screen that only allows quitting the application.
+The system SHALL enforce a minimum terminal viewport of 60 columns by 30 rows at startup. If the terminal is smaller than 60x30 at startup, the system SHALL replace the normal UI with a non-interactive guard screen that only allows quitting the application.
 
 #### Scenario: Guard screen shown on small viewport
-- **WHEN** the app starts in a terminal smaller than 70x40
+- **WHEN** the app starts in a terminal smaller than 60x30
 - **THEN** the guard screen is shown with a Quit action and no other UI elements
 
 ### Requirement: Wrestler View component
@@ -138,7 +138,7 @@ The system SHALL provide the MVP screens defined in the PRD, including the start
 - **THEN** the main menu, game hub, booking hub, match booking, promo booking, wrestler selection, results, and roster screens are available
 
 #### Scenario: Guard screen availability
-- **WHEN** the app is started in a terminal smaller than 70x40
+- **WHEN** the app is started in a terminal smaller than 60x30
 - **THEN** the guard screen is shown in place of the normal UI
 
 ### Requirement: Widget mapping
@@ -172,7 +172,7 @@ The system SHALL match the following ASCII mockups for the MVP screens relevant 
 ┌──────────────────────────────────────────────┐
 │ Match #1        🔥 x1                         │
 ├──────────────────────────────────────────────┤
-│ Wrestlers: [ 2 ▾ ]    Stip: [ Singles ▾ ]     │
+│ [ 2 ▾ ]    [ Singles ▾ ]                      │
 │                                              │
 │ Wrestlers (VerticalScroll)                    │
 │  ▶ 😃 Kazuchika Okada                         │
@@ -257,7 +257,7 @@ The system SHALL match the following ASCII mockups for the MVP screens relevant 
 ```
 ┌──────────────────────────────────────────────┐
 │                                              │
-│   Terminal size too small (need 70x40).       │
+│   Terminal size too small (need 60x30).       │
 │   Resize your terminal and restart the app.  │
 │                                              │
 │                [ Q ] Quit                    │

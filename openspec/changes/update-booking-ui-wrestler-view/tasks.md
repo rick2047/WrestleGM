@@ -4,11 +4,11 @@
 - [x] 1.3 Update Match Booking UI to card layout with inline wrestler-count selection and rivalry summary header.
 - [x] 1.4 Update Promo Booking UI to use a single Wrestler View (no rivalry block).
 - [x] 1.5 Add Wrestler View inspection modal to wrestler selection ("i" to open, Esc to close).
-- [x] 1.6 Add startup-only viewport guard screen at <70x40 and route gating in app startup.
+- [x] 1.6 Add startup-only viewport guard screen at <60x30 and route gating in app startup.
 - [x] 1.7 Update UI CSS/layout for the new components and layouts.
 
 ## 2. Tests
-- [x] 2.1 Update UI test harness viewport to >=70x40 and add guard screen tests.
+- [x] 2.1 Update UI test harness viewport to >=60x30 and add guard screen tests.
 - [x] 2.2 Update UI flow tests for new match booking flow (count selection, confirm path).
 - [x] 2.3 Update snapshot registry and baselines for new booking screens and wrestler view modal.
 
