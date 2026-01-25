@@ -5,7 +5,7 @@ from __future__ import annotations
 from itertools import combinations
 
 from textual.app import ComposeResult
-from textual.containers import Grid, Horizontal, Vertical, VerticalScroll
+from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.screen import Screen
 from textual.widgets import Button, Footer, Label, ListItem, ListView, Select, Static
 
@@ -14,6 +14,7 @@ from wrestlegm.models import Match, MatchTypeDefinition
 
 from ..drafts import BookingDraft
 from ..formatting import match_category_size, slot_label
+from ..widgets import SafeSelect
 from ..widgets.list_views import FilteredListView
 from ..widgets.wrestler_view import (
     WrestlerView,
@@ -59,35 +60,36 @@ class MatchBookingScreen(Screen):
                 yield self.header
 
                 with Vertical(classes="match-booking-controls"):
-                    with Grid(classes="match-booking-controls-row"):
-                        category_options = self._match_category_options()
-                        initial_category = (
-                            self.draft.match_category_id
-                            or (category_options[0][1] if category_options else None)
-                        )
-                        yield Label("Wrestlers:", classes="inline-label")
-                        self.match_category_select = Select(
-                            category_options,
-                            value=initial_category,
-                            allow_blank=False,
-                            id="match-category",
-                            classes="match-category-select",
-                        )
-                        yield self.match_category_select
-                        yield Label("Stip:", classes="inline-label")
-                        match_type_options = self._match_type_options_for_category(
-                            self.initial_category_id
-                        )
-                        initial_match_type = (
-                            match_type_options[0][1] if match_type_options else None
-                        )
-                        self.match_type_select = Select(
-                            match_type_options,
-                            value=initial_match_type,
-                            id="match-type",
-                            classes="match-type-select",
-                        )
-                        yield self.match_type_select
+                    with Horizontal(classes="match-booking-controls-row"):
+                        with Horizontal(classes="match-booking-control-group"):
+                            category_options = self._match_category_options()
+                            initial_category = (
+                                self.draft.match_category_id
+                                or (category_options[0][1] if category_options else None)
+                            )
+                            self.match_category_select = SafeSelect(
+                                category_options,
+                                value=initial_category,
+                                allow_blank=False,
+                                id="match-category",
+                                classes="match-category-select",
+                            )
+                            yield self.match_category_select
+                        with Horizontal(classes="match-booking-control-group"):
+                            match_type_options = self._match_type_options_for_category(
+                                self.initial_category_id
+                            )
+                            initial_match_type = (
+                                match_type_options[0][1] if match_type_options else None
+                            )
+                            self.match_type_select = SafeSelect(
+                                match_type_options,
+                                value=initial_match_type,
+                                allow_blank=False,
+                                id="match-type",
+                                classes="match-type-select",
+                            )
+                            yield self.match_type_select
 
                 yield Static("Wrestlers", classes="booking-section-title")
 

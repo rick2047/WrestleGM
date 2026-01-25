@@ -54,32 +54,44 @@ ListView {
 .match-booking-controls-row {
     height: 3;
     min-height: 3;
-    layout: grid;
-    grid-size: 4 1;
-    grid-columns: 12 8 6 18;
-    grid-rows: 1;
-    grid-gutter: 1;
     align: left middle;
+    width: 1fr;
+}
+
+.match-booking-control-group {
+    height: 3;
+    align: left middle;
+    margin-right: 2;
+}
+
+.match-booking-controls-row > .match-booking-control-group:first-child {
+    margin-right: 4;
 }
 
 .inline-label {
-    width: auto;
+    width: 10;
+    margin-right: 1;
+}
+
+.inline-label-short {
+    width: 6;
+    margin-right: 1;
 }
 
 #match-category {
-    width: 8;
+    min-width: 12;
+    margin-right: 2;
 }
 
 #match-type {
-    width: 18;
+    min-width: 12;
 }
 
 .match-booking-controls Select {
     border: round gray;
     display: block;
-    height: 3;
     min-height: 3;
-    min-width: 8;
+    min-width: 10;
     padding: 0 1;
     content-align: center middle;
 }
@@ -107,6 +119,15 @@ ListView {
     border: solid gray;
     padding: 1 2;
     margin-bottom: 1;
+}
+
+.match-wrestlers-scroll ListItem {
+    height: auto;
+    min-height: 28;
+}
+
+.match-wrestlers-scroll ListItem > .wrestler-view {
+    height: auto;
 }
 
 .wrestler-name-header {
