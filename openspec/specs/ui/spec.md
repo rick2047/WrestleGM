@@ -59,11 +59,11 @@ The system SHALL push and pop screens on a navigation stack, pop on Escape where
 - **THEN** the current screen is popped
 
 #### Scenario: Subscreen selection returns
-- **WHEN** the player selects a wrestler or match category
+- **WHEN** the player selects a wrestler
 - **THEN** the selection screen is popped and control returns to the parent screen
 
 #### Scenario: Draft state persists across subscreens
-- **WHEN** the player opens wrestler selection or match category selection during booking
+- **WHEN** the player opens wrestler selection during booking
 - **THEN** the in-progress draft remains intact when returning to booking
 
 #### Scenario: Cancel discards draft
@@ -74,7 +74,7 @@ The system SHALL push and pop screens on a navigation stack, pop on Escape where
 The system SHALL centralize screen navigation in the app layer using named routes so screens do not import each other directly.
 
 #### Scenario: Screen transitions use the router
-- **WHEN** a screen triggers navigation (e.g., Main Menu → Save Slots, Booking Hub → Match Category)
+- **WHEN** a screen triggers navigation (e.g., Main Menu → Save Slots, Booking Hub → Match Booking)
 - **THEN** the transition is performed via a named route in the app router
 
 ### Requirement: Footer behavior
@@ -151,7 +151,7 @@ The system SHALL show five slots in fixed order (Match 1, Promo 1, Match 2, Prom
 
 #### Scenario: Enter opens slot editor
 - **WHEN** the player selects a match slot
-- **THEN** the match category selection screen opens
+- **THEN** the match booking screen opens
 
 - **WHEN** the player selects a promo slot
 - **THEN** the promo booking screen opens
