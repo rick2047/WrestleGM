@@ -7,8 +7,8 @@ than in screen classes.
 
 ## Flow Summary
 
-Main Menu -> Game Hub -> Booking Hub -> Match Category -> Match Booking -> Wrestler
-Selection -> Confirmation Modal -> Simulating -> Results -> Game Hub.
+Main Menu -> Game Hub -> Booking Hub -> Match Booking -> Wrestler Selection ->
+Confirmation Modal -> Simulating -> Results -> Game Hub.
 
 ## Navigation Model
 
@@ -115,7 +115,7 @@ Components:
 Behavior:
 - Confirm requires all fields and no validation errors.
 - Clear Slot removes the match from the slot.
-- Cancel returns to match category selection.
+- Cancel returns to the booking hub.
 - Validation logic runs through `GameState` to prevent duplicates or invalid
   stamina bookings.
 
@@ -155,29 +155,6 @@ State interactions:
 
 Focus behavior:
 - The wrestler list receives focus on mount.
-
-### MatchCategorySelectionScreen
-
-Purpose: pick a match category for a slot.
-
-Key bindings:
-- `Enter`: select
-- `Esc`: cancel
-
-Components:
-- `Static` header.
-- `ListView` of match category names.
-- `Button` group: Select, Cancel.
-- `Footer` for bindings.
-
-Behavior:
-- Selection uses the callback to open match booking.
-
-State interactions:
-- Lists categories from the fixed category registry.
-
-Focus behavior:
-- The category list receives focus on mount.
 
 ### ConfirmBookingModal
 
