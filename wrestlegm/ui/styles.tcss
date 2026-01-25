@@ -52,14 +52,14 @@ ListView {
 }
 
 .match-booking-controls-row {
-    height: 3;
-    min-height: 3;
+    height: 6;
+    min-height: 6;
     align: left middle;
     width: 1fr;
 }
 
 .match-booking-control-group {
-    height: 3;
+    height: 6;
     align: left middle;
     margin-right: 2;
 }
@@ -90,7 +90,7 @@ ListView {
 .match-booking-controls Select {
     border: round gray;
     display: block;
-    min-height: 3;
+    min-height: 6;
     min-width: 10;
     padding: 0 1;
     content-align: center middle;
@@ -123,7 +123,7 @@ ListView {
 
 .match-wrestlers-scroll ListItem {
     height: auto;
-    min-height: 28;
+    min-height: 29;
 }
 
 .match-wrestlers-scroll ListItem > .wrestler-view {
