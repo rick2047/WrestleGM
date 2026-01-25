@@ -4,14 +4,15 @@
 TBD - created by archiving change add-wrestlegm-mvp. Update Purpose after archive.
 ## Requirements
 ### Requirement: Data-driven wrestler definitions
-The system SHALL load wrestler definitions from `data/wrestlers.json` with fields `id`, `name`, `alignment`, `popularity`, `stamina`, and `mic_skill`.
+The system SHALL load wrestler definitions from `data/wrestlers.json` with fields `id`, `name`, `alignment`, `popularity`, `stamina`, `mic_skill`, `description`, and `avatar_path`. If `description` or `avatar_path` is missing, the system SHALL default it to an empty string.
 
 #### Scenario: Load roster on startup
 - **WHEN** the app starts
-- **THEN** it loads all wrestler definitions from `data/wrestlers.json`
+- **THEN** it loads all wrestler definitions from `data/wrestlers.json` including `description` and `avatar_path`
+- **AND THEN** missing `description` or `avatar_path` fields default to empty strings
 
 ### Requirement: Optional wrestler fields
-The system SHALL not require optional wrestler fields such as `style`, `tags`, or `injury_status`, and SHALL ignore additional fields not used by the MVP.
+The system SHALL ignore optional wrestler fields beyond the defined schema (such as `style`, `tags`, or `injury_status`) while preserving the required fields including `description` and `avatar_path`.
 
 #### Scenario: Optional wrestler fields ignored
 - **WHEN** wrestler data includes extra fields
@@ -36,3 +37,4 @@ The system SHALL define a static match category registry with `id`, `name`, and 
 #### Scenario: Load match categories
 - **WHEN** the app starts
 - **THEN** the match category registry includes Singles, Triple Threat, and Fatal 4-Way with the correct sizes
+
