@@ -55,15 +55,11 @@ ListView {
     height: 3;
     min-height: 3;
     layout: grid;
-    grid-size: 2 1;
-    grid-columns: 12 8;
+    grid-size: 4 1;
+    grid-columns: 12 8 6 18;
     grid-rows: 1;
     grid-gutter: 1;
     align: left middle;
-}
-
-.match-booking-controls-row.stipulation-row {
-    grid-columns: 6 18;
 }
 
 .inline-label {

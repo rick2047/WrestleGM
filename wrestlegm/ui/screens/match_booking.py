@@ -74,9 +74,6 @@ class MatchBookingScreen(Screen):
                             classes="match-category-select",
                         )
                         yield self.match_category_select
-                    with Grid(
-                        classes="match-booking-controls-row stipulation-row"
-                    ):
                         yield Label("Stip:", classes="inline-label")
                         match_type_options = self._match_type_options_for_category(
                             self.initial_category_id
