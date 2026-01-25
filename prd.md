@@ -1281,71 +1281,193 @@ The system SHALL display an emoji-only rivalry summary in the Match Booking head
 Global layout: all `Screen` instances align center/middle via `wrestlegm/ui/styles.tcss`, and most screens render a `Footer` with key bindings.
 
 ### MainMenuScreen
-Layout: Static title, EdgeAwareListView with three ListItem entries, Footer.
-Classes: `section-title`.
+- Structure
+  - `Screen`
+  - `Static("WrestleGM")` → classes: `section-title`
+  - `EdgeAwareListView`
+    - `ListItem(Static("New Game"))` id: `new-game`
+    - `ListItem(Static("Load Game"))` id: `load-game`
+    - `ListItem(Static("Quit"))` id: `quit`
+  - `Footer`
+- Classes used: `section-title`
 
 ### GameHubScreen
-Layout: Static app title, Static screen title, EdgeAwareListView with show/roster/exit entries, Footer.
-Classes: `section-title`.
+- Structure
+  - `Screen`
+  - `Static("WrestleGM")` → classes: `section-title`
+  - `Static("Game Hub")` → classes: `section-title`
+  - `EdgeAwareListView`
+    - `ListItem(Static("Book Current Show…"))` id: `current-show`
+    - `ListItem(Static("Roster Overview"))` id: `roster`
+    - `ListItem(Static("Exit to Main Menu"))` id: `exit`
+  - `Footer`
+- Classes used: `section-title`
 
 ### SaveSlotSelectionScreen
-Layout: Static app title, Static mode title, FilteredListView of slots, Footer.
-Classes: `section-title`.
+- Structure
+  - `Screen`
+  - `Static("WrestleGM")` → classes: `section-title`
+  - `Static(title)` where title is "Load Game" or "New Game" → classes: `section-title`
+  - `FilteredListView`
+    - `ListItem(Static(slot label))` id: `slot-{index}`
+  - `Footer`
+- Classes used: `section-title`
 
 ### BookingHubScreen
-Layout: Static app title, Static show header, EdgeAwareListView for slot summaries, Vertical container with Run Show and Back buttons, Footer.
-Classes: `section-title`.
+- Structure
+  - `Screen`
+  - `Static("WrestleGM")` → classes: `section-title`
+  - `Static(show header)` → classes: `section-title`
+  - `EdgeAwareListView`
+    - `ListItem(Static(slot summary))` id: `slot-item-{index}`
+  - `Vertical`
+    - `Button("Run Show")` id: `run-show`
+    - `Button("Back")` id: `back`
+  - `Footer`
+- Classes used: `section-title`
 
 ### MatchBookingScreen
-Layout: Vertical `booking-shell` wrapping a Vertical `booking-card` with header, control rows, wrestler list, plus a Horizontal `booking-actions` button row; Footer.
-Classes: `booking-screen`, `booking-shell`, `booking-card`, `match-booking-header`, `match-booking-controls`, `match-booking-controls-row`, `match-booking-control-group`, `booking-section-title`, `match-wrestlers-scroll`, `booking-actions`, `match-category-select`, `match-type-select`.
-WrestlerView classes (used in each ListItem): `wrestler-view`, `wrestler-name-header`, `wrestler-empty-label`, `wrestler-avatar-frame`, `wrestler-avatar`, `wrestler-info`, `wrestler-stats`, `wrestler-description`, `wrestler-rivalry-title`, `wrestler-rivalry-scroll`, `wrestler-rivalry`.
+- Structure
+  - `Screen` → classes: `booking-screen`
+  - `Vertical` → classes: `booking-shell`
+    - `Vertical` → classes: `booking-card`
+      - `Static(header)` → classes: `match-booking-header`
+      - `Vertical` → classes: `match-booking-controls`
+        - `Horizontal` → classes: `match-booking-controls-row`
+          - `Horizontal` → classes: `match-booking-control-group`
+            - `SafeSelect` id: `match-category` → classes: `match-category-select`
+          - `Horizontal` → classes: `match-booking-control-group`
+            - `SafeSelect` id: `match-type` → classes: `match-type-select`
+      - `Static("Wrestlers")` → classes: `booking-section-title`
+      - `FilteredListView` → classes: `match-wrestlers-scroll`
+        - `ListItem(WrestlerView)` id: `field-wrestler-{index}`
+    - `Horizontal` → classes: `booking-actions`
+      - `Button("Clear Slot")` id: `clear`
+      - `Button("Confirm")` id: `confirm`
+      - `Button("Cancel")` id: `cancel`
+  - `Footer`
+- Classes used: `booking-screen`, `booking-shell`, `booking-card`, `match-booking-header`, `match-booking-controls`, `match-booking-controls-row`, `match-booking-control-group`, `booking-section-title`, `match-wrestlers-scroll`, `booking-actions`, `match-category-select`, `match-type-select`
+- WrestlerView subtree classes (applies per list item)
+  - Root: `wrestler-view`
+  - Name: `wrestler-name-header`
+  - Empty label: `wrestler-empty-label`
+  - Avatar frame: `wrestler-avatar-frame`
+  - Avatar: `wrestler-avatar`
+  - Info container: `wrestler-info`
+  - Stats: `wrestler-stats`
+  - Rivalry title: `wrestler-rivalry-title`
+  - Rivalry scroll: `wrestler-rivalry-scroll`
+  - Rivalry text: `wrestler-rivalry`
 
 ### PromoBookingScreen
-Layout: Vertical `booking-shell` wrapping a Vertical `booking-card` with header and performer list, plus a Horizontal `booking-actions` button row; Footer.
-Classes: `booking-screen`, `booking-shell`, `booking-card`, `match-booking-header`, `booking-section-title`, `match-wrestlers-scroll`, `booking-actions`.
-WrestlerView classes: `wrestler-view`, `wrestler-name-header`, `wrestler-empty-label`, `wrestler-avatar-frame`, `wrestler-avatar`, `wrestler-info`, `wrestler-stats`, `wrestler-description`.
+- Structure
+  - `Screen` → classes: `booking-screen`
+  - `Vertical` → classes: `booking-shell`
+    - `Vertical` → classes: `booking-card`
+      - `Static(header)` → classes: `match-booking-header`
+      - `Static("Performer")` → classes: `booking-section-title`
+      - `EdgeAwareListView` → classes: `match-wrestlers-scroll`
+        - `ListItem(WrestlerView)` id: `field-wrestler`
+    - `Horizontal` → classes: `booking-actions`
+      - `Button("Clear Slot")` id: `clear`
+      - `Button("Confirm")` id: `confirm`
+      - `Button("Cancel")` id: `cancel`
+  - `Footer`
+- Classes used: `booking-screen`, `booking-shell`, `booking-card`, `match-booking-header`, `booking-section-title`, `match-wrestlers-scroll`, `booking-actions`
+- WrestlerView subtree classes (same as MatchBookingScreen, without rivalry blocks)
 
 ### WrestlerSelectionScreen
-Layout: Static title, EdgeAwareDataTable roster, Static message line, Horizontal button row, Footer.
-Classes: none applied in compose.
+- Structure
+  - `Screen`
+  - `Static(title)`
+  - `EdgeAwareDataTable`
+  - `Static(message line)`
+  - `Horizontal`
+    - `Button("Select")` id: `select`
+    - `Button("Cancel")` id: `cancel`
+  - `Footer`
+- Classes used: none applied in compose
 
 ### WrestlerInspectModal
-Layout: Vertical modal panel with title, WrestlerView, and hint line.
-Classes: `panel`, `inspect-panel`, `section-title`, `modal-hint`.
-WrestlerView classes: `wrestler-view`, `wrestler-name-header`, `wrestler-empty-label`, `wrestler-avatar-frame`, `wrestler-avatar`, `wrestler-info`, `wrestler-stats`, `wrestler-description`, `wrestler-rivalry-title`, `wrestler-rivalry-scroll`, `wrestler-rivalry`.
+- Structure
+  - `ModalScreen`
+  - `Vertical` → classes: `panel inspect-panel`
+    - `Static("Wrestler Details")` → classes: `section-title`
+    - `WrestlerView`
+    - `Static("[ Esc to close ]")` → classes: `modal-hint`
+- Classes used: `panel`, `inspect-panel`, `section-title`, `modal-hint`
+- WrestlerView subtree classes: `wrestler-view`, `wrestler-name-header`, `wrestler-empty-label`, `wrestler-avatar-frame`, `wrestler-avatar`, `wrestler-info`, `wrestler-stats`, `wrestler-description`, `wrestler-rivalry-title`, `wrestler-rivalry-scroll`, `wrestler-rivalry`
 
 ### RosterScreen
-Layout: Static title, EdgeAwareDataTable roster, Back button, Footer.
-Classes: `section-title`.
+- Structure
+  - `Screen`
+  - `Static("Roster Overview")` → classes: `section-title`
+  - `EdgeAwareDataTable`
+  - `Button("Back")` id: `back`
+  - `Footer`
+- Classes used: `section-title`
 
 ### ResultsScreen
-Layout: Static title, Static results body, Static show rating, Continue button, Footer.
-Classes: `section-title`.
+- Structure
+  - `Screen`
+  - `Static("Show Results")` → classes: `section-title`
+  - `Static(results body)`
+  - `Static(show rating)`
+  - `Button("Continue")` id: `continue`
+  - `Footer`
+- Classes used: `section-title`
 
 ### SimulatingScreen
-Layout: Static status line, Footer.
-Classes: none applied in compose.
+- Structure
+  - `Screen`
+  - `Static("Simulating show...")`
+  - `Footer`
+- Classes used: none applied in compose
 
 ### GuardScreen
-Layout: Static message, Footer.
-Classes: `guard-message`.
+- Structure
+  - `Screen`
+  - `Static(message)` → classes: `guard-message`
+  - `Footer`
+- Classes used: `guard-message`
 
 ### ConfirmBookingModal
-Layout: Vertical modal panel with prompt and Confirm/Cancel buttons.
-Classes: `panel`.
+- Structure
+  - `ModalScreen`
+  - `Vertical` → classes: `panel`
+    - `Static("Confirm booking?")`
+    - `Button("Confirm")` id: `confirm`
+    - `Button("Cancel")` id: `cancel`
+- Classes used: `panel`
 
 ### ErrorModal
-Layout: Vertical modal panel with title, message, Ok button.
-Classes: `panel`.
+- Structure
+  - `ModalScreen`
+  - `Vertical` → classes: `panel`
+    - `Static("Error")`
+    - `Static(message)`
+    - `Button("Ok")` id: `ok`
+- Classes used: `panel`
 
 ### NameSaveSlotModal
-Layout: Vertical modal panel with title, Input, Confirm/Cancel buttons.
-Classes: `panel`.
+- Structure
+  - `ModalScreen`
+  - `Vertical` → classes: `panel`
+    - `Static("Name Save Slot")`
+    - `Input(placeholder="Slot name")`
+    - `Button("Confirm")` id: `confirm`
+    - `Button("Cancel")` id: `cancel`
+- Classes used: `panel`
 
 ### OverwriteSaveSlotModal
-Layout: Vertical modal panel with title, description, Confirm/Cancel buttons.
-Classes: `panel`.
+- Structure
+  - `ModalScreen`
+  - `Vertical` → classes: `panel`
+    - `Static("Overwrite Slot {n}?")`
+    - `Static('This will replace "{name}".')`
+    - `Button("Confirm")` id: `confirm`
+    - `Button("Cancel")` id: `cancel`
+- Classes used: `panel`
 
 ---
 # FILE: openspec/specs/ui-testing/spec.md
