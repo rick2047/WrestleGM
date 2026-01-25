@@ -46,12 +46,14 @@ ListView {
 
 .match-booking-controls {
     height: auto;
+    min-height: 6;
     margin-bottom: 1;
     align: left middle;
 }
 
 .match-booking-controls-row {
     height: 3;
+    min-height: 3;
     layout: grid;
     grid-size: 2 1;
     grid-columns: auto 8;
