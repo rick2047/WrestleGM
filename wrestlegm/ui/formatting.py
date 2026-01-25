@@ -71,7 +71,9 @@ def slot_label(slot_index: int, slot_type: str) -> str:
 def row_key_to_id(row_key: object) -> str:
     """Normalize Textual row keys to their underlying string ID."""
 
-    value = getattr(row_key, "value", row_key)
+    value = getattr(row_key, "key", row_key)
+    value = getattr(value, "value", value)
+    value = getattr(value, "value", value)
     return str(value)
 
 

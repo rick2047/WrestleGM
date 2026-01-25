@@ -25,3 +25,158 @@ ListView {
 .spacer {
     height: 1;
 }
+
+.booking-shell {
+    width: 1fr;
+    height: 1fr;
+    padding: 1 2;
+}
+
+.booking-card {
+    border: solid gray;
+    padding: 1 2;
+    width: 1fr;
+    height: 1fr;
+}
+
+.match-booking-header {
+    text-style: bold;
+    margin-bottom: 1;
+}
+
+.match-booking-controls {
+    height: auto;
+    min-height: 6;
+    margin-bottom: 1;
+    align: left middle;
+}
+
+.match-booking-controls-row {
+    height: 6;
+    min-height: 6;
+    align: left middle;
+    width: 1fr;
+}
+
+.match-booking-control-group {
+    height: 6;
+    align: left middle;
+    margin-right: 2;
+}
+
+.match-booking-controls-row > .match-booking-control-group:first-child {
+    margin-right: 4;
+}
+
+.inline-label {
+    width: 10;
+    margin-right: 1;
+}
+
+.inline-label-short {
+    width: 6;
+    margin-right: 1;
+}
+
+#match-category {
+    min-width: 12;
+    margin-right: 2;
+}
+
+#match-type {
+    min-width: 12;
+}
+
+.match-booking-controls Select {
+    border: round gray;
+    display: block;
+    min-height: 6;
+    min-width: 10;
+    padding: 0 1;
+    content-align: center middle;
+}
+
+
+.match-wrestlers-scroll {
+    height: 1fr;
+}
+
+.booking-actions {
+    height: auto;
+    margin-top: 1;
+}
+
+.booking-screen {
+    align: left top;
+}
+
+.booking-section-title {
+    text-style: bold;
+    margin-bottom: 1;
+}
+
+.wrestler-view {
+    border: solid gray;
+    padding: 1 2;
+    margin-bottom: 1;
+}
+
+.match-wrestlers-scroll ListItem {
+    height: auto;
+    min-height: 29;
+}
+
+.match-wrestlers-scroll ListItem > .wrestler-view {
+    height: auto;
+}
+
+.wrestler-name-header {
+    text-style: bold;
+    margin-bottom: 1;
+}
+
+.wrestler-empty-label {
+    text-style: bold;
+    margin-bottom: 1;
+}
+
+.wrestler-avatar-frame {
+    height: 24;
+    width: 48;
+    margin-bottom: 1;
+}
+
+.wrestler-avatar {
+    height: 24;
+    width: 48;
+}
+
+.wrestler-stats {
+    margin-bottom: 1;
+}
+
+.wrestler-description {
+    margin-bottom: 1;
+}
+
+.wrestler-rivalry-title {
+    text-style: bold;
+    margin-bottom: 1;
+}
+
+.wrestler-rivalry-scroll {
+    height: 5;
+}
+
+.guard-message {
+    text-align: center;
+}
+
+.inspect-panel {
+    width: 60;
+}
+
+.modal-hint {
+    text-align: center;
+    margin-top: 1;
+}

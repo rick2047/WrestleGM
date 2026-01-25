@@ -165,24 +165,19 @@ The system SHALL show five slots in fixed order (Match 1, Promo 1, Match 2, Prom
 - **THEN** the Game Hub is shown
 
 ### Requirement: Match booking flow
-The system SHALL edit matches in a dedicated booking screen, require confirmation before committing, and split match category selection (size) from stipulation selection (rules). The booking screen SHALL open after a category is chosen, render one wrestler row per required slot based on category, filter stipulations to those allowed for the selected category, allow changing stipulation via an inline dropdown, default the stipulation to the first available option when booking an empty slot, mark already-booked wrestlers with a 📅 indicator in the selection list, show popularity and stamina, display alignment via emoji (Face 😃, Heel 😈), render the selection list as a table with Name/Stamina/Mic/Popularity columns, include a header row naming the name/stamina/mic/popularity columns, truncate names longer than 18 characters to 15 + `...`, format rows as `{emoji} {name:<18} {sta:>3} {mic:>3} {pop:>3}{fatigue}{booked_marker}`, and use 🥱 consistently for low-stamina indicators.
+The system SHALL edit matches in a dedicated booking screen with a single card layout, require confirmation before committing, allow selecting the wrestler count inline, render participants as a vertical list of Wrestler Views, filter stipulations by the selected wrestler count, and keep validation rules unchanged. The match booking screen SHALL show a rivalry summary header, allow changing stipulation via an inline dropdown, default the stipulation to the first available option when booking an empty slot, and keep Clear Slot/Cancel behavior consistent with current booking flows.
 
-#### Scenario: Stipulation dropdown opens on Enter
-- **WHEN** the user focuses the stipulation dropdown in match booking
-- **AND WHEN** they press Enter
-- **THEN** the stipulation dropdown opens without error
+#### Scenario: Inline wrestler count selection
+- **WHEN** the match booking screen is shown
+- **THEN** the user can select the required wrestler count inline without opening a separate category screen
 
-#### Scenario: Match booking opens after category selection
-- **WHEN** the player selects a match category
-- **THEN** match booking opens for that slot
+#### Scenario: Wrestler views in match booking
+- **WHEN** the match booking screen renders
+- **THEN** each participant slot is a Wrestler View card in a vertical scroll list
 
-#### Scenario: Re-selecting a match category keeps early picks
-- **WHEN** the player re-selects a match category with fewer required slots
-- **THEN** the earliest selected wrestlers remain assigned and any extra slots are cleared
-
-#### Scenario: Re-selecting a match category adds new slots
-- **WHEN** the player re-selects a match category with more required slots
-- **THEN** the existing selected wrestlers remain assigned and new empty slots are added
+#### Scenario: Stipulation filtering
+- **WHEN** a wrestler count is selected
+- **THEN** the stipulation list includes only stipulations allowed for the derived match category
 
 #### Scenario: Confirm disabled until valid
 - **WHEN** the match booking screen has incomplete or invalid selections
@@ -192,25 +187,9 @@ The system SHALL edit matches in a dedicated booking screen, require confirmatio
 - **WHEN** the match slot is empty
 - **THEN** Clear Slot is disabled
 
-#### Scenario: Cancel returns to match category selection
-- **WHEN** the player selects Cancel or presses Escape in match booking
-- **THEN** they return to match category selection without committing changes
-
-#### Scenario: Draft selections show booked marker
-- **WHEN** the wrestler selection screen is opened during match booking
-- **THEN** wrestlers already selected in the current draft show a 📅 marker
-
-#### Scenario: Clear Slot returns to booking hub
-- **WHEN** the player clears a booked match slot
-- **THEN** the slot is emptied and the booking hub is shown
-
-#### Scenario: Stipulation list filters by category
-- **WHEN** a match category is selected
-- **THEN** the stipulation list includes only stipulations allowed for that category
-
-#### Scenario: Default stipulation for empty slots
-- **WHEN** the player books an empty match slot
-- **THEN** the stipulation defaults to the first available option
+#### Scenario: Cancel returns to booking hub
+- **WHEN** the player cancels match booking
+- **THEN** they return to the booking hub without committing changes
 
 ### Requirement: Match booking confirmation modal
 The system SHALL confirm match booking via a modal overlay with the prompt `Confirm booking?`, explicit Confirm/Cancel actions, and trapped focus.
@@ -269,30 +248,15 @@ The system SHALL render a Main Menu that offers New Game, Load Game, and Quit, a
 - **THEN** the only options are New Game, Load Game, and Quit
 
 ### Requirement: MVP screen list
-The system SHALL provide the following MVP screens: Main Menu, Save Slot Selection, Game Hub, Booking Hub, Match Booking, Promo Booking, Wrestler Selection, Match Category Selection, Match Confirmation modal, Simulating Show, Show Results, Name Save Slot modal, Overwrite Save Slot modal, and Roster Overview.
+The system SHALL provide the MVP screens defined in the PRD, including the startup guard screen for insufficient viewport size.
 
 #### Scenario: MVP screens are available
-- **WHEN** the player navigates through the UI
-- **THEN** each MVP screen is reachable via its expected flow
+- **WHEN** the app is running at or above the minimum viewport
+- **THEN** the main menu, game hub, booking hub, match booking, promo booking, wrestler selection, results, and roster screens are available
 
-#### Scenario: Main menu mockup layout
-- **WHEN** the Main Menu is displayed
-- **THEN** it matches the Main Menu mockup in the ASCII mockups section
-
-#### Scenario: Main menu options
-- **WHEN** the Main Menu is shown
-- **THEN** the only options are New Game, Load Game, and Quit
-
-#### Scenario: Quit from Main Menu
-- **WHEN** the player presses Q on the Main Menu
-- **THEN** the application quits
-
-#### Scenario: Enter session from Main Menu
-- **WHEN** the player selects New Game
-- **THEN** the Save Slot Selection screen is shown
-
-- **WHEN** the player selects Load Game
-- **THEN** the Save Slot Selection screen is shown
+#### Scenario: Guard screen availability
+- **WHEN** the app is started in a terminal smaller than 60x30
+- **THEN** the guard screen is shown in place of the normal UI
 
 ### Requirement: Game hub screen
 The system SHALL provide a Game Hub screen that displays the current show number and offers Book Current Show, Roster Overview, and Exit to Main Menu actions. The hub SHALL be the gateway to gameplay screens once a session is active, except for the initial entry after creating or loading a save which MAY enter the Booking Hub directly. The show subtitle line under Book Current Show SHALL display the show name/number and be non-selectable text.
@@ -344,14 +308,14 @@ The system SHALL present a Simulating screen that runs `GameState.run_show()` on
 - **THEN** user input is ignored
 
 ### Requirement: Promo booking flow
-The system SHALL provide a promo booking screen that edits a single wrestler for a promo slot and requires confirmation before committing.
+The system SHALL provide a promo booking screen that edits a single wrestler for a promo slot, renders the wrestler slot as a Wrestler View, disallows rivalry blocks in this context, and requires confirmation before committing.
 
 #### Scenario: Empty promo slot booking
 - **WHEN** the user opens promo booking for an empty slot
-- **THEN** the screen shows a single Wrestler field and a disabled Confirm action
+- **THEN** the screen shows a single Wrestler View and a disabled Confirm action
 
 #### Scenario: Promo wrestler field opens selection
-- **WHEN** the player activates the Wrestler field
+- **WHEN** the player activates the Wrestler View
 - **THEN** the wrestler selection screen opens
 
 #### Scenario: Confirm promo booking
@@ -371,18 +335,18 @@ The system SHALL provide a promo booking screen that edits a single wrestler for
 - **THEN** changes are discarded and the booking hub is shown
 
 ### Requirement: Shared wrestler selection for promos
-The system SHALL reuse the existing wrestler selection screen for promo booking and may change only the contextual title text and validation rules needed to allow low-stamina promo selection.
+The system SHALL reuse the wrestler selection screen for promo booking with contextual title text and validation rules that allow low-stamina promo selection, and SHALL keep the inspection modal available.
 
 #### Scenario: Promo wrestler selection layout
 - **WHEN** the user opens wrestler selection from promo booking
-- **THEN** the table layout, columns, and indicators match the match-booking selection screen
+- **THEN** the table layout, columns, indicators, and inspection modal match match-booking selection behavior
 
 ### Requirement: Wrestler selection screen layout
-The system SHALL render a wrestler selection table with Name/Sta/Mic/Pop columns, an inline message row for blocking errors, and Select/Cancel actions.
+The system SHALL render a wrestler selection table with Name, Pop, Sta, Mic, and Align columns, an inline message row for blocking errors, Select/Cancel actions, and an inspect hint for the `i` key.
 
 #### Scenario: Wrestler selection components
 - **WHEN** the wrestler selection screen renders
-- **THEN** it shows the table, inline message row, and Select/Cancel actions
+- **THEN** it shows the table, inline message row, Select/Cancel actions, and an inspect hint
 
 ### Requirement: Mic skill visibility in roster and selection
 The system SHALL display wrestler mic skill on the roster overview and wrestler selection screens using the same table layout.
@@ -391,20 +355,8 @@ The system SHALL display wrestler mic skill on the roster overview and wrestler 
 - **WHEN** the roster overview or wrestler selection screen renders
 - **THEN** the table includes a Mic column showing each wrestler's mic skill value
 
-### Requirement: Match category selection screen
-The system SHALL provide a match category selection screen when booking a match slot and use the selected category to determine the required wrestler count in match booking.
-
-#### Scenario: Match category selection
-- **WHEN** the user selects a match slot on the booking hub
-- **THEN** the match category selection screen lists Singles, Triple Threat, and Fatal 4-Way
-- **AND THEN** selecting a match category opens match booking for that slot
-
-#### Scenario: Match category actions
-- **WHEN** the match category selection screen is shown
-- **THEN** Select and Cancel actions are available
-
 ### Requirement: Rivalry and cooldown emoji display
-The system SHALL display rivalry and cooldown emojis on the match name line in the Booking Hub and Match Booking screens using the specified emoji mappings, and SHALL update the emoji list live as wrestlers are added or removed.
+The system SHALL display rivalry and cooldown emojis on the match name line in the Booking Hub, and SHALL display an aggregated rivalry summary in the Match Booking header along with compact rivalry badges within Wrestler Views. Wrestler View rivalry badges SHALL reflect only rivalries between the displayed wrestler and other participants in the current match.
 
 #### Scenario: Booking hub emojis
 - **WHEN** a match slot is rendered in the Booking Hub
@@ -412,15 +364,15 @@ The system SHALL display rivalry and cooldown emojis on the match name line in t
 
 #### Scenario: Match booking emojis
 - **WHEN** the match booking screen has at least two wrestlers selected
-- **THEN** rivalry and cooldown emojis appear on the match name line and update as selections change
+- **THEN** the header shows the rivalry summary and each Wrestler View shows compact rivalry badges
 
 ### Requirement: Rivalry and cooldown emoji mapping and order
-The system SHALL map rivalry levels to ⚡, 🔥, ⚔️, and 💥 for levels 1–4 respectively, map cooldown remaining shows to 🧊 (6–5), ❄️ (4–3), and 💧 (2–1), and order emojis by wrestler pair order derived from the booked wrestler list.
+The system SHALL map rivalry levels to ⚡, 🔥, ⚔️, and 💥 for levels 1–4 respectively, map cooldown remaining shows to 🧊 (6–5), ❄️ (4–3), and 💧 (2–1), and SHALL aggregate match booking header emojis across unordered wrestler pairs using ASCII `xN` compression.
 
 #### Scenario: Emoji mapping and ordering
-- **WHEN** a match includes multiple rivalry or cooldown pairs
-- **THEN** emojis are ordered by the unique pair order derived from the match wrestler list
-- **AND THEN** each emoji uses the correct mapping for the pair's rivalry level or cooldown remaining shows
+- **WHEN** rivalries or cooldowns are displayed
+- **THEN** each emoji uses the correct mapping for the pair's rivalry level or cooldown remaining shows
+- **AND THEN** the match booking header aggregates across unordered pairs using ASCII `xN` counts
 
 ### Requirement: No rivalry emojis in show results
 The system SHALL not display rivalry or cooldown emojis on the Show Results screen.
@@ -446,235 +398,125 @@ The system SHALL provide keyboard-only interaction, deterministic behavior, no a
 ### Requirement: Widget mapping
 The system SHALL map each screen to the following primary Textual widgets.
 
-| Screen               | Primary Widgets             |
-| -------------------- | --------------------------- |
-| Main Menu            | ListView, Static, Footer    |
-| Game Hub             | ListView, Static, Footer    |
-| Booking Hub          | ListView, Static, Button    |
+| Screen               | Primary Widgets                  |
+| -------------------- | -------------------------------- |
+| Main Menu            | ListView, Static, Footer         |
+| Game Hub             | ListView, Static, Footer         |
+| Booking Hub          | ListView, Static, Button         |
 | Match Booking        | ListView, Select, Static, Button |
-| Promo Booking        | ListView, Static, Button    |
-| Wrestler Selection   | DataTable, Static, Button   |
-| Match Category Selection | ListView, Static, Button    |
-| Confirmation         | ModalScreen, Static, Button |
-| Simulating           | Static, Footer              |
-| Results              | Static, Button, Footer      |
-| Roster               | DataTable, Static, Button   |
+| Promo Booking        | ListView, Static, Button         |
+| Wrestler Selection   | DataTable, Static, Button        |
+| Wrestler Inspect Modal | ModalScreen, Static, Button     |
+| Confirmation         | ModalScreen, Static, Button      |
+| Simulating           | Static, Footer                   |
+| Results              | Static, Button, Footer           |
 
 #### Scenario: Widget usage
-- **WHEN** a screen is implemented
-- **THEN** it uses the primary widgets listed for that screen
+- **WHEN** each screen renders
+- **THEN** it uses the primary widgets specified in the mapping
 
 ### Requirement: ASCII mockups
-The system SHALL match the following ASCII mockups for the MVP screens.
+The system SHALL match the following ASCII mockups for the MVP screens relevant to booking and wrestler inspection.
 
-#### Scenario: Screen layouts follow mockups
-- **WHEN** an MVP screen is displayed
-- **THEN** it matches the corresponding ASCII mockup
+#### Scenario: Match booking mockup layout
+- **WHEN** the Match Booking screen renders
+- **THEN** it matches the following layout:
 
-#### Main Menu
 ```
-┌──────────────────────────────────────┐
-│ WrestleGM                            │
-│ Main Menu                            │
-├──────────────────────────────────────┤
-│ ▸ New Game                           │
-│                                      │
-│   Quit                               │
-│                                      │
-├──────────────────────────────────────┤
-│ ↑↓ Navigate   Enter Select           │
-└──────────────────────────────────────┘
-```
-
-#### Game Hub
-```
-┌──────────────────────────────────────┐
-│ WrestleGM                            │
-│ Game Hub                             │
-├──────────────────────────────────────┤
-│ ▸ Book Current Show                  │
-│   Show #12                           │
-│                                      │
-│   Roster Overview                    │
-│                                      │
-│   Exit to Main Menu                  │
-├──────────────────────────────────────┤
-│ ↑↓ Navigate   Enter Select   Q Quit  │
-└──────────────────────────────────────┘
+┌──────────────────────────────────────────────┐
+│ Match #1        🔥 x1                         │
+├──────────────────────────────────────────────┤
+│ [ 2 ▾ ]    [ Singles ▾ ]                      │
+│                                              │
+│ Wrestlers (VerticalScroll)                    │
+│  ▶ 😃 Kazuchika Okada                         │
+│    ┌───────────────┐                         │
+│    │  avatar.png   │                         │
+│    │ (half render) │                         │
+│    └───────────────┘                         │
+│    ⭐92  🔋28  🎤88                            │
+│    🔥                                        │
+│                                              │
+│    😈 Jay White                               │
+│    ┌───────────────┐                         │
+│    │  avatar.png   │                         │
+│    │ (half render) │                         │
+│    └───────────────┘                         │
+│    ⭐85  🔋40  🎤70                            │
+│    🔥                                        │
+│                                              │
+│ [ Clear Slot ]   [ Confirm ]   [ Back ]       │
+└──────────────────────────────────────────────┘
 ```
 
-#### Booking Hub (Slot-Level)
+#### Scenario: Promo booking mockup layout
+- **WHEN** the Promo Booking screen renders
+- **THEN** it matches the following layout:
+
 ```
-┌──────────────────────────────────────┐
-│ WrestleGM                            │
-│ Show #12                             │
-├──────────────────────────────────────┤
-│ ▸ Match 1                            │
-│   😃 Kenny Omega vs 😈 Eddie Kingston │
-│   Singles · Hardcore                 │
-│                                      │
-│   Promo 1                            │
-│   Jon Moxley                         │
-│                                      │
-│   Match 2                            │
-│   😈 Jon Moxley vs 😃 Claudio vs 😃 Kenny │
-│   Triple Threat · Submission         │
-│                                      │
-│   Promo 2                            │
-│   [ Empty ]                          │
-│                                      │
-│   Match 3                            │
-│   [ Empty ]                          │
-│                                      │
-├──────────────────────────────────────┤
-│ [ Run Show ] (disabled)              │
-│ [ Back ]                             │
-└──────────────────────────────────────┘
+┌──────────────────────────────────────────────┐
+│ Promo Slot #2                                 │
+├──────────────────────────────────────────────┤
+│ Performer                                     │
+│  ▶ 😃 Kazuchika Okada                         │
+│    ┌───────────────┐                         │
+│    │  avatar.png   │                         │
+│    │ (half render) │                         │
+│    └───────────────┘                         │
+│    ⭐92  🔋28  🎤88                            │
+│                                              │
+│ [ Clear Slot ]   [ Confirm ]   [ Back ]       │
+└──────────────────────────────────────────────┘
 ```
 
-#### Match Booking (Empty Slot)
+#### Scenario: Wrestler selection inspect modal mockup
+- **WHEN** the user opens inspection from wrestler selection
+- **THEN** it matches the following layout:
+
 ```
-┌──────────────────────────────────────┐
-│ Book Match 3                         │
-│ Singles                              │
-├──────────────────────────────────────┤
-│ ▸ [ Empty ]                          │
-│                                      │
-│   [ Empty ]                          │
-│                                      │
-│   Stipulation                        │
-│   [ Hardcore ▾ ]                     │
-│                                      │
-├──────────────────────────────────────┤
-│ [ Confirm ] (disabled)               │
-│ [ Clear Slot ] (disabled)            │
-│ [ Cancel ]                           │
-└──────────────────────────────────────┘
+┌──────────────────────────────────────────────┐
+│ Select Wrestler                               │
+├──────────────────────────────────────────────┤
+│ Name            ⭐   🔋   🎤   Align            │
+│ ▶ Okada           92   28   88   😃            │
+│   Jay White       85   40   70   😈            │
+│   Naito           88   35   82   😃            │
+│   Omega           90   30   85   😃            │
+│                                              │
+│ ┌──────────────────────────────────────────┐ │
+│ │ Wrestler Details                          │ │
+│ │ 😃 Kazuchika Okada                        │ │
+│ │ ──────────────────────────────────────── │ │
+│ │ ┌───────────────┐                        │ │
+│ │ │  avatar.png   │                        │ │
+│ │ │ (half render) │                        │ │
+│ │ └───────────────┘                        │ │
+│ │ ⭐92  🔋28  🎤88                          │ │
+│ │ "Ace of the Rainmaker..."                │ │
+│ │                                          │ │
+│ │ Rivalries                                 │ │
+│ │  💥 Kenny Omega                           │ │
+│ │  ⚔️ Tetsuya Naito                         │ │
+│ │  🔥 Jay White                             │ │
+│ │                                          │ │
+│ │              [ Esc to close ]             │ │
+│ └──────────────────────────────────────────┘ │
+└──────────────────────────────────────────────┘
 ```
 
-#### Match Booking (Filled Slot)
-```
-┌──────────────────────────────────────┐
-│ Book Match 3                         │
-│ Singles                              │
-├──────────────────────────────────────┤
-│ ▸ 😃 Kenny Omega                     │
-│                                      │
-│   😈 Eddie Kingston                  │
-│                                      │
-│   Stipulation                        │
-│   Submission                         │
-│                                      │
-├──────────────────────────────────────┤
-│ [ Confirm ]                          │
-│ [ Clear Slot ]                       │
-│ [ Cancel ]                           │
-└──────────────────────────────────────┘
-```
+#### Scenario: Guard screen mockup
+- **WHEN** the guard screen is shown
+- **THEN** it matches the following layout:
 
-#### Promo Booking (Filled Slot)
 ```
-┌──────────────────────────────────────┐
-│ Book Promo 1                         │
-│ Jon Moxley                           │
-├──────────────────────────────────────┤
-│ ▸ Wrestler                           │
-│   Jon Moxley                         │
-│                                      │
-├──────────────────────────────────────┤
-│ [ Confirm ]                          │
-│ [ Clear Slot ]                       │
-│ [ Cancel ]                           │
-└──────────────────────────────────────┘
-```
-
-#### Wrestler Selection
-```
-Select Wrestler (Match 3 · A)
-
-| Name                 | Sta | Mic | Pop |
-| -------------------- | --- | --- | ---:|
-| 😃 Kenny Omega       |  28 |  88 |  92 🥱 📅 |
-| 😈 Jon Moxley        |  12 |  86 |  88 🥱   |
-| 😃 Eddie Kingston    |  64 |  70 |  74     |
-
-⛔ Already booked in Match 2
-
-[ Select ]   [ Cancel ]
-```
-
-#### Match Category Selection
-```
-┌──────────────────────────────────────┐
-│ Select Match Category                │
-├──────────────────────────────────────┤
-│ ▸ Singles                            │
-│                                      │
-│   Triple Threat                      │
-│                                      │
-│   Fatal 4-Way                        │
-├──────────────────────────────────────┤
-│ [ Select ]   [ Cancel ]              │
-└──────────────────────────────────────┘
-```
-
-#### Match Booking Confirmation (Modal)
-```
-              ┌──────────────────────┐
-              │ Confirm booking?     │
-              ├──────────────────────┤
-              │ [ Confirm ]          │
-              │ [ Cancel ]           │
-              └──────────────────────┘
-```
-
-#### Show Results
-```
-┌────────────────────────── SHOW RESULTS ──────────────────────────┐
-│ WrestleGM                                                        │
-│ Show #12 · RAW                                                   │
-├──────────────────────────────────────────────────────────────────┤
-│ Match 1                                                         │
-│ 😃 Kenny Omega def. 😈 Eddie Kingston                            │
-│ Singles · Hardcore                                               │
-│                                                          ★★★☆☆ │
-│                                                                  │
-│ Promo 1                                                         │
-│ Jon Moxley                                                      │
-│                                                          ★★☆☆☆ │
-│                                                                  │
-│ Match 2                                                         │
-│ 😈 Jon Moxley def. 😃 Claudio Castagnoli                          │
-│ Singles · Submission                                             │
-│                                                          ★★★★☆ │
-│                                                                  │
-│ Promo 2                                                         │
-│ Maria Blaze                                                     │
-│                                                          ★★☆☆☆ │
-│                                                                  │
-│ Match 3                                                         │
-│ 😃 Alpha def. 😈 Beta, 😃 Gamma                                   │
-│ Triple Threat · High Flying                                      │
-│                                                          ★★★☆☆ │
-├──────────────────────────────────────────────────────────────────┤
-│ Show Rating: ★★★½☆                                             │
-│                                                                  │
-│ [ Continue ]                                                    │
-└──────────────────────────────────────────────────────────────────┘
-```
-
-#### Roster Overview
-```
-Roster Overview
-
-| Name                   | Sta | Mic | Pop |
-| ---------------------- | --- | --- | ---:|
-| 😃 Kenny Omega         |  28 |  88 |  89  |
-| 😈 Jon Moxley          |  12 |  86 |  82 🥱 |
-| 😃 Eddie Kingston      |  64 |  70 |  74  |
-| 😃 Claudio Castagnoli  |  71 |  75 |  77  |
-
-[ Back ]
+┌──────────────────────────────────────────────┐
+│                                              │
+│   Terminal size too small (need 60x30).       │
+│   Resize your terminal and restart the app.  │
+│                                              │
+│                [ Q ] Quit                    │
+│                                              │
+└──────────────────────────────────────────────┘
 ```
 
 ### Requirement: Save slot selection screen
@@ -750,4 +592,47 @@ The Textual app SHALL load its CSS from a `.tcss` file to keep styling separate 
 #### Scenario: CSS path configuration
 - **WHEN** the app starts
 - **THEN** `WrestleGMApp` loads styling via `CSS_PATH` pointing at the UI stylesheet
+
+### Requirement: Minimum viewport guard screen
+The system SHALL enforce a minimum terminal viewport of 60 columns by 30 rows at startup. If the terminal is smaller than 60x30 at startup, the system SHALL replace the normal UI with a non-interactive guard screen that only allows quitting the application.
+
+#### Scenario: Guard screen shown on small viewport
+- **WHEN** the app starts in a terminal smaller than 60x30
+- **THEN** the guard screen is shown with a Quit action and no other UI elements
+
+### Requirement: Wrestler View component
+The system SHALL provide a reusable Wrestler View component that is built from configurable blocks (avatar, header, stats, description, rivalry) and renders in fixed height. Callers MUST explicitly enable or disable each block; absence of a block MUST NOT affect layout stability of the others.
+
+#### Scenario: Wrestler View block configuration
+- **WHEN** a Wrestler View is instantiated
+- **THEN** each block is rendered only if explicitly enabled
+
+### Requirement: Wrestler View empty-state behavior
+The system SHALL render an empty-state Wrestler View with a placeholder image and "Select Wrestler", and SHALL render no other blocks while in the empty state.
+
+#### Scenario: Empty-state rendering
+- **WHEN** a Wrestler View has no assigned wrestler
+- **THEN** only the placeholder image and "Select Wrestler" are shown
+
+### Requirement: Wrestler View avatar rendering
+The system SHALL render wrestler avatars using a rich-pixels half renderer from 48x48 PNG assets, defaulting to a standard wrestler image when `avatar_path` is empty or invalid, and MUST NOT crash on image load errors.
+
+#### Scenario: Avatar fallback
+- **WHEN** a wrestler has an empty or invalid `avatar_path`
+- **THEN** the default wrestler image is rendered without error
+
+### Requirement: Wrestler selection inspection modal
+The system SHALL provide a read-only Wrestler View inspection modal from the wrestler selection table, opened with `i` and closed with `Esc`, and SHALL restore focus to the same table row after closing.
+
+#### Scenario: Inspect modal flow
+- **WHEN** the user presses `i` on the wrestler selection screen
+- **THEN** the inspection modal opens without changing selection
+- **AND THEN** pressing `Esc` closes the modal and returns focus to the same row
+
+### Requirement: Match booking rivalry summary header
+The system SHALL display an emoji-only rivalry summary in the Match Booking header by aggregating rivalries across all unordered wrestler pairs and compressing counts using ASCII `xN` (e.g., `💥 x3`). The header MUST NOT wrap, scroll, or overflow.
+
+#### Scenario: Rivalry summary aggregation
+- **WHEN** a match has multiple rivalry pairs
+- **THEN** the header displays each rivalry emoji with an ASCII count suffix
 

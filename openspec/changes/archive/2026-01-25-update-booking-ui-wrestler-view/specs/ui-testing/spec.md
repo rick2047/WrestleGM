@@ -1,8 +1,12 @@
-# ui-testing Specification
+## ADDED Requirements
+### Requirement: Viewport guard tests
+The system SHALL include UI tests that validate the startup viewport guard behavior for terminals smaller than 60x30.
 
-## Purpose
-TBD - created by archiving change add-ui-testing. Update Purpose after archive.
-## Requirements
+#### Scenario: Guard screen validation
+- **WHEN** the app starts with a viewport smaller than 60x30
+- **THEN** the guard screen is shown and only the Quit action is available
+
+## MODIFIED Requirements
 ### Requirement: Textual UI test harness
 The system SHALL provide a Textual UI test harness that uses Textual test utilities to drive keyboard-only interactions in a deterministic environment.
 
@@ -10,13 +14,6 @@ The system SHALL provide a Textual UI test harness that uses Textual test utilit
 - **WHEN** UI tests run
 - **THEN** they use a fixed RNG seed of 2047
 - **AND THEN** they use a fixed viewport size of 80x40
-
-### Requirement: UI test fixtures
-The system SHALL provide dedicated UI test fixtures for roster and match type inputs to ensure deterministic flows and snapshots.
-
-#### Scenario: Fixture-based UI data
-- **WHEN** UI tests run
-- **THEN** they load roster and match type data from `tests/fixtures/ui/`
 
 ### Requirement: UI flow tests
 The system SHALL include UI flow tests that validate keyboard-only navigation and state progression across core gameplay screens, and SHALL organize them into modules that reflect the UI screen structure.
@@ -61,26 +58,3 @@ The system SHALL generate deterministic SVG snapshots for canonical UI screens a
   - S19 Save Slot Selection (mixed)
   - S20 Name Save Slot Modal
   - S21 Overwrite Save Slot Modal
-
-### Requirement: Snapshot baseline management
-The system SHALL store SVG snapshot baselines in-repo using the `pytest-textual-snapshot` naming conventions.
-
-#### Scenario: Baseline location and naming
-- **WHEN** baselines are committed
-- **THEN** they live under `tests/snapshots/`
-- **AND THEN** filenames are derived from snapshot test function names and stored with the `.svg` extension
-
-### Requirement: Snapshot enforcement
-The system SHALL fail tests when snapshot output does not match baselines.
-
-#### Scenario: Snapshot mismatch handling
-- **WHEN** a generated snapshot differs from its baseline
-- **THEN** the test run fails
-
-### Requirement: Viewport guard tests
-The system SHALL include UI tests that validate the startup viewport guard behavior for terminals smaller than 60x30.
-
-#### Scenario: Guard screen validation
-- **WHEN** the app starts with a viewport smaller than 60x30
-- **THEN** the guard screen is shown and only the Quit action is available
-

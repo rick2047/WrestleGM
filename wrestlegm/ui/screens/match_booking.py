@@ -2,19 +2,25 @@
 
 from __future__ import annotations
 
+from itertools import combinations
+
 from textual.app import ComposeResult
-from textual.containers import Vertical
+from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.screen import Screen
-from textual.widgets import Button, Footer, ListItem, ListView, Select, Static
+from textual.widgets import Button, Footer, Label, ListItem, ListView, Select, Static
 
 from wrestlegm import constants
 from wrestlegm.models import Match, MatchTypeDefinition
 
 from ..drafts import BookingDraft
-from ..formatting import build_name_cell, match_category_label, match_category_size, slot_label
-from ..routes import MATCH_BOOKING, MATCH_CATEGORY
+from ..formatting import match_category_size, slot_label
+from ..widgets import SafeSelect
 from ..widgets.list_views import FilteredListView
-from ..widgets.safe_select import SafeSelect
+from ..widgets.wrestler_view import (
+    WrestlerView,
+    WrestlerViewConfig,
+    build_wrestler_view_data,
+)
 from .modals import ConfirmBookingModal
 from .wrestler_selection import WrestlerSelectionScreen
 
@@ -29,6 +35,7 @@ class MatchBookingScreen(Screen):
     """
 
     BINDINGS = [
+        ("enter", "select_field", "Select"),
         ("up", "focus_prev", "Prev"),
         ("down", "focus_next", "Next"),
         ("escape", "cancel", "Cancel"),
@@ -47,50 +54,88 @@ class MatchBookingScreen(Screen):
     def compose(self) -> ComposeResult:
         """Build the match booking layout."""
 
-        self.header = Static("", classes="section-title")
-        yield self.header
-        self.detail = Static("", classes="section-title")
-        yield self.detail
+        with Vertical(classes="booking-shell"):
+            with Vertical(classes="booking-card"):
+                self.header = Static("", classes="match-booking-header")
+                yield self.header
 
-        max_wrestlers = max(
-            (category["size"] for category in constants.MATCH_CATEGORIES.values()),
-            default=2,
-        )
-        self.wrestler_items: list[Static] = []
-        self.wrestler_list_items: list[ListItem] = []
-        for index in range(max_wrestlers):
-            item = Static("")
-            self.wrestler_items.append(item)
-            self.wrestler_list_items.append(ListItem(item, id=f"field-wrestler-{index}"))
-        self.fields = FilteredListView(
-            *self.wrestler_list_items,
-            is_item_active=lambda item: item.styles.display != "none",
-            on_edge_prev=self.action_focus_prev,
-            on_edge_next=self.action_focus_next,
-        )
-        yield self.fields
+                with Vertical(classes="match-booking-controls"):
+                    with Horizontal(classes="match-booking-controls-row"):
+                        with Horizontal(classes="match-booking-control-group"):
+                            category_options = self._match_category_options()
+                            initial_category = (
+                                self.draft.match_category_id
+                                or (category_options[0][1] if category_options else None)
+                            )
+                            self.match_category_select = SafeSelect(
+                                category_options,
+                                value=initial_category,
+                                allow_blank=False,
+                                id="match-category",
+                                classes="match-category-select",
+                            )
+                            yield self.match_category_select
+                        with Horizontal(classes="match-booking-control-group"):
+                            match_type_options = self._match_type_options_for_category(
+                                self.initial_category_id
+                            )
+                            initial_match_type = (
+                                match_type_options[0][1] if match_type_options else None
+                            )
+                            self.match_type_select = SafeSelect(
+                                match_type_options,
+                                value=initial_match_type,
+                                allow_blank=False,
+                                id="match-type",
+                                classes="match-type-select",
+                            )
+                            yield self.match_type_select
 
-        self.match_type_label = Static("Stipulation")
-        yield self.match_type_label
-        self.match_type_select = SafeSelect(
-            self._match_type_options_for_category(self.initial_category_id),
-            id="match-type",
-        )
-        yield self.match_type_select
+                yield Static("Wrestlers", classes="booking-section-title")
 
-        with Vertical():
-            self.confirm_button = Button("Confirm", id="confirm")
-            self.clear_button = Button("Clear Slot", id="clear")
-            self.cancel_button = Button("Cancel", id="cancel")
-            yield self.confirm_button
-            yield self.clear_button
-            yield self.cancel_button
+                max_wrestlers = max(
+                    (category["size"] for category in constants.MATCH_CATEGORIES.values()),
+                    default=2,
+                )
+                self.wrestler_views: list[WrestlerView] = []
+                self.wrestler_list_items: list[ListItem] = []
+                config = WrestlerViewConfig(
+                    show_avatar=True,
+                    show_name=True,
+                    show_stats=True,
+                    show_description=False,
+                    show_rivalry=True,
+                    rivalry_compact=True,
+                )
+                for index in range(max_wrestlers):
+                    view = WrestlerView(None, config)
+                    self.wrestler_views.append(view)
+                    self.wrestler_list_items.append(
+                        ListItem(view, id=f"field-wrestler-{index}")
+                    )
+                self.fields = FilteredListView(
+                    *self.wrestler_list_items,
+                    is_item_active=lambda item: item.styles.display != "none",
+                    on_edge_prev=self.action_focus_prev,
+                    on_edge_next=self.action_focus_next,
+                )
+                self.fields.add_class("match-wrestlers-scroll")
+                yield self.fields
+
+            with Horizontal(classes="booking-actions"):
+                self.clear_button = Button("Clear Slot", id="clear")
+                self.confirm_button = Button("Confirm", id="confirm")
+                self.cancel_button = Button("Cancel", id="cancel")
+                yield self.clear_button
+                yield self.confirm_button
+                yield self.cancel_button
 
         yield Footer()
 
     def on_mount(self) -> None:
         """Load existing slot data and focus the field list."""
 
+        self.add_class("booking-screen")
         self.fields.focus()
         existing = self.app.state.show_card[self.slot_index]
         if isinstance(existing, Match):
@@ -100,55 +145,45 @@ class MatchBookingScreen(Screen):
         if self.initial_category_id is not None:
             self.draft.match_category_id = self.initial_category_id
         self._apply_match_category_change()
+        self._refresh_match_category_options()
         self._refresh_match_type_options()
         self.refresh_view()
 
     def refresh_view(self) -> None:
         """Update field labels, buttons, and match summary."""
 
-        base_label = f"Book {slot_label(self.slot_index, 'match')}"
+        base_label = f"{slot_label(self.slot_index, 'match')}"
         selected_ids = [wrestler_id for wrestler_id in self.draft.wrestler_ids if wrestler_id]
-        emojis = self.app.state.rivalry_emojis_for_match(selected_ids)
-        header_text = f"{base_label}  {emojis}" if emojis else base_label
+        summary = self.app.state.rivalry_summary_for_match(selected_ids)
+        header_text = f"{base_label}  {summary}" if summary else base_label
         self.header.update(header_text)
-        self.detail.update(self.category_label())
 
         required_count = self.required_wrestler_count()
-        for index, item in enumerate(self.wrestler_items):
+        for index, view in enumerate(self.wrestler_views):
             list_item = self.wrestler_list_items[index]
             if index < required_count:
                 wrestler_id = self.draft.wrestler_ids[index]
-                item.update(self.wrestler_field_text(wrestler_id))
+                wrestler_view = (
+                    build_wrestler_view_data(self.app.state, wrestler_id)
+                    if wrestler_id
+                    else None
+                )
+                rivalries = self._rivalry_badges_for_wrestler(wrestler_id)
+                view.set_wrestler(wrestler_view, rivalries=rivalries)
                 list_item.styles.display = "block"
             else:
                 list_item.styles.display = "none"
 
-        if (
-            self.fields.index is not None
-            and self.fields.index < len(self.wrestler_list_items)
-            and self.fields.index >= required_count
-        ):
-            self.fields.index = 0 if required_count else len(self.wrestler_list_items)
+        if self.fields.index is not None:
+            current_item = self.fields.children[self.fields.index]
+            wrestler_index = self._wrestler_index_from_item(current_item)
+            if wrestler_index is None or wrestler_index >= required_count:
+                self._focus_first_wrestler(required_count)
 
         self.confirm_button.disabled = not self.draft.is_complete(required_count) or bool(
             self.validate_draft()
         )
         self.clear_button.disabled = self.app.state.show_card[self.slot_index] is None
-
-    def wrestler_field_text(self, wrestler_id: str | None) -> str:
-        """Render the display text for a wrestler row."""
-
-        if wrestler_id is None:
-            return "[ Empty ]"
-        wrestler = self.app.state.roster[wrestler_id]
-        return build_name_cell(wrestler.name, wrestler.alignment)
-
-    def category_label(self) -> str:
-        """Return the current category label for the header detail."""
-
-        if self.draft.match_category_id is None:
-            return ""
-        return match_category_label(self.draft.match_category_id)
 
     def required_wrestler_count(self) -> int:
         """Return the required wrestler count for the selected category."""
@@ -161,11 +196,6 @@ class MatchBookingScreen(Screen):
         """Ensure draft wrestler slots match the selected category."""
 
         self.draft.ensure_size(self.required_wrestler_count())
-
-    def _available_match_types(self) -> list[MatchTypeDefinition]:
-        """Return match types allowed for the selected category."""
-
-        return self._available_match_types_for_category(self.draft.match_category_id)
 
     def _available_match_types_for_category(
         self, match_category_id: str | None
@@ -192,10 +222,31 @@ class MatchBookingScreen(Screen):
             for match_type in self._available_match_types_for_category(match_category_id)
         ]
 
+    def _match_category_options(self) -> list[tuple[str, str]]:
+        """Return the match category options as wrestler counts."""
+
+        return [
+            (str(constants.MATCH_CATEGORIES[category_id]["size"]), category_id)
+            for category_id in constants.MATCH_CATEGORY_ORDER
+        ]
+
+    def _refresh_match_category_options(self) -> None:
+        """Update the match category dropdown options."""
+
+        options = self._match_category_options()
+        self.match_category_select.set_options(options)
+        self.match_category_select.disabled = not options
+        valid_ids = {value for _, value in options}
+        if self.draft.match_category_id not in valid_ids:
+            self.draft.match_category_id = options[0][1] if options else None
+        if self.draft.match_category_id is not None:
+            self.match_category_select.value = self.draft.match_category_id
+
     def _refresh_match_type_options(self) -> None:
         """Update match type dropdown options based on the category."""
 
         options = self._match_type_options_for_category(self.draft.match_category_id)
+        self.match_type_select.set_options(options)
         self.match_type_select.disabled = not options
         valid_ids = {value for _, value in options}
         if self.draft.match_type_id not in valid_ids:
@@ -220,21 +271,36 @@ class MatchBookingScreen(Screen):
     def action_select_field(self) -> None:
         """Open the selection screen for the highlighted field."""
 
+        if self.app.focused is self.match_category_select:
+            self.match_category_select.expanded = True
+            return
+        if self.app.focused is self.match_type_select:
+            self.match_type_select.expanded = True
+            return
+        if self.app.focused is not self.fields:
+            return
         selected = self.fields.index
         if selected is None:
             return
+        item = self.fields.children[selected]
+        wrestler_index = self._wrestler_index_from_item(item)
         required_count = self.required_wrestler_count()
-        if selected >= required_count:
+        if wrestler_index is None or wrestler_index >= required_count:
             return
-        title = f"Select Wrestler ({slot_label(self.slot_index, 'match')} · {selected + 1})"
-        current_ids = self._current_ids(exclude_index=selected)
+        title = (
+            f"Select Wrestler ({slot_label(self.slot_index, 'match')} · "
+            f"{wrestler_index + 1})"
+        )
+        current_ids = self._current_ids(exclude_index=wrestler_index)
         self.app.push_screen(
             WrestlerSelectionScreen(
                 slot_index=self.slot_index,
                 title=title,
                 current_ids=current_ids,
                 booked_ids=self._booked_ids(),
-                on_select=lambda wrestler_id: self.set_wrestler(selected, wrestler_id),
+                on_select=lambda wrestler_id: self.set_wrestler(
+                    wrestler_index, wrestler_id
+                ),
             )
         )
 
@@ -247,28 +313,23 @@ class MatchBookingScreen(Screen):
         self.refresh_view()
 
     def on_select_changed(self, event: Select.Changed) -> None:
-        """Update draft match type when selection changes."""
+        """Update draft selections when a dropdown changes."""
 
-        if event.select is self.match_type_select and event.value is not None:
+        if event.value is None:
+            return
+        if event.select is self.match_category_select:
+            self.draft.match_category_id = event.value
+            self._apply_match_category_change()
+            self._refresh_match_type_options()
+            self.refresh_view()
+        elif event.select is self.match_type_select:
             self.draft.match_type_id = event.value
             self.refresh_view()
 
     def action_cancel(self) -> None:
         """Discard changes and return to the booking hub."""
 
-        slot_index = self.slot_index
-        initial_category_id = self.draft.match_category_id or self.initial_category_id
         self.app.pop_screen()
-        self.app.navigate(
-            MATCH_CATEGORY,
-            slot_index=slot_index,
-            initial_category_id=initial_category_id,
-            on_select=lambda category_id: self.app.navigate(
-                MATCH_BOOKING,
-                slot_index=slot_index,
-                match_category_id=category_id,
-            ),
-        )
 
     def action_focus_next(self) -> None:
         """Move focus to the next booking control."""
@@ -280,11 +341,12 @@ class MatchBookingScreen(Screen):
 
         self._move_focus(-1)
 
-    def _move_focus(self, delta: int) -> None:
+    def _move_focus(self, delta: int, selector: str | None = None) -> None:
         """Cycle focus between fields and action buttons."""
 
         focus_order = [
             self.fields,
+            self.match_category_select,
             self.match_type_select,
             self.confirm_button,
             self.clear_button,
@@ -311,10 +373,12 @@ class MatchBookingScreen(Screen):
                 return
             self.app.push_screen(ConfirmBookingModal(), self.handle_confirmation)
         elif event.button.id == "clear":
+            if self.app.state.show_card[self.slot_index] is None:
+                return
             self.app.state.clear_slot(self.slot_index)
             self.app.pop_screen()
         elif event.button.id == "cancel":
-            self.app.pop_screen()
+            self.action_cancel()
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
         """Handle selection from the field list."""
@@ -324,6 +388,10 @@ class MatchBookingScreen(Screen):
         index = event.index
         if index is None:
             return
+        item = self.fields.children[index]
+        wrestler_index = self._wrestler_index_from_item(item)
+        if wrestler_index is None or wrestler_index >= self.required_wrestler_count():
+            return
         self.fields.index = index
         self.action_select_field()
 
@@ -331,7 +399,9 @@ class MatchBookingScreen(Screen):
         """Commit the draft match to the show card."""
 
         match = Match(
-            wrestler_ids=[wrestler_id for wrestler_id in self.draft.wrestler_ids if wrestler_id],
+            wrestler_ids=[
+                wrestler_id for wrestler_id in self.draft.wrestler_ids if wrestler_id
+            ],
             match_category_id=self.draft.match_category_id or "",
             match_type_id=self.draft.match_type_id or "",
         )
@@ -366,3 +436,40 @@ class MatchBookingScreen(Screen):
             for index, wrestler_id in enumerate(self.draft.wrestler_ids)
             if wrestler_id and index != exclude_index
         }
+
+    def _rivalry_badges_for_wrestler(self, wrestler_id: str | None) -> list[str]:
+        """Return compact rivalry emoji badges for a wrestler."""
+
+        if not wrestler_id:
+            return []
+        participants = [wrestler for wrestler in self.draft.wrestler_ids if wrestler]
+        if len(participants) < 2:
+            return []
+        badges: list[str] = []
+        for wrestler_a_id, wrestler_b_id in combinations(participants, 2):
+            if wrestler_id not in (wrestler_a_id, wrestler_b_id):
+                continue
+            emoji = self.app.state.rivalry_emoji_for_pair(wrestler_a_id, wrestler_b_id)
+            if emoji:
+                badges.append(emoji)
+        return badges
+
+    def _wrestler_index_from_item(self, item: ListItem) -> int | None:
+        if item.id is None:
+            return None
+        item_id = str(item.id)
+        if not item_id.startswith("field-wrestler-"):
+            return None
+        try:
+            return int(item_id.split("-")[-1])
+        except ValueError:
+            return None
+
+    def _focus_first_wrestler(self, required_count: int) -> None:
+        if required_count <= 0:
+            return
+        for index, item in enumerate(self.fields.children):
+            wrestler_index = self._wrestler_index_from_item(item)
+            if wrestler_index is not None and wrestler_index < required_count:
+                self.fields.index = index
+                return
