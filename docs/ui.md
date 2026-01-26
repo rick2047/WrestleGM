@@ -250,6 +250,7 @@ Focus behavior:
 
 - Use Textual's `App.run_test` with a fixed viewport of 80x40.
 - Load deterministic fixtures from `tests/fixtures/ui/`.
+- Fixtures are a curated snapshot of production data; refresh by copying `data/wrestlers.json` and `data/match_types.json` into `tests/fixtures/ui/` when needed.
 - Core journeys live in `tests/test_ui_flows.py` and exercise keyboard-only navigation.
 
 ### Snapshot Tests
