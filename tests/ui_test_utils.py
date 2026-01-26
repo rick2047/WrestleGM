@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import tempfile
 from pathlib import Path
 from typing import Awaitable, Callable
@@ -12,7 +13,7 @@ from textual.pilot import Pilot
 
 from wrestlegm import constants
 from wrestlegm.data import load_match_types, load_wrestlers
-from wrestlegm.models import Match, Promo
+from wrestlegm.models import Match, Promo, RivalryState, normalize_pair
 from wrestlegm.state import GameState
 from wrestlegm.session import SessionManager
 from wrestlegm.ui import (
@@ -31,6 +32,7 @@ from wrestlegm.ui import (
 )
 
 FIXTURE_DIR = Path(__file__).parent / "fixtures" / "ui"
+RIVALRY_FIXTURE = FIXTURE_DIR / "rivalries.json"
 VIEWPORT_SIZE = (80, 40)
 SEED = 2047
 
@@ -45,6 +47,7 @@ class TestWrestleGMApp(WrestleGMApp):
         self._save_dir = tempfile.TemporaryDirectory()
         self._wrestlers = load_wrestlers(FIXTURE_DIR / "wrestlers.json")
         self._match_types = load_match_types(FIXTURE_DIR / "match_types.json")
+        self._rivalry_states = load_rivalry_states(RIVALRY_FIXTURE)
         self.session = SessionManager(
             self._wrestlers,
             self._match_types,
@@ -52,12 +55,34 @@ class TestWrestleGMApp(WrestleGMApp):
             save_dir=Path(self._save_dir.name),
         )
         self.state = GameState(self._wrestlers, self._match_types, seed=SEED)
+        self._seed_rivalries()
 
     def new_game(self, slot_index: int, slot_name: str) -> None:
         """Start a fresh test session with the fixed seed."""
 
         self.state = self.session.new_game(slot_index, slot_name)
+        self._seed_rivalries()
         self.switch_screen(BookingHubScreen())
+
+    def _seed_rivalries(self) -> None:
+        """Load rivalry seed data into the test state."""
+
+        self.state.rivalry_manager.rivalry_states = dict(self._rivalry_states)
+
+
+def load_rivalry_states(path: Path) -> dict[tuple[str, str], RivalryState]:
+    """Load rivalry seed data from a fixture file."""
+
+    data = json.loads(path.read_text(encoding="utf-8"))
+    states: dict[tuple[str, str], RivalryState] = {}
+    for entry in data:
+        key = normalize_pair(entry["wrestler_a_id"], entry["wrestler_b_id"])
+        states[key] = RivalryState(
+            wrestler_a_id=key[0],
+            wrestler_b_id=key[1],
+            rivalry_value=int(entry["rivalry_value"]),
+        )
+    return states
 
 
 def run_async(coro: Awaitable[None]) -> None:

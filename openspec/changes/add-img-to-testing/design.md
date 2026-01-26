@@ -7,6 +7,7 @@ UI tests currently load fixtures from `tests/fixtures/ui/`, which can omit wrest
 **Goals:**
 - Snapshot the current production data into test fixtures once, keeping tests deterministic.
 - Ensure UI flow tests exercise wrestler images via the snapshot data.
+- Seed baseline rivalry data in fixtures so UI rivalry views are populated without extra test logic.
 - Keep production and test data separate going forward.
 
 **Non-Goals:**
@@ -19,7 +20,7 @@ UI tests currently load fixtures from `tests/fixtures/ui/`, which can omit wrest
   - *Rationale:* Preserves completeness (including images) while avoiding ongoing coupling.
   - *Alternative:* Always read from `data/`; rejected to avoid drift and unexpected test changes.
 
-- **Use a curated snapshot that already includes image-bearing wrestlers.**
+- **Use a curated snapshot that already includes image-bearing wrestlers and rivalry seed data.**
   - *Rationale:* Keeps tests deterministic without adding selection logic or validations.
   - *Alternative:* Add selection/filtering logic in tests; rejected to avoid complexity.
 
@@ -36,8 +37,9 @@ UI tests currently load fixtures from `tests/fixtures/ui/`, which can omit wrest
 ## Migration Plan
 
 - Copy current production wrestler and match type data into `tests/fixtures/ui/` as the snapshot.
-- Ensure the snapshot includes wrestlers with image attachments.
-- Keep existing UI flow tests unchanged; rely on the snapshot to provide image-bearing wrestlers.
+- Ensure the snapshot includes wrestlers with image attachments and a rivalry seed fixture.
+- Load rivalry seed data into the UI test state at startup.
+- Keep existing UI flow tests unchanged; rely on the snapshot to provide image-bearing wrestlers and rivalries.
 - Update snapshots if visual output changes.
 
 ## Open Questions

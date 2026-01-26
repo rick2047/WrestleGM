@@ -7,6 +7,7 @@ UI flow tests currently use fixtures that may omit images, which misses image-de
 - Capture a one-time snapshot of the current production wrestler and match type data (including images) into UI test fixtures.
 - Update UI flow tests to select wrestlers with image attachments from that snapshot data.
 - Keep production and test data separate to avoid test drift from future production updates.
+- Seed rivalry data in the UI fixtures so rivalry views are populated without extra test logic.
 
 ## Capabilities
 
