@@ -17,6 +17,9 @@ The system SHALL provide dedicated UI test fixtures for roster and match type in
 #### Scenario: Fixture-based UI data
 - **WHEN** UI tests run
 - **THEN** they load roster and match type data from `tests/fixtures/ui/`
+- **AND THEN** the fixture data is a snapshot of current production data captured intentionally, not a live mirror
+- **AND THEN** the snapshot is curated to include image-bearing wrestlers so existing tests exercise image rendering paths without extra selection logic
+- **AND THEN** the fixture snapshot includes rivalry seed data for UI tests
 
 ### Requirement: UI flow tests
 The system SHALL include UI flow tests that validate keyboard-only navigation and state progression across core gameplay screens, and SHALL organize them into modules that reflect the UI screen structure.
@@ -83,4 +86,3 @@ The system SHALL include UI tests that validate the startup viewport guard behav
 #### Scenario: Guard screen validation
 - **WHEN** the app starts with a viewport smaller than 60x30
 - **THEN** the guard screen is shown and only the Quit action is available
-
