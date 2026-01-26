@@ -1,66 +1,102 @@
 [
   {
-    "id": "alpha",
-    "name": "Alpha Ace",
+    "id": "brutus-hale",
+    "name": "Brutus Hale",
+    "alignment": "Heel",
+    "popularity": 82,
+    "stamina": 45,
+    "mic_skill": 60,
+    "description": "Ruthless powerhouse with a broken nose and a cold stare.",
+    "avatar_path": "data/images/01.png"
+  },
+  {
+    "id": "evan-bright",
+    "name": "Evan Bright",
+    "alignment": "Face",
+    "popularity": 86,
+    "stamina": 58,
+    "mic_skill": 84,
+    "description": "Charismatic hero with a confident smile and crowd-favorite energy.",
+    "avatar_path": "data/images/02.png"
+  },
+  {
+    "id": "silas-ward",
+    "name": "Silas Ward",
+    "alignment": "Face",
+    "popularity": 78,
+    "stamina": 62,
+    "mic_skill": 70,
+    "description": "Veteran technician, calm and calculating, with a steady gaze.",
+    "avatar_path": "data/images/03.png"
+  },
+  {
+    "id": "rex-slaughter",
+    "name": "Rex Slaughter",
+    "alignment": "Heel",
+    "popularity": 74,
+    "stamina": 68,
+    "mic_skill": 62,
+    "description": "Wild brawler with untamed hair and an unhinged, snarling glare.",
+    "avatar_path": "data/images/04.png"
+  },
+  {
+    "id": "kai-jetstream",
+    "name": "Kai Jetstream",
     "alignment": "Face",
     "popularity": 80,
-    "stamina": 80,
-    "mic_skill": 80
-  },
-  {
-    "id": "bravo",
-    "name": "Bravo Blade",
-    "alignment": "Heel",
-    "popularity": 70,
-    "stamina": 78,
-    "mic_skill": 70
-  },
-  {
-    "id": "charlie",
-    "name": "Charlie Clutch",
-    "alignment": "Face",
-    "popularity": 65,
-    "stamina": 74,
-    "mic_skill": 65
-  },
-  {
-    "id": "delta",
-    "name": "Delta Drop",
-    "alignment": "Heel",
-    "popularity": 60,
     "stamina": 72,
-    "mic_skill": 60
+    "mic_skill": 66,
+    "description": "High-flying cruiserweight, youthful, sharp-eyed, and built for speed.",
+    "avatar_path": "data/images/05.png"
   },
   {
-    "id": "echo",
-    "name": "Echo Edge",
+    "id": "el-niebla",
+    "name": "El Niebla",
     "alignment": "Face",
-    "popularity": 55,
+    "popularity": 76,
+    "stamina": 55,
+    "mic_skill": 60,
+    "description": "Mysterious masked wrestler with piercing eyes and a battered mask.",
+    "avatar_path": "data/images/06.png"
+  },
+  {
+    "id": "magnus-crown",
+    "name": "Magnus Crown",
+    "alignment": "Face",
+    "popularity": 90,
     "stamina": 70,
-    "mic_skill": 55
+    "mic_skill": 78,
+    "description": "Dominant champion with a proud, unyielding presence and iron calm.",
+    "avatar_path": "data/images/07.png"
   },
   {
-    "id": "foxtrot",
-    "name": "Foxtrot Fury",
+    "id": "vance-cruel",
+    "name": "Vance Cruel",
     "alignment": "Heel",
-    "popularity": 50,
-    "stamina": 68,
-    "mic_skill": 50
+    "popularity": 79,
+    "stamina": 50,
+    "mic_skill": 74,
+    "description": "Sadistic heel with a twisted grin and amused, sharp eyes.",
+    "avatar_path": "data/images/08.png"
   },
   {
-    "id": "gamma",
-    "name": "Gamma Groove",
+    "id": "kade-iron",
+    "name": "Kade Iron",
+    "alignment": "Heel",
+    "popularity": 77,
+    "stamina": 65,
+    "mic_skill": 58,
+    "description": "Stoic enforcer, shaved head, emotionless stare, relentless aura.",
+    "avatar_path": "data/images/09.png"
+  },
+  {
+    "id": "luca-flair",
+    "name": "Luca Flair",
     "alignment": "Face",
-    "popularity": 45,
-    "stamina": 66,
-    "mic_skill": 55
-  },
-  {
-    "id": "hotel",
-    "name": "Hotel Havoc",
-    "alignment": "Heel",
-    "popularity": 40,
-    "stamina": 64,
-    "mic_skill": 52
+    "popularity": 83,
+    "stamina": 48,
+    "mic_skill": 88,
+    "description": "Eccentric showman with wild charisma and a theatrical grin.",
+    "avatar_path": "data/images/10.png"
   }
 ]

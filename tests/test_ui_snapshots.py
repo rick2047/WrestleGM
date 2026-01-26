@@ -145,6 +145,7 @@ def test_snapshot_s10_wrestler_selection_inspect_modal(snap_compare) -> None:
         await open_match_booking(pilot, 0)
         await pilot.press("enter")
         await wait_for_screen(pilot, WrestlerSelectionScreen)
+        await pilot.press("down")
         await pilot.press("i")
         await wait_for_screen(pilot, WrestlerInspectModal)
 
