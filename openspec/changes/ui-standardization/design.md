@@ -34,20 +34,21 @@ The goal of this change is a cohesive, full-width layout where:
 
 ### 1) Introduce a shared base layout for non-modal screens
 
-**Decision:** Create a reusable “standard screen” abstraction that guarantees `header → content → footer` composition for all `Screen` instances.
+**Decision:** Use Textual’s built-in `Header()` widget for the header, and standardize non-modal screens around a shared “standard screen” abstraction that guarantees a consistent `header → content → footer` experience.
 
-**Rationale:** Centralizing the composition pattern ensures consistency, reduces duplication (e.g., repeated title `Static` patterns), and makes future screens automatically conform.
+**Rationale:** Centralizing the layout contract ensures consistency, reduces duplication (e.g., repeated title `Static` patterns), and keeps the header modular so it can grow beyond “just the screen title” later (e.g., show number, save slot name) without rewriting every screen.
 
 **Alternatives considered:**
 
-- **App-level header** (set `app.sub_title` per screen): reduces per-screen composition changes but makes “header” a global app concern and is less explicit in each screen’s DOM structure.
+- **Per-screen title `Static`**: makes the header explicit per screen but reintroduces drift and makes later header enhancements (adding game context) require touching every screen.
 - **Duplicate per-screen containers**: simplest in the moment but reintroduces drift and makes later tweaks tedious.
 
-**Chosen approach:** A base `Screen` class (e.g., `StandardScreen`) with:
+**Chosen approach:**
 
-- A required `TITLE` (or similar) string for the header.
-- A `compose_content()` hook that yields the screen’s main widgets into a content container (`height: 1fr`).
-- A shared header widget (`Static`) and a shared `Footer`.
+- Render a single `Header()` at the app level (configured/styled to be full-width and to show only the current screen name, centered).
+- Provide a small, reusable API for screens to set header state (initially just `screen_name`, later extensible to include game context).
+- Use a base `Screen` class (e.g., `StandardScreen`) with a required `TITLE` (or similar), which sets the header state on mount/resume and yields its main widgets into a content container (`height: 1fr`).
+- Preserve the existing per-screen `Footer()` usage so key bindings remain authoritative and modal-aware.
 
 ### 2) Make non-modal screens full-width and top-aligned by default
 
