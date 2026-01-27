@@ -6,7 +6,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
 
-from textual.app import ComposeResult
 from textual.app import App
 from textual.screen import Screen
 
@@ -36,7 +35,6 @@ from .screens.results import ResultsScreen
 from .screens.roster import RosterScreen
 from .screens.save_slots import SaveSlotSelectionScreen
 from .screens.simulating import SimulatingScreen
-from .widgets import HeaderState, WrestleHeader
 
 
 STYLES_PATH = Path(__file__).with_name("styles.tcss")
@@ -61,18 +59,6 @@ class WrestleGMApp(App):
         self._match_types = load_match_types()
         self.session = SessionManager(self._wrestlers, self._match_types)
         self.state = GameState(self._wrestlers, self._match_types)
-        self.header_state = HeaderState(title="")
-        self.header: WrestleHeader | None = None
-
-    def compose(self) -> ComposeResult:
-        self.header = WrestleHeader()
-        self.header.set_state(self.header_state)
-        yield self.header
-
-    def set_header_state(self, *, title: str, left: str = "", right: str = "") -> None:
-        self.header_state = HeaderState(title=title, left=left, right=right)
-        if self.header is not None:
-            self.header.set_state(self.header_state)
 
     def on_mount(self) -> None:
         """Show the main menu at startup."""

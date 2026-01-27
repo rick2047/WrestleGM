@@ -6,7 +6,7 @@ ModalScreen {
     align: center middle;
 }
 
-Header {
+WrestleHeader {
     dock: top;
     height: 1;
 }

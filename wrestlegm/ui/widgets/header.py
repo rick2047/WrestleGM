@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from rich.table import Table
 from rich.text import Text
 from textual.reactive import reactive
-from textual.widgets import Header
+from textual.widget import Widget
 
 
 @dataclass(frozen=True)
@@ -19,13 +19,23 @@ class HeaderState:
     right: str = ""
 
 
-class WrestleHeader(Header):
-    """A Textual Header that renders a centered screen title with optional side context."""
+class WrestleHeader(Widget):
+    """A header widget that renders a centered screen title with optional side context."""
+
+    DEFAULT_CSS = """
+    WrestleHeader {
+        dock: top;
+        width: 100%;
+        background: $panel;
+        color: $foreground;
+        height: 1;
+    }
+    """
 
     state: reactive[HeaderState] = reactive(HeaderState(title=""))
 
     def __init__(self, *, side_width: int = 22) -> None:
-        super().__init__(show_clock=False)
+        super().__init__()
         self.side_width = side_width
 
     def set_state(self, state: HeaderState) -> None:

@@ -30,7 +30,6 @@ from wrestlegm.ui import (
     WrestleGMApp,
     WrestlerSelectionScreen,
 )
-from wrestlegm.ui.widgets import HeaderState
 
 FIXTURE_DIR = Path(__file__).parent / "fixtures" / "ui"
 RIVALRY_FIXTURE = FIXTURE_DIR / "rivalries.json"
@@ -56,8 +55,6 @@ class TestWrestleGMApp(WrestleGMApp):
             save_dir=Path(self._save_dir.name),
         )
         self.state = GameState(self._wrestlers, self._match_types, seed=SEED)
-        self.header_state = HeaderState(title="")
-        self.header = None
         self._seed_rivalries()
 
     def new_game(self, slot_index: int, slot_name: str) -> None:
