@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: Standard screen layout structure
-The system SHALL standardize all non-modal UI screens to a `Header → Body → Actions → Footer` structure. The Header SHALL be full-width and display the current screen name centered. The header MAY additionally display screen-specific context badges (e.g., emoji indicators) alongside the screen name when defined by that screen. The Body region SHALL expand to fill available space and SHALL be implemented as a dedicated layout container with a configurable layout direction; the default Body layout direction SHALL be vertical. The Actions row SHALL be visually and structurally separate from the Body, SHALL contain only `Button` widgets, and SHALL remain pinned above the Footer.
+The system SHALL standardize all non-modal UI screens to a `Header → Body → Actions → Footer` structure. The Header SHALL be full-width and display the current screen name centered. The header MAY additionally display compact context outside the centered title, including screen-specific badges (e.g., emoji indicators for match booking) and/or global context derived from game state (e.g., show name/number or currency). The Body region SHALL expand to fill available space and SHALL be implemented as a dedicated layout container with a configurable layout direction; the default Body layout direction SHALL be vertical. The Actions row SHALL be visually and structurally separate from the Body, SHALL contain only `Button` widgets, and SHALL remain pinned above the Footer.
 
 #### Scenario: Header shows current screen name
 - **WHEN** any non-modal screen is shown
@@ -11,6 +11,10 @@ The system SHALL standardize all non-modal UI screens to a `Header → Body → 
 - **WHEN** a non-modal screen defines header context badges
 - **THEN** the header displays those badges alongside the screen name
 - **AND THEN** the badges update as the underlying screen state changes
+
+#### Scenario: Header can show compact game-state context
+- **WHEN** a non-modal screen defines compact header context derived from game state
+- **THEN** the header displays that context without shifting the centered screen name
 
 #### Scenario: Match booking header badges
 - **WHEN** the match booking screen is shown
