@@ -10,6 +10,7 @@ This leads to two consistency issues:
 The goal of this change is a cohesive, full-width layout where:
 
 - Non-modal screens show a single centered header containing only the screen name.
+- Some screens MAY append compact context badges (e.g., rivalry/cooldown emojis) to the header alongside the screen name.
 - The primary content region expands to fill remaining space, keeping the footer pinned to the bottom.
 - Modals remain overlay dialogs sized to their content (no full-screen modal framing).
 
@@ -48,7 +49,7 @@ The goal of this change is a cohesive, full-width layout where:
 **Chosen approach:**
 
 - Render a single `Header()` at the app level (configured/styled to be full-width and to show only the current screen name, centered).
-- Provide a small, reusable API for screens to set header state (initially just `screen_name`, later extensible to include game context).
+- Provide a small, reusable API for screens to set header state (initially `screen_name`, and optionally a compact list of context badges such as rivalry/cooldown emojis for match booking; later extensible to include additional game context).
 - Use a base `Screen` class (e.g., `StandardScreen`) with a required `TITLE` (or similar), which sets the header state on mount/resume and yields its main widgets into a body container (`height: 1fr`).
 - Provide an optional actions row container (pinned above the footer) for screens that need `Button` actions separate from the body.
 - Preserve the existing per-screen `Footer()` usage so key bindings remain authoritative and modal-aware.

@@ -1,12 +1,21 @@
 ## ADDED Requirements
 
 ### Requirement: Standard screen layout structure
-The system SHALL standardize all non-modal UI screens to a `Header → Body → Actions → Footer` structure. The Header SHALL be full-width and display only the current screen name centered. The Body region SHALL expand to fill available space and SHALL be implemented as a dedicated layout container with a configurable layout direction; the default Body layout direction SHALL be vertical. The Actions row SHALL be visually and structurally separate from the Body, SHALL contain only `Button` widgets, and SHALL remain pinned above the Footer.
+The system SHALL standardize all non-modal UI screens to a `Header → Body → Actions → Footer` structure. The Header SHALL be full-width and display the current screen name centered. The header MAY additionally display screen-specific context badges (e.g., emoji indicators) alongside the screen name when defined by that screen. The Body region SHALL expand to fill available space and SHALL be implemented as a dedicated layout container with a configurable layout direction; the default Body layout direction SHALL be vertical. The Actions row SHALL be visually and structurally separate from the Body, SHALL contain only `Button` widgets, and SHALL remain pinned above the Footer.
 
 #### Scenario: Header shows current screen name
 - **WHEN** any non-modal screen is shown
 - **THEN** the header displays the current screen name centered
-- **AND THEN** the header displays no other game state or hints
+
+#### Scenario: Screen-specific header badges
+- **WHEN** a non-modal screen defines header context badges
+- **THEN** the header displays those badges alongside the screen name
+- **AND THEN** the badges update as the underlying screen state changes
+
+#### Scenario: Match booking header badges
+- **WHEN** the match booking screen is shown
+- **THEN** the header includes the rivalry and cooldown emoji indicators relevant to the current draft selections
+- **AND THEN** the header updates as the draft selections change
 
 #### Scenario: Body expands to fill available space
 - **WHEN** any non-modal screen is shown
