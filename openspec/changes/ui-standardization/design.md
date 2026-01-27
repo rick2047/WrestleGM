@@ -4,7 +4,7 @@ WrestleGM’s Textual UI currently composes each screen independently. All `Scre
 
 This leads to two consistency issues:
 
-- Screens do not follow a consistent `header → content → footer` structure (no single, standardized header).
+- Screens do not follow a consistent `header → body → actions → footer` structure (no single, standardized header or consistent actions placement).
 - Many screens do not use available vertical space because widgets are sized to content and the overall screen is centered.
 
 The goal of this change is a cohesive, full-width layout where:
@@ -17,9 +17,11 @@ The goal of this change is a cohesive, full-width layout where:
 
 **Goals:**
 
-- Standardize all non-modal screens to `header → content → footer`.
+- Standardize all non-modal screens to `header → body → actions → footer`, with the actions row optional per-screen.
 - Render a full-width header on all non-modal screens with the current screen name centered.
-- Make the content region expand (`1fr`) so screens use the viewport effectively.
+- Make the body region expand (`1fr`) so screens use the viewport effectively.
+- Use a dedicated body container whose layout direction is configurable per-screen (default vertical) to support future horizontal layouts without rewriting the layout primitives.
+- Produce a concise style guide that documents the layout primitives (header/body/actions/footer), the CSS classes used, and examples for building new screens consistently.
 - Preserve existing footer behavior (bindings-only, modal-aware) and existing navigation behavior.
 - Keep modals as content-sized overlays that appear centered above the current screen.
 
@@ -34,7 +36,7 @@ The goal of this change is a cohesive, full-width layout where:
 
 ### 1) Introduce a shared base layout for non-modal screens
 
-**Decision:** Use Textual’s built-in `Header()` widget for the header, and standardize non-modal screens around a shared “standard screen” abstraction that guarantees a consistent `header → content → footer` experience.
+**Decision:** Use Textual’s built-in `Header()` widget for the header, and standardize non-modal screens around a shared “standard screen” abstraction that guarantees a consistent `header → body → actions → footer` experience.
 
 **Rationale:** Centralizing the layout contract ensures consistency, reduces duplication (e.g., repeated title `Static` patterns), and keeps the header modular so it can grow beyond “just the screen title” later (e.g., show number, save slot name) without rewriting every screen.
 
@@ -47,7 +49,8 @@ The goal of this change is a cohesive, full-width layout where:
 
 - Render a single `Header()` at the app level (configured/styled to be full-width and to show only the current screen name, centered).
 - Provide a small, reusable API for screens to set header state (initially just `screen_name`, later extensible to include game context).
-- Use a base `Screen` class (e.g., `StandardScreen`) with a required `TITLE` (or similar), which sets the header state on mount/resume and yields its main widgets into a content container (`height: 1fr`).
+- Use a base `Screen` class (e.g., `StandardScreen`) with a required `TITLE` (or similar), which sets the header state on mount/resume and yields its main widgets into a body container (`height: 1fr`).
+- Provide an optional actions row container (pinned above the footer) for screens that need `Button` actions separate from the body.
 - Preserve the existing per-screen `Footer()` usage so key bindings remain authoritative and modal-aware.
 
 ### 2) Make non-modal screens full-width and top-aligned by default
@@ -96,5 +99,4 @@ The goal of this change is a cohesive, full-width layout where:
 
 ## Open Questions
 
-- Should any screens intentionally omit the header (e.g., startup guard) or should all `Screen` instances always display it?
-- Do we want a strict single-line header (truncate/ellipsis) or allow wrapping when the title is long?
+- Header overflow strategy: titles SHOULD remain single-line; if a title would overflow, it SHOULD be truncated with an ellipsis rather than wrapping.
