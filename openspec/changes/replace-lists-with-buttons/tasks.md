@@ -16,4 +16,6 @@
     - [ ] Update focus management logic in `_move_focus` to correctly cycle between the new slot buttons and the action buttons.
 - [ ] **Verification**:
     - [ ] Run the application and manually test the functionality of all three refactored screens.
+    - [ ] Update UI tests to target `Button` widgets instead of list items where applicable.
+    - [ ] Update any focus/navigation tests to reflect button-based traversal.
     - [ ] Run the automated UI tests and update any snapshots that have changed as a result of the new button layout.

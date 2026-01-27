@@ -1,6 +1,6 @@
 ## Technical Design
 
-This change will be implemented by replacing `textual.widgets.ListView` components with `textual.widgets.Button` components in three key screens. The core logic will shift from handling `ListView.Selected` events to handling `Button.Pressed` events.
+This change will be implemented by replacing `textual.widgets.ListView` components with `textual.widgets.Button` components in three key screens. The core logic will shift from handling `ListView.Selected` events to handling `Button.Pressed` events. Keyboard navigation between options will be preserved by explicitly managing focus movement across buttons, mirroring the prior list navigation behavior. Layout will be updated so the button groups are centered and expand to better fill the screen, giving a more game-like presentation on large displays.
 
 ### 1. `MainMenuScreen` (`wrestlegm/ui/screens/main_menu.py`)
 
@@ -20,9 +20,9 @@ This change will be implemented by replacing `textual.widgets.ListView` componen
 
 ### 3. `BookingHubScreen` (`wrestlegm/ui/screens/booking_hub.py`)
 
--   **Current:** Uses an `EdgeAwareListView` to display the 7 show slots.
+-   **Current:** Uses an `EdgeAwareListView` to display the 5 show slots.
 -   **Proposed:**
     -   The `compose_body` method will loop from 0 to `constants.SHOW_SLOT_COUNT` and `yield` a `Button` for each slot. Each button will have a unique ID like `slot-button-0`.
-    -   The `refresh_view` method will be updated. Instead of updating `Static` widgets inside a list, it will now update the `.label` of each of the 7 `Button` widgets using the existing `slot_text` helper method.
+    -   The `refresh_view` method will be updated. Instead of updating `Static` widgets inside a list, it will now update the `.label` of each of the 5 `Button` widgets using the existing `slot_text` helper method.
     -   The `on_list_view_selected` and `action_edit_slot` handlers will be replaced. A new `on_button_pressed` handler will be added. It will parse the button ID (e.g., `slot-button-0`) to get the slot index and then call the appropriate navigation logic (e.g., `self.open_match_booking(index)`).
     -   Focus management logic (`_move_focus`) will need to be updated to cycle through the new slot buttons and the existing "Run Show" and "Back" buttons.
