@@ -38,3 +38,46 @@ The system SHALL standardize all non-modal UI screens to a `Header → Body → 
 - **WHEN** a modal screen is open
 - **THEN** it overlays the current screen and sizes to its content
 - **AND THEN** it does not render the standard screen header or actions row
+
+### Requirement: Header content per screen
+The system SHALL render the following header content on non-modal screens:
+
+| Screen | Header title | Header badges / context |
+| ------ | ------------ | ----------------------- |
+| Main Menu | `Main Menu` | None |
+| Save Slots (new) | `New Game` | None |
+| Save Slots (load) | `Load Game` | None |
+| Game Hub | `Game Hub` | None |
+| Booking Hub | `Booking Hub` | None |
+| Match Booking | `Match {N}` | Aggregated rivalry + cooldown emojis for the current draft selection |
+| Promo Booking | `Promo {N}` | None |
+| Wrestler Selection | Contextual selection title passed by the parent screen | None |
+| Roster | `Roster Overview` | None |
+| Results | `Show Results` | None |
+| Simulating | `Simulating` | None |
+| Viewport Guard | `Viewport Guard` | None |
+
+Unless explicitly specified above, the header SHALL display no additional badges or game-state context.
+
+#### Scenario: Main menu header title
+- **WHEN** the Main Menu screen is shown
+- **THEN** the header title is `Main Menu`
+
+#### Scenario: Save slots header title matches mode
+- **WHEN** the save slot selection screen is shown in new-game mode
+- **THEN** the header title is `New Game`
+- **WHEN** the save slot selection screen is shown in load-game mode
+- **THEN** the header title is `Load Game`
+
+#### Scenario: Booking hub header title
+- **WHEN** the Booking Hub screen is shown
+- **THEN** the header title is `Booking Hub`
+
+#### Scenario: Match booking header includes rivalry and cooldown emojis
+- **WHEN** the Match Booking screen is shown
+- **THEN** the header title follows `Match {N}` for the edited slot
+- **AND THEN** the header includes the aggregated rivalry and cooldown emojis for the current draft selection
+
+#### Scenario: Wrestler selection header uses contextual title
+- **WHEN** the wrestler selection screen is shown
+- **THEN** the header title matches the contextual title provided by the parent screen
