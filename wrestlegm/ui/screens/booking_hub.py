@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from textual.app import ComposeResult
-from textual.widgets import Button, ListItem, ListView, Static
+from textual.containers import Vertical
+from textual.widgets import Button, Static
 
 from wrestlegm import constants
 from wrestlegm.models import Match
@@ -15,7 +16,6 @@ from ..routes import (
     PROMO_BOOKING,
     SIMULATING,
 )
-from ..widgets.list_views import EdgeAwareListView
 from .standard import StandardScreen
 
 
@@ -29,7 +29,7 @@ class BookingHubScreen(StandardScreen):
     """
 
     BINDINGS = [
-        ("enter", "edit_slot", "Edit"),
+        ("enter", "select", "Select"),
         ("r", "run_show", "Run Show"),
         ("up", "focus_prev", "Prev"),
         ("down", "focus_next", "Next"),
@@ -44,18 +44,12 @@ class BookingHubScreen(StandardScreen):
         self.show_header = Static("", classes="section-title")
         yield self.show_header
 
-        self.slot_items: list[Static] = []
-        slot_list_items: list[ListItem] = []
-        for index in range(constants.SHOW_SLOT_COUNT):
-            slot_static = Static("", id=f"slot-{index}")
-            self.slot_items.append(slot_static)
-            slot_list_items.append(ListItem(slot_static, id=f"slot-item-{index}"))
-        self.slot_list = EdgeAwareListView(
-            *slot_list_items,
-            on_edge_prev=self.action_focus_prev,
-            on_edge_next=self.action_focus_next,
-        )
-        yield self.slot_list
+        self.slot_buttons: list[Button] = []
+        with Vertical(classes="booking-slot-group"):
+            for index in range(constants.SHOW_SLOT_COUNT):
+                button = Button("", id=f"slot-button-{index}", classes="booking-slot-button")
+                self.slot_buttons.append(button)
+                yield button
 
     def compose_actions(self) -> list[Button]:
         self.run_button = Button("Run Show", id="run-show")
@@ -64,18 +58,19 @@ class BookingHubScreen(StandardScreen):
         return [self.run_button, self.back_button]
 
     def on_mount(self) -> None:
-        """Focus the slot list and refresh the view."""
+        """Focus the first slot and refresh the view."""
 
         super().on_mount()
-        self.slot_list.focus()
         self.refresh_view()
+        if self.slot_buttons:
+            self.slot_buttons[0].focus()
 
     def refresh_view(self) -> None:
         """Update slot text and Run Show enablement."""
 
         self.show_header.update(f"Show #{self.app.state.show_index}")
-        for index, slot_static in enumerate(self.slot_items):
-            slot_static.update(self.slot_text(index))
+        for index, button in enumerate(self.slot_buttons):
+            button.label = self.slot_text(index)
         self.run_button.disabled = bool(self.app.state.validate_show())
 
     def slot_text(self, index: int) -> str:
@@ -100,29 +95,15 @@ class BookingHubScreen(StandardScreen):
         wrestler = self.app.state.roster[slot.wrestler_id]
         return f"{label}\n{wrestler.name}"
 
-    def action_edit_slot(self) -> None:
+    def action_select(self) -> None:
         """Open the booking screen for the selected slot."""
 
-        index = self.slot_list.index
-        if index is None:
+        focused = self.app.focused
+        if isinstance(focused, Button) and focused.id:
+            self._handle_selection(focused.id)
             return
-        if self.app.state.slot_type(index) == "match":
-            self.open_match_booking(index)
-        else:
-            self.app.navigate(PROMO_BOOKING, slot_index=index)
-
-    def on_list_view_selected(self, event: ListView.Selected) -> None:
-        """Handle slot selection from the list view."""
-
-        if event.list_view is not self.slot_list:
-            return
-        index = event.index
-        if index is None:
-            return
-        if self.app.state.slot_type(index) == "match":
-            self.open_match_booking(index)
-        else:
-            self.app.navigate(PROMO_BOOKING, slot_index=index)
+        if self.slot_buttons:
+            self._handle_selection(self.slot_buttons[0].id)
 
     def open_match_booking(self, slot_index: int) -> None:
         """Open match booking with the existing or default category."""
@@ -163,29 +144,44 @@ class BookingHubScreen(StandardScreen):
     def _move_focus(self, delta: int) -> None:
         """Cycle focus between the slot list and action buttons."""
 
-        focus_order = [self.slot_list, self.run_button, self.back_button]
+        focus_order = [*self.slot_buttons, self.run_button, self.back_button]
         focused = self.app.focused
         if focused not in focus_order:
-            focus_order[0].focus()
+            if self.slot_buttons:
+                self.slot_buttons[0].focus()
             return
         index = focus_order.index(focused)
         next_index = index
         for _ in range(len(focus_order)):
             next_index = (next_index + delta) % len(focus_order)
             candidate = focus_order[next_index]
-            if candidate is self.slot_list or not candidate.disabled:
-                if candidate is self.slot_list and focused is not self.slot_list:
-                    self.slot_list.index = 0
-                candidate.focus()
-                return
+            if candidate is self.run_button and candidate.disabled:
+                continue
+            candidate.focus()
+            return
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
-        """Handle Run Show and Back button presses."""
+        """Handle booking hub button presses."""
 
         if event.button.id == "run-show":
             self.action_run_show()
         elif event.button.id == "back":
             self.action_back()
+        else:
+            self._handle_selection(event.button.id)
+
+    def _handle_selection(self, button_id: str | None) -> None:
+        if not button_id:
+            return
+        if button_id.startswith("slot-button-"):
+            try:
+                index = int(button_id.replace("slot-button-", ""))
+            except ValueError:
+                return
+            if self.app.state.slot_type(index) == "match":
+                self.open_match_booking(index)
+            else:
+                self.app.navigate(PROMO_BOOKING, slot_index=index)
 
     def on_screen_resume(self) -> None:
         """Refresh slot details after returning to the hub."""
