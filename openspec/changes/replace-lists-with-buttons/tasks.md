@@ -3,6 +3,8 @@
     - [ ] Remove the `on_list_view_selected` event handler.
     - [ ] Implement the `on_button_pressed` event handler to manage navigation.
     - [ ] Remove the unused `on_mount` method and imports.
+- [ ] **Standard Screen Layout**:
+    - [ ] Center standard screen body content at the layout/style level so content is not clustered in the top-left on large screens.
 - [ ] **`GameHubScreen` Refactor**:
     - [ ] Change `compose_body` to yield `Button` widgets.
     - [ ] Remove the `on_list_view_selected` event handler.

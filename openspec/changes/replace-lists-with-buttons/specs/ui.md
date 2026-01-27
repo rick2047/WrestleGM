@@ -9,6 +9,13 @@ The application SHALL present main menu options as individual, selectable button
 - **AND** clicking one of these buttons MUST trigger the corresponding action.
 - **AND** the button group MUST be centered and sized to feel intentional on large screens, rather than clustered in the top-left.
 
+### Requirement: Standard Screen Layout
+The application SHALL center standard screen body content by default to avoid top-left clustering on large screens.
+
+#### Scenario: Viewing a standard screen
+- **WHEN** the user views a screen built on the standard layout
+- **THEN** the primary body content MUST be centered on the screen by default.
+
 ### Requirement: Game Hub Navigation
 The application SHALL present game hub options as individual, selectable buttons.
 

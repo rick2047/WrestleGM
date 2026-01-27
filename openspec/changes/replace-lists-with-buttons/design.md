@@ -1,6 +1,6 @@
 ## Technical Design
 
-This change will be implemented by replacing `textual.widgets.ListView` components with `textual.widgets.Button` components in three key screens. The core logic will shift from handling `ListView.Selected` events to handling `Button.Pressed` events. Keyboard navigation between options will be preserved by explicitly managing focus movement across buttons, mirroring the prior list navigation behavior. Layout will be updated so the button groups are centered and expand to better fill the screen, giving a more game-like presentation on large displays.
+This change will be implemented by replacing `textual.widgets.ListView` components with `textual.widgets.Button` components in three key screens. The core logic will shift from handling `ListView.Selected` events to handling `Button.Pressed` events. Keyboard navigation between options will be preserved by explicitly managing focus movement across buttons, mirroring the prior list navigation behavior. Layout will be updated so the button groups are centered and expand to better fill the screen, giving a more game-like presentation on large displays. At the layout level, `StandardScreen` will center its body content by default so screens are not clustered in the top-left on large viewports.
 
 ### 1. `MainMenuScreen` (`wrestlegm/ui/screens/main_menu.py`)
 
