@@ -104,6 +104,7 @@ jobs:
       - name: Run UI snapshot tests
         id: pytest
         env:
+          NO_COLOR: "0"
           RICH_COLOR_SYSTEM: standard
           TEXTUAL_COLOR_SYSTEM: standard
           TEXTUAL_DISABLE_CURSOR_BLINK: "1"
