@@ -20,6 +20,7 @@ StandardHeader {
 .screen-body {
     width: 1fr;
     height: 1fr;
+    align: center middle;
 }
 
 .screen-body--vertical {

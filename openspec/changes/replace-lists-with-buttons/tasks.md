@@ -1,5 +1,5 @@
-- [ ] **Standard Screen Layout**:
-    - [ ] Center standard screen body content at the layout/style level so content is not clustered in the top-left on large screens.
+- [x] **Standard Screen Layout**:
+    - [x] Center standard screen body content at the layout/style level so content is not clustered in the top-left on large screens.
 - [ ] **`MainMenuScreen` Refactor**:
     - [ ] Change `compose_body` to yield `Button` widgets for "New Game", "Load Game", and "Quit".
     - [ ] Remove the `on_list_view_selected` event handler.
