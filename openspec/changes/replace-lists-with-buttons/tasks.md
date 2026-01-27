@@ -1,0 +1,19 @@
+- [ ] **`MainMenuScreen` Refactor**:
+    - [ ] Change `compose_body` to yield `Button` widgets for "New Game", "Load Game", and "Quit".
+    - [ ] Remove the `on_list_view_selected` event handler.
+    - [ ] Implement the `on_button_pressed` event handler to manage navigation.
+    - [ ] Remove the unused `on_mount` method and imports.
+- [ ] **`GameHubScreen` Refactor**:
+    - [ ] Change `compose_body` to yield `Button` widgets.
+    - [ ] Remove the `on_list_view_selected` event handler.
+    - [ ] Implement the `on_button_pressed` event handler.
+    - [ ] Update `refresh_view` to modify the button's `label` property directly.
+- [ ] **`BookingHubScreen` Refactor**:
+    - [ ] Change `compose_body` to yield a `Button` for each show slot.
+    - [ ] Remove `on_list_view_selected` and `action_edit_slot`.
+    - [ ] Implement an `on_button_pressed` handler that detects which slot button was clicked and navigates accordingly.
+    - [ ] Update `refresh_view` to set the `label` on each slot button.
+    - [ ] Update focus management logic in `_move_focus` to correctly cycle between the new slot buttons and the action buttons.
+- [ ] **Verification**:
+    - [ ] Run the application and manually test the functionality of all three refactored screens.
+    - [ ] Run the automated UI tests and update any snapshots that have changed as a result of the new button layout.
