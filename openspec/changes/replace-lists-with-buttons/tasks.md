@@ -5,11 +5,11 @@
     - [x] Remove the `on_list_view_selected` event handler.
     - [x] Implement the `on_button_pressed` event handler to manage navigation.
     - [x] Remove the unused `on_mount` method and imports.
-- [ ] **`GameHubScreen` Refactor**:
-    - [ ] Change `compose_body` to yield `Button` widgets.
-    - [ ] Remove the `on_list_view_selected` event handler.
-    - [ ] Implement the `on_button_pressed` event handler.
-    - [ ] Update `refresh_view` to modify the button's `label` property directly.
+- [x] **`GameHubScreen` Refactor**:
+    - [x] Change `compose_body` to yield `Button` widgets.
+    - [x] Remove the `on_list_view_selected` event handler.
+    - [x] Implement the `on_button_pressed` event handler.
+    - [x] Update `refresh_view` to modify the button's `label` property directly.
 - [ ] **`BookingHubScreen` Refactor**:
     - [ ] Change `compose_body` to yield a `Button` for each show slot.
     - [ ] Remove `on_list_view_selected` and `action_edit_slot`.

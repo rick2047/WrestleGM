@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 from textual.app import ComposeResult
-from textual.widgets import ListItem, ListView, Static
+from textual.containers import Vertical
+from textual.widgets import Button
 
 from ..routes import BOOKING_HUB, MAIN_MENU, ROSTER
-from ..widgets.list_views import EdgeAwareListView
 from .standard import StandardScreen
 
 
@@ -21,6 +21,8 @@ class GameHubScreen(StandardScreen):
 
     BINDINGS = [
         ("enter", "select", "Select"),
+        ("up", "focus_prev", "Prev"),
+        ("down", "focus_next", "Next"),
         ("q", "app.quit", "Quit"),
     ]
 
@@ -29,30 +31,25 @@ class GameHubScreen(StandardScreen):
     def compose_body(self) -> ComposeResult:
         """Build the game hub layout."""
 
-        self.current_show = Static("")
-        self.roster = Static("Roster Overview\n")
-        self.exit = Static("Exit to Main Menu\n")
-
-        self.menu = EdgeAwareListView(
-            ListItem(self.current_show, id="current-show"),
-            ListItem(self.roster, id="roster"),
-            ListItem(self.exit, id="exit"),
-        )
-        yield self.menu
+        with Vertical(classes="menu-button-group"):
+            self.current_show_button = Button("", id="current-show", classes="menu-button")
+            self.roster_button = Button("Roster Overview", id="roster", classes="menu-button")
+            self.exit_button = Button("Exit to Main Menu", id="exit", classes="menu-button")
+            yield self.current_show_button
+            yield self.roster_button
+            yield self.exit_button
 
     def on_mount(self) -> None:
         """Focus the menu list and refresh labels."""
 
         super().on_mount()
-        self.menu.focus()
-        if self.menu.index is None:
-            self.menu.index = 0
         self.refresh_view()
+        self.current_show_button.focus()
 
     def refresh_view(self) -> None:
         """Update the current show text."""
 
-        self.current_show.update(
+        self.current_show_button.label = (
             "Book Current Show\n"
             f"[dim]Show #{self.app.state.show_index}[/dim]"
         )
@@ -61,14 +58,47 @@ class GameHubScreen(StandardScreen):
         """Refresh the hub labels after returning."""
 
         super().on_screen_resume()
-        self.menu.focus()
-        self.menu.index = 0
         self.refresh_view()
+        self.current_show_button.focus()
 
-    def on_list_view_selected(self, event: ListView.Selected) -> None:
-        """Handle hub option selection."""
+    def action_select(self) -> None:
+        """Activate the currently focused hub option."""
 
-        self._route_selection(event.item.id)
+        focused = self.app.focused
+        if isinstance(focused, Button):
+            self._route_selection(focused.id)
+            return
+        self._route_selection(self.current_show_button.id)
+
+    def action_focus_next(self) -> None:
+        """Move focus to the next hub button."""
+
+        self._move_focus(1)
+
+    def action_focus_prev(self) -> None:
+        """Move focus to the previous hub button."""
+
+        self._move_focus(-1)
+
+    def _move_focus(self, delta: int) -> None:
+        """Cycle focus across hub buttons."""
+
+        focus_order = [
+            self.current_show_button,
+            self.roster_button,
+            self.exit_button,
+        ]
+        focused = self.app.focused
+        if focused not in focus_order:
+            self.current_show_button.focus()
+            return
+        index = focus_order.index(focused)
+        focus_order[(index + delta) % len(focus_order)].focus()
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        """Handle hub button presses."""
+
+        self._route_selection(event.button.id)
 
     def _route_selection(self, item_id: str | None) -> None:
         """Route the selected menu option to the target screen."""
