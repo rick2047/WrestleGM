@@ -12,3 +12,5 @@
 - If `openspec` is not found on `PATH`, use the absolute path: `/home/droid/.nvm/versions/node/v24.12.0/bin/openspec`.
 ## Tooling
 - Use `uv` to run pytest (e.g., `uv run pytest`).
+- Use `uv` to run Python (e.g., `uv run python`).
+- Prefer multiple background terminals to run tests in parallel when possible.
