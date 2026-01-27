@@ -139,6 +139,8 @@ async def wait_for_screen(
 
     for _ in range(attempts):
         if isinstance(pilot.app.screen, screen_type):
+            await pilot.pause(0.05)
+            await pilot.wait_for_scheduled_animations()
             return
         await pilot.pause(0.05)
     raise AssertionError(f"Expected screen {screen_type} did not appear.")

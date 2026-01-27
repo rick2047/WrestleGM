@@ -5,9 +5,8 @@ from __future__ import annotations
 from itertools import combinations
 
 from textual.app import ComposeResult
-from textual.containers import Horizontal, Vertical, VerticalScroll
-from textual.screen import Screen
-from textual.widgets import Button, Footer, Label, ListItem, ListView, Select, Static
+from textual.containers import Horizontal, Vertical
+from textual.widgets import Button, ListItem, ListView, Select, Static
 
 from wrestlegm import constants
 from wrestlegm.models import Match, MatchTypeDefinition
@@ -22,10 +21,11 @@ from ..widgets.wrestler_view import (
     build_wrestler_view_data,
 )
 from .modals import ConfirmBookingModal
+from .standard import StandardScreen
 from .wrestler_selection import WrestlerSelectionScreen
 
 
-class MatchBookingScreen(Screen):
+class MatchBookingScreen(StandardScreen):
     """Editor for a single match slot.
 
     Responsibilities:
@@ -51,14 +51,18 @@ class MatchBookingScreen(Screen):
         self.draft.match_category_id = match_category_id
         self.draft.ensure_size(match_category_size(match_category_id))
 
-    def compose(self) -> ComposeResult:
+    def header_title(self) -> str:
+        return slot_label(self.slot_index, "match")
+
+    def header_right(self) -> str:
+        selected_ids = [wrestler_id for wrestler_id in self.draft.wrestler_ids if wrestler_id]
+        return self.app.state.rivalry_and_cooldown_summary_for_match(selected_ids)
+
+    def compose_body(self) -> ComposeResult:
         """Build the match booking layout."""
 
         with Vertical(classes="booking-shell"):
             with Vertical(classes="booking-card"):
-                self.header = Static("", classes="match-booking-header")
-                yield self.header
-
                 with Vertical(classes="match-booking-controls"):
                     with Horizontal(classes="match-booking-controls-row"):
                         with Horizontal(classes="match-booking-control-group"):
@@ -122,19 +126,16 @@ class MatchBookingScreen(Screen):
                 self.fields.add_class("match-wrestlers-scroll")
                 yield self.fields
 
-            with Horizontal(classes="booking-actions"):
-                self.clear_button = Button("Clear Slot", id="clear")
-                self.confirm_button = Button("Confirm", id="confirm")
-                self.cancel_button = Button("Cancel", id="cancel")
-                yield self.clear_button
-                yield self.confirm_button
-                yield self.cancel_button
-
-        yield Footer()
+    def compose_actions(self) -> list[Button]:
+        self.clear_button = Button("Clear Slot", id="clear")
+        self.confirm_button = Button("Confirm", id="confirm")
+        self.cancel_button = Button("Cancel", id="cancel")
+        return [self.clear_button, self.confirm_button, self.cancel_button]
 
     def on_mount(self) -> None:
         """Load existing slot data and focus the field list."""
 
+        super().on_mount()
         self.add_class("booking-screen")
         self.fields.focus()
         existing = self.app.state.show_card[self.slot_index]
@@ -151,12 +152,6 @@ class MatchBookingScreen(Screen):
 
     def refresh_view(self) -> None:
         """Update field labels, buttons, and match summary."""
-
-        base_label = f"{slot_label(self.slot_index, 'match')}"
-        selected_ids = [wrestler_id for wrestler_id in self.draft.wrestler_ids if wrestler_id]
-        summary = self.app.state.rivalry_summary_for_match(selected_ids)
-        header_text = f"{base_label}  {summary}" if summary else base_label
-        self.header.update(header_text)
 
         required_count = self.required_wrestler_count()
         for index, view in enumerate(self.wrestler_views):
@@ -184,6 +179,7 @@ class MatchBookingScreen(Screen):
             self.validate_draft()
         )
         self.clear_button.disabled = self.app.state.show_card[self.slot_index] is None
+        self.update_header()
 
     def required_wrestler_count(self) -> int:
         """Return the required wrestler count for the selected category."""
@@ -272,10 +268,10 @@ class MatchBookingScreen(Screen):
         """Open the selection screen for the highlighted field."""
 
         if self.app.focused is self.match_category_select:
-            self.match_category_select.expanded = True
+            self.match_category_select.action_show_overlay()
             return
         if self.app.focused is self.match_type_select:
-            self.match_type_select.expanded = True
+            self.match_type_select.action_show_overlay()
             return
         if self.app.focused is not self.fields:
             return

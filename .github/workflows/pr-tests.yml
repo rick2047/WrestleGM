@@ -104,6 +104,10 @@ jobs:
       - name: Run UI snapshot tests
         id: pytest
         env:
+          NO_COLOR: "0"
+          RICH_COLOR_SYSTEM: standard
+          TEXTUAL_COLOR_SYSTEM: standard
+          TEXTUAL_DISABLE_CURSOR_BLINK: "1"
           TEXTUAL_SNAPSHOT_TEMPDIR: tests/snapshots/__failed__
         run: uv run pytest tests/test_ui_snapshots.py --junitxml=pytest-ui.xml
         continue-on-error: true

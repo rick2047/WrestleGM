@@ -1,4 +1,39 @@
 Screen {
+    align: left top;
+}
+
+ModalScreen {
+    align: center middle;
+}
+
+StandardHeader {
+    dock: top;
+    height: 1;
+}
+
+.screen-root {
+    width: 1fr;
+    height: 1fr;
+    layout: vertical;
+}
+
+.screen-body {
+    width: 1fr;
+    height: 1fr;
+}
+
+.screen-body--vertical {
+    layout: vertical;
+}
+
+.screen-body--horizontal {
+    layout: horizontal;
+}
+
+.screen-actions {
+    height: auto;
+    width: 1fr;
+    padding: 1 2;
     align: center middle;
 }
 
@@ -19,7 +54,7 @@ Button {
 }
 
 ListView {
-    height: auto;
+    height: 1fr;
 }
 
 .spacer {

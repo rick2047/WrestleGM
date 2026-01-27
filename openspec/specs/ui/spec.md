@@ -24,6 +24,22 @@ The system SHALL provide the MVP screens defined in the PRD using Textual widget
 - **WHEN** the roster screen renders
 - **THEN** Face alignment uses 😃 and Heel alignment uses 😈
 
+### Requirement: Standard screen layout structure
+The system SHALL standardize all non-modal UI screens to a `Header → Body → Actions → Footer` structure. The Header SHALL be full-width and display the current screen name centered, rendered via the `StandardHeader` widget. The header MAY additionally display compact context outside the centered title, including screen-specific badges (e.g., emoji indicators for match booking) and/or global context derived from game state (e.g., show name/number or currency). The Body region SHALL expand to fill available space and SHALL be implemented as a dedicated layout container with a configurable layout direction; the default Body layout direction SHALL be vertical. The Actions row SHALL be visually and structurally separate from the Body, SHALL contain only `Button` widgets, and SHALL remain pinned above the Footer.
+
+#### Scenario: Header shows current screen name
+- **WHEN** any non-modal screen is shown
+- **THEN** the header displays the current screen name centered
+
+#### Scenario: Screen-specific header badges
+- **WHEN** a non-modal screen defines header context badges
+- **THEN** the header displays those badges alongside the screen name
+- **AND THEN** the badges update as the underlying screen state changes
+
+#### Scenario: Header can show compact game-state context
+- **WHEN** a non-modal screen defines compact header context derived from game state
+- **THEN** the header displays that context without shifting the centered screen name
+
 ### Requirement: Global navigation keys and footer
 The system SHALL use keyboard-only navigation and display a persistent footer that shows key bindings only. Enter SHALL activate the focused widget. Escape SHALL back out of the current screen or modal where a back action exists, except on the Game Hub, Main Menu, and Show Results screens where Escape has no effect. Arrow-key focus order SHALL skip disabled action buttons, loop between lists and action buttons, and wrap from last to first and first to last within a screen. Left/Right keys SHALL move between horizontal fields or buttons where applicable.
 
@@ -635,4 +651,3 @@ The system SHALL display an emoji-only rivalry summary in the Match Booking head
 #### Scenario: Rivalry summary aggregation
 - **WHEN** a match has multiple rivalry pairs
 - **THEN** the header displays each rivalry emoji with an ASCII count suffix
-

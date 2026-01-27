@@ -233,6 +233,11 @@ class GameState:
 
         return self.rivalry_manager.rivalry_summary_for_match(wrestler_ids)
 
+    def rivalry_and_cooldown_summary_for_match(self, wrestler_ids: Iterable[str]) -> str:
+        """Return aggregated rivalry and cooldown emojis with ASCII counts for a match."""
+
+        return self.rivalry_manager.rivalry_and_cooldown_summary_for_match(wrestler_ids)
+
     def rivalry_emoji_for_pair(self, wrestler_a_id: str, wrestler_b_id: str) -> str:
         """Return rivalry emoji for a pair, ignoring cooldowns."""
 

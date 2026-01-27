@@ -5,9 +5,9 @@ from __future__ import annotations
 from typing import Callable
 
 from textual.app import ComposeResult
-from textual.containers import Horizontal, Vertical
-from textual.screen import ModalScreen, Screen
-from textual.widgets import Button, DataTable, Footer, Static
+from textual.containers import Vertical
+from textual.screen import ModalScreen
+from textual.widgets import Button, DataTable, Static
 
 from wrestlegm import constants
 
@@ -20,9 +20,10 @@ from ..formatting import (
 )
 from ..widgets.data_table import EdgeAwareDataTable
 from ..widgets.wrestler_view import WrestlerView, WrestlerViewConfig, build_wrestler_view_data
+from .standard import StandardScreen
 
 
-class WrestlerSelectionScreen(Screen):
+class WrestlerSelectionScreen(StandardScreen):
     """Roster picker for assigning a wrestler to a slot side.
 
     Responsibilities:
@@ -60,10 +61,12 @@ class WrestlerSelectionScreen(Screen):
         self.message = Static("")
         self._inspect_row: int | None = None
 
-    def compose(self) -> ComposeResult:
+    def header_title(self) -> str:
+        return self.title
+
+    def compose_body(self) -> ComposeResult:
         """Build the wrestler selection layout."""
 
-        yield Static(self.title)
         self.table = EdgeAwareDataTable(
             on_edge_prev=self.action_focus_prev,
             on_edge_next=self.action_focus_next,
@@ -91,16 +94,16 @@ class WrestlerSelectionScreen(Screen):
             )
         yield self.table
         yield self.message
-        with Horizontal():
-            self.select_button = Button("Select", id="select")
-            self.cancel_button = Button("Cancel", id="cancel")
-            yield self.select_button
-            yield self.cancel_button
-        yield Footer()
+
+    def compose_actions(self) -> list[Button]:
+        self.select_button = Button("Select", id="select")
+        self.cancel_button = Button("Cancel", id="cancel")
+        return [self.select_button, self.cancel_button]
 
     def on_mount(self) -> None:
         """Focus the wrestler list and select the first entry."""
 
+        super().on_mount()
         self.table.focus()
         if self.table.row_count:
             self.table.cursor_coordinate = (0, 0)

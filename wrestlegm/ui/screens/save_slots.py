@@ -4,16 +4,17 @@ from __future__ import annotations
 
 from textual.app import ComposeResult
 from textual.containers import Vertical
-from textual.screen import ModalScreen, Screen
-from textual.widgets import Button, Footer, Input, ListItem, ListView, Static
+from textual.screen import ModalScreen
+from textual.widgets import Button, Input, ListItem, ListView, Static
 
 from wrestlegm import persistence
 
 from ..routes import MAIN_MENU
 from ..widgets.list_views import FilteredListView
+from .standard import StandardScreen
 
 
-class SaveSlotSelectionScreen(Screen):
+class SaveSlotSelectionScreen(StandardScreen):
     """Shared screen for selecting save slots."""
 
     BINDINGS = [
@@ -28,21 +29,21 @@ class SaveSlotSelectionScreen(Screen):
         self.mode = mode
         self.slots: list[persistence.SaveSlotInfo] = []
 
-    def compose(self) -> ComposeResult:
+    def header_title(self) -> str:
+        return "Load Game" if self.mode == "load" else "New Game"
+
+    def compose_body(self) -> ComposeResult:
         """Build the save slot selection layout."""
 
-        title = "Load Game" if self.mode == "load" else "New Game"
-        yield Static("WrestleGM", classes="section-title")
-        yield Static(title, classes="section-title")
         self.menu = FilteredListView(
             is_item_active=self._is_item_active,
         )
         yield self.menu
-        yield Footer()
 
     def on_mount(self) -> None:
         """Load slots and focus the list."""
 
+        super().on_mount()
         self.refresh_view()
         self.menu.focus()
         if self.menu.index is None and self.menu.children:
