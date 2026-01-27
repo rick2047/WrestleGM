@@ -1,7 +1,7 @@
 """Reusable Textual widgets for WrestleGM."""
 
 from .data_table import EdgeAwareDataTable
-from .header import HeaderState, WrestleHeader
+from .header import HeaderState, StandardHeader
 from .list_views import EdgeAwareListView, FilteredListView
 from .safe_select import SafeSelect
 from .wrestler_view import (
@@ -18,7 +18,7 @@ __all__ = [
     "FilteredListView",
     "HeaderState",
     "SafeSelect",
-    "WrestleHeader",
+    "StandardHeader",
     "WrestlerView",
     "WrestlerViewConfig",
     "WrestlerViewData",

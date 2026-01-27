@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: Standard screen layout structure
-The system SHALL standardize all non-modal UI screens to a `Header → Body → Actions → Footer` structure. The Header SHALL be full-width and display the current screen name centered. The header MAY additionally display compact context outside the centered title, including screen-specific badges (e.g., emoji indicators for match booking) and/or global context derived from game state (e.g., show name/number or currency). The Body region SHALL expand to fill available space and SHALL be implemented as a dedicated layout container with a configurable layout direction; the default Body layout direction SHALL be vertical. The Actions row SHALL be visually and structurally separate from the Body, SHALL contain only `Button` widgets, and SHALL remain pinned above the Footer.
+The system SHALL standardize all non-modal UI screens to a `Header → Body → Actions → Footer` structure. The Header SHALL be full-width and display the current screen name centered, rendered via the `StandardHeader` widget. The header MAY additionally display compact context outside the centered title, including screen-specific badges (e.g., emoji indicators for match booking) and/or global context derived from game state (e.g., show name/number or currency). The Body region SHALL expand to fill available space and SHALL be implemented as a dedicated layout container with a configurable layout direction; the default Body layout direction SHALL be vertical. The Actions row SHALL be visually and structurally separate from the Body, SHALL contain only `Button` widgets, and SHALL remain pinned above the Footer.
 
 #### Scenario: Header shows current screen name
 - **WHEN** any non-modal screen is shown

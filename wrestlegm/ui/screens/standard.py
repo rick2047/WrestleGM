@@ -9,7 +9,7 @@ from textual.containers import Container, Horizontal
 from textual.screen import Screen
 from textual.widgets import Footer
 
-from ..widgets import HeaderState, WrestleHeader
+from ..widgets import HeaderState, StandardHeader
 
 class StandardScreen(Screen):
     """Base screen implementing the standard `Header → Body → Actions → Footer` layout."""
@@ -47,7 +47,7 @@ class StandardScreen(Screen):
         actions = list(self.compose_actions())
         body_classes = ["screen-body", f"screen-body--{self.BODY_LAYOUT}"]
 
-        yield WrestleHeader()
+        yield StandardHeader()
 
         with Container(classes="screen-root"):
             with Container(classes=" ".join(body_classes)):
@@ -61,7 +61,7 @@ class StandardScreen(Screen):
             yield Footer()
 
     def _update_header(self) -> None:
-        header = self.query_one(WrestleHeader)
+        header = self.query_one(StandardHeader)
         header.set_state(
             HeaderState(
                 title=self.header_title(),

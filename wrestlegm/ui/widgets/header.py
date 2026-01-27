@@ -19,11 +19,11 @@ class HeaderState:
     right: str = ""
 
 
-class WrestleHeader(Widget):
+class StandardHeader(Widget):
     """A header widget that renders a centered screen title with optional side context."""
 
     DEFAULT_CSS = """
-    WrestleHeader {
+    StandardHeader {
         dock: top;
         width: 100%;
         background: $panel;
