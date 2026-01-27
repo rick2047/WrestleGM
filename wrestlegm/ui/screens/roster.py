@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 from textual.app import ComposeResult
-from textual.screen import Screen
-from textual.widgets import Button, Footer, Static
+from textual.widgets import Button, Static
 
 from ..formatting import build_name_cell, build_pop_cell
 from ..widgets.data_table import EdgeAwareDataTable
+from .standard import StandardScreen
 
 
-class RosterScreen(Screen):
+class RosterScreen(StandardScreen):
     """Read-only roster listing.
 
     Responsibilities:
@@ -24,10 +24,11 @@ class RosterScreen(Screen):
         ("escape", "back", "Back"),
     ]
 
-    def compose(self) -> ComposeResult:
+    TITLE = "Roster Overview"
+
+    def compose_body(self) -> ComposeResult:
         """Build the roster screen layout."""
 
-        yield Static("Roster Overview", classes="section-title")
         self.table = EdgeAwareDataTable(
             on_edge_prev=self.action_focus_prev,
             on_edge_next=self.action_focus_next,
@@ -37,13 +38,15 @@ class RosterScreen(Screen):
         self.table.add_column("Mic", key="mic")
         self.table.add_column("Pop", key="pop")
         yield self.table
+
+    def compose_actions(self) -> list[Button]:
         self.back_button = Button("Back", id="back")
-        yield self.back_button
-        yield Footer()
+        return [self.back_button]
 
     async def on_mount(self) -> None:
         """Populate the roster list and focus it."""
 
+        super().on_mount()
         await self.refresh_view()
         self.table.focus()
         if self.table.row_count:
@@ -103,4 +106,5 @@ class RosterScreen(Screen):
     async def on_screen_resume(self) -> None:
         """Refresh roster data when returning to the screen."""
 
+        super().on_screen_resume()
         await self.refresh_view()

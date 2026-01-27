@@ -86,6 +86,29 @@ class RivalryManager:
         parts = [f"{emoji} x{count}" for emoji, count in counts.items() if count]
         return "  ".join(parts)
 
+    def rivalry_and_cooldown_summary_for_match(self, wrestler_ids: Iterable[str]) -> str:
+        """Return aggregated rivalry and cooldown emojis with ASCII counts."""
+
+        ids = [wrestler_id for wrestler_id in wrestler_ids if wrestler_id]
+        if len(ids) < 2:
+            return ""
+        counts = {"⚡": 0, "🔥": 0, "⚔️": 0, "💥": 0, "🧊": 0, "❄️": 0, "💧": 0}
+        for wrestler_a_id, wrestler_b_id in ordered_pairs(ids):
+            key = normalize_pair(wrestler_a_id, wrestler_b_id)
+            cooldown = self.cooldown_states.get(key)
+            if cooldown:
+                emoji = self._cooldown_emoji(cooldown.remaining_shows)
+                if emoji in counts:
+                    counts[emoji] += 1
+                continue
+            rivalry = self.rivalry_states.get(key)
+            if rivalry and rivalry.rivalry_value > 0:
+                emoji = self._rivalry_emoji(rivalry.rivalry_value)
+                if emoji in counts:
+                    counts[emoji] += 1
+        parts = [f"{emoji} x{count}" for emoji, count in counts.items() if count]
+        return "  ".join(parts)
+
     def rivalry_emoji_for_pair(self, wrestler_a_id: str, wrestler_b_id: str) -> str:
         """Return the rivalry emoji for a pair, ignoring cooldowns."""
 

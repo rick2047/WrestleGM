@@ -3,16 +3,17 @@
 from __future__ import annotations
 
 from textual.app import ComposeResult
-from textual.screen import Screen
-from textual.widgets import Button, Footer, Static
+from textual.containers import VerticalScroll
+from textual.widgets import Button, Static
 
 from wrestlegm.models import Match
 
 from ..formatting import build_name_cell, format_stars, match_category_label, slot_label
 from ..routes import GAME_HUB
+from .standard import StandardScreen
 
 
-class ResultsScreen(Screen):
+class ResultsScreen(StandardScreen):
     """Show results screen for completed matches.
 
     Responsibilities:
@@ -29,21 +30,25 @@ class ResultsScreen(Screen):
         ("down", "focus_next", "Next"),
     ]
 
-    def compose(self) -> ComposeResult:
+    TITLE = "Show Results"
+
+    def compose_body(self) -> ComposeResult:
         """Build the results screen layout."""
 
-        yield Static("Show Results", classes="section-title")
-        self.results = Static("")
-        yield self.results
-        self.show_rating = Static("")
-        yield self.show_rating
+        with VerticalScroll():
+            self.results = Static("")
+            yield self.results
+            self.show_rating = Static("")
+            yield self.show_rating
+
+    def compose_actions(self) -> list[Button]:
         self.continue_button = Button("Continue", id="continue")
-        yield self.continue_button
-        yield Footer()
+        return [self.continue_button]
 
     def on_mount(self) -> None:
         """Populate results when the screen is shown."""
 
+        super().on_mount()
         self.refresh_view()
         self.continue_button.focus()
 

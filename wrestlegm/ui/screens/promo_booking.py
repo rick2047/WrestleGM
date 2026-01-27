@@ -3,21 +3,21 @@
 from __future__ import annotations
 
 from textual.app import ComposeResult
-from textual.containers import Horizontal, Vertical, VerticalScroll
-from textual.screen import Screen
-from textual.widgets import Button, Footer, ListItem, ListView, Static
+from textual.containers import Vertical
+from textual.widgets import Button, ListItem, ListView, Static
 
 from wrestlegm.models import Match, Promo
 
 from ..drafts import PromoDraft
-from ..formatting import ALIGNMENT_EMOJI, slot_label
+from ..formatting import slot_label
 from ..widgets.list_views import EdgeAwareListView
 from ..widgets.wrestler_view import WrestlerView, WrestlerViewConfig, build_wrestler_view_data
 from .modals import ConfirmBookingModal
+from .standard import StandardScreen
 from .wrestler_selection import WrestlerSelectionScreen
 
 
-class PromoBookingScreen(Screen):
+class PromoBookingScreen(StandardScreen):
     """Editor for a single promo slot."""
 
     BINDINGS = [
@@ -32,12 +32,12 @@ class PromoBookingScreen(Screen):
         self.slot_index = slot_index
         self.draft = PromoDraft()
 
-    def compose(self) -> ComposeResult:
+    def header_title(self) -> str:
+        return slot_label(self.slot_index, "promo")
+
+    def compose_body(self) -> ComposeResult:
         with Vertical(classes="booking-shell"):
             with Vertical(classes="booking-card"):
-                self.header = Static("", classes="match-booking-header")
-                yield self.header
-
                 yield Static("Performer", classes="booking-section-title")
 
                 config = WrestlerViewConfig(
@@ -56,17 +56,14 @@ class PromoBookingScreen(Screen):
                 self.fields.add_class("match-wrestlers-scroll")
                 yield self.fields
 
-            with Horizontal(classes="booking-actions"):
-                self.clear_button = Button("Clear Slot", id="clear")
-                self.confirm_button = Button("Confirm", id="confirm")
-                self.cancel_button = Button("Cancel", id="cancel")
-                yield self.clear_button
-                yield self.confirm_button
-                yield self.cancel_button
-
-        yield Footer()
+    def compose_actions(self) -> list[Button]:
+        self.clear_button = Button("Clear Slot", id="clear")
+        self.confirm_button = Button("Confirm", id="confirm")
+        self.cancel_button = Button("Cancel", id="cancel")
+        return [self.clear_button, self.confirm_button, self.cancel_button]
 
     def on_mount(self) -> None:
+        super().on_mount()
         self.add_class("booking-screen")
         self.fields.focus()
         existing = self.app.state.show_card[self.slot_index]
@@ -75,22 +72,17 @@ class PromoBookingScreen(Screen):
         self.refresh_view()
 
     def refresh_view(self) -> None:
-        label = slot_label(self.slot_index, "promo")
         wrestler_view = (
             build_wrestler_view_data(self.app.state, self.draft.wrestler_id)
             if self.draft.wrestler_id
             else None
         )
-        if wrestler_view is None:
-            self.header.update(label)
-        else:
-            emoji = ALIGNMENT_EMOJI.get(wrestler_view.alignment, "")
-            self.header.update(f"{label}  {emoji}".strip())
         self.wrestler_view.set_wrestler(wrestler_view, rivalries=[])
         self.confirm_button.disabled = not self.draft.is_complete() or bool(
             self.validate_draft()
         )
         self.clear_button.disabled = self.app.state.show_card[self.slot_index] is None
+        self.update_header()
 
     def validate_draft(self) -> list[str]:
         if not self.draft.is_complete():
@@ -168,6 +160,7 @@ class PromoBookingScreen(Screen):
             self.action_cancel()
 
     def on_screen_resume(self) -> None:
+        super().on_screen_resume()
         self.refresh_view()
 
     def handle_confirmation(self, result: bool | None) -> None:

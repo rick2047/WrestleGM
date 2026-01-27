@@ -18,11 +18,47 @@ Confirmation Modal -> Simulating -> Results -> Game Hub.
 
 ## Global Components
 
+- `Header`: app-level header that shows the current screen title (centered) with optional compact context badges.
 - `Footer`: always present, shows key bindings only.
 - `ListView` + `ListItem`: used for menu lists, match slots, and selections.
 - `Button`: actions such as Run Show, Confirm, and Back.
 - `Static`: labels, detail lines, and status text.
 - `Horizontal` / `Vertical`: lightweight layout containers.
+
+## Standard Layout
+
+All non-modal screens use a consistent layout:
+
+```
+Header → Body → Actions → Footer
+```
+
+- **Header**: full-width, centered screen title. Some screens may add compact badges (e.g., match booking rivalry/cooldown emojis).
+- **Body**: fills remaining space (`height: 1fr`) and may scroll when content overflows.
+- **Actions**: optional row for buttons only, pinned above the footer.
+- **Footer**: key bindings only, modal-aware.
+
+CSS primitives (see `wrestlegm/ui/styles.tcss`):
+- `.screen-root` (vertical layout)
+- `.screen-body` / `.screen-body--vertical` / `.screen-body--horizontal`
+- `.screen-actions`
+
+## Header Titles
+
+| Screen | Header title | Header badges / context |
+| ------ | ------------ | ----------------------- |
+| Main Menu | `Main Menu` | None |
+| Save Slots (new) | `New Game` | None |
+| Save Slots (load) | `Load Game` | None |
+| Game Hub | `Game Hub` | None |
+| Booking Hub | `Booking Hub` | None |
+| Match Booking | `Match {N}` | Aggregated rivalry + cooldown emojis for the current draft selection |
+| Promo Booking | `Promo {N}` | None |
+| Wrestler Selection | Contextual selection title passed by the parent screen | None |
+| Roster | `Roster Overview` | None |
+| Results | `Show Results` | None |
+| Simulating | `Simulating` | None |
+| Guard Screen | `Viewport Guard` | None |
 
 ## Screens and Composition
 
@@ -37,7 +73,6 @@ Key bindings:
 
 Components:
 - `ListView` with items for New Game and Quit.
-- `Footer` for bindings.
 
 State interactions:
 - `New Game` initializes a new `GameState` and shows `GameHubScreen`.
@@ -56,7 +91,6 @@ Key bindings:
 
 Components:
 - `ListView` with items for Book Current Show, Roster Overview, and Exit to Main Menu.
-- `Footer` for bindings.
 
 State interactions:
 - `Book Current Show` switches to `BookingHubScreen`.
@@ -77,10 +111,9 @@ Key bindings:
 - `Esc`: back
 
 Components:
-- `Static` title and show header.
+- `Static` show header.
 - `ListView` of three slot items.
-- `Button` group for Run Show and Back.
-- `Footer` for bindings.
+- `Actions` row with Run Show and Back buttons.
 
 Behavior:
 - Run Show is disabled until all slots are valid.
@@ -106,11 +139,9 @@ Key bindings:
 - `Esc`: cancel
 
 Components:
-- `Static` header and detail line.
 - `ListView` fields: Wrestler slots (based on category).
 - `Select` dropdown: Stipulation.
-- `Button` group: Confirm, Clear Slot, Cancel.
-- `Footer` for bindings.
+- `Actions` row with Confirm, Clear Slot, Cancel.
 
 Behavior:
 - Confirm requires all fields and no validation errors.
@@ -137,11 +168,9 @@ Key bindings:
 - `Esc`: cancel
 
 Components:
-- `Static` header.
 - `ListView` of wrestler rows with alignment and stamina.
 - `Static` message line for validation errors.
-- `Button` group: Select, Cancel.
-- `Footer` for bindings.
+- `Actions` row with Select, Cancel.
 
 Behavior:
 - Prevents selecting the same wrestler twice in a match.
@@ -199,11 +228,9 @@ Key bindings:
 - `Up/Down/Left/Right`: move focus between actions
 
 Components:
-- `Static` title.
 - `Static` results list with star ratings.
 - `Static` show rating summary.
-- `Button` group: Continue.
-- `Footer` for bindings.
+- `Actions` row with Continue.
 
 State interactions:
 - Reads `GameState.last_show` to populate match results and show rating.
@@ -220,10 +247,8 @@ Key bindings:
 - `Esc`: back
 
 Components:
-- `Static` title.
 - `ListView` of roster rows with popularity and stamina.
-- `Button` back.
-- `Footer` for bindings.
+- `Actions` row with Back.
 
 State interactions:
 - Reads `GameState.roster` for current popularity/stamina values.

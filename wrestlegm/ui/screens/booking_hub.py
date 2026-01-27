@@ -3,9 +3,7 @@
 from __future__ import annotations
 
 from textual.app import ComposeResult
-from textual.containers import Vertical
-from textual.screen import Screen
-from textual.widgets import Button, Footer, ListItem, ListView, Static
+from textual.widgets import Button, ListItem, ListView, Static
 
 from wrestlegm import constants
 from wrestlegm.models import Match
@@ -18,9 +16,10 @@ from ..routes import (
     SIMULATING,
 )
 from ..widgets.list_views import EdgeAwareListView
+from .standard import StandardScreen
 
 
-class BookingHubScreen(Screen):
+class BookingHubScreen(StandardScreen):
     """Show overview and booking hub for the current card.
 
     Responsibilities:
@@ -37,10 +36,11 @@ class BookingHubScreen(Screen):
         ("escape", "back", "Back"),
     ]
 
-    def compose(self) -> ComposeResult:
+    TITLE = "Booking Hub"
+
+    def compose_body(self) -> ComposeResult:
         """Build the booking hub layout."""
 
-        yield Static("WrestleGM", classes="section-title")
         self.show_header = Static("", classes="section-title")
         yield self.show_header
 
@@ -57,18 +57,16 @@ class BookingHubScreen(Screen):
         )
         yield self.slot_list
 
-        with Vertical():
-            self.run_button = Button("Run Show", id="run-show")
-            self.run_button.disabled = True
-            self.back_button = Button("Back", id="back")
-            yield self.run_button
-            yield self.back_button
-
-        yield Footer()
+    def compose_actions(self) -> list[Button]:
+        self.run_button = Button("Run Show", id="run-show")
+        self.run_button.disabled = True
+        self.back_button = Button("Back", id="back")
+        return [self.run_button, self.back_button]
 
     def on_mount(self) -> None:
         """Focus the slot list and refresh the view."""
 
+        super().on_mount()
         self.slot_list.focus()
         self.refresh_view()
 
@@ -192,4 +190,5 @@ class BookingHubScreen(Screen):
     def on_screen_resume(self) -> None:
         """Refresh slot details after returning to the hub."""
 
+        super().on_screen_resume()
         self.refresh_view()

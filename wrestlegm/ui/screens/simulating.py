@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 from textual.app import ComposeResult
-from textual.screen import Screen
-from textual.widgets import Footer, Static
+from textual.widgets import Static
 
 from ..routes import RESULTS
+from .standard import StandardScreen
 
 
-class SimulatingScreen(Screen):
+class SimulatingScreen(StandardScreen):
     """Simulating screen that runs the show and auto-advances.
 
     Responsibilities:
@@ -17,15 +17,17 @@ class SimulatingScreen(Screen):
     - Advance to ResultsScreen after a short delay.
     """
 
-    def compose(self) -> ComposeResult:
+    TITLE = "Simulating"
+
+    def compose_body(self) -> ComposeResult:
         """Build the simulating screen layout."""
 
         yield Static("Simulating show...")
-        yield Footer()
 
     def on_mount(self) -> None:
         """Run the show and schedule auto-advance."""
 
+        super().on_mount()
         self.app.state.run_show()
         self.set_timer(0.4, self.advance)
 
