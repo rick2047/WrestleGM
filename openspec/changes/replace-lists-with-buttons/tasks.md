@@ -1,10 +1,10 @@
 - [x] **Standard Screen Layout**:
     - [x] Center standard screen body content at the layout/style level so content is not clustered in the top-left on large screens.
-- [ ] **`MainMenuScreen` Refactor**:
-    - [ ] Change `compose_body` to yield `Button` widgets for "New Game", "Load Game", and "Quit".
-    - [ ] Remove the `on_list_view_selected` event handler.
-    - [ ] Implement the `on_button_pressed` event handler to manage navigation.
-    - [ ] Remove the unused `on_mount` method and imports.
+- [x] **`MainMenuScreen` Refactor**:
+    - [x] Change `compose_body` to yield `Button` widgets for "New Game", "Load Game", and "Quit".
+    - [x] Remove the `on_list_view_selected` event handler.
+    - [x] Implement the `on_button_pressed` event handler to manage navigation.
+    - [x] Remove the unused `on_mount` method and imports.
 - [ ] **`GameHubScreen` Refactor**:
     - [ ] Change `compose_body` to yield `Button` widgets.
     - [ ] Remove the `on_list_view_selected` event handler.

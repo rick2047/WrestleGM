@@ -54,6 +54,19 @@ Button {
     width: 18;
 }
 
+.menu-button-group {
+    width: 1fr;
+    min-width: 40;
+    max-width: 60;
+    height: auto;
+    align: center middle;
+}
+
+.menu-button {
+    width: 1fr;
+    margin: 1 0;
+}
+
 ListView {
     height: 1fr;
 }
