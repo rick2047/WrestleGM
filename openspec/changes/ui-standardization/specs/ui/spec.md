@@ -55,7 +55,7 @@ The system SHALL render the following header content on non-modal screens:
 | Roster | `Roster Overview` | None |
 | Results | `Show Results` | None |
 | Simulating | `Simulating` | None |
-| Viewport Guard | `Viewport Guard` | None |
+| Guard Screen | `Viewport Guard` | None |
 
 Unless explicitly specified above, the header SHALL display no additional badges or game-state context.
 

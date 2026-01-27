@@ -25,10 +25,10 @@
 - [ ] 3.8 Roster: set header title to `Roster Overview`; keep the table in body and Back in actions row.
 - [ ] 3.9 Results: set header title to `Show Results`; ensure large results content scrolls in body with Continue in actions row.
 - [ ] 3.10 Simulating: set header title to `Simulating`; keep content minimal and non-interactive.
-- [ ] 3.11 Viewport Guard: set header title to `Viewport Guard`; keep guard message in body and Quit in actions row.
+- [ ] 3.11 Guard Screen: set header title to `Viewport Guard`; keep guard message in body and Quit in actions row.
 
 ## 4. Verification and docs
 
 - [ ] 4.1 Update `docs/ui.md` to describe the standardized `Header → Body → Actions → Footer` structure and the header content mapping.
-- [ ] 4.2 Run UI flow tests (`uv run pytest tests/test_ui_flows.py`) and fix any focus/navigation regressions introduced by the layout changes.
+- [ ] 4.2 Update UI flow tests as needed (`uv run pytest tests/test_ui_flows.py`) and fix any focus/navigation regressions introduced by the layout changes.
 - [ ] 4.3 Run snapshot tests and update baselines intentionally (`uv run pytest tests/test_ui_snapshots.py --snapshot-update`), then re-run without `--snapshot-update`.
