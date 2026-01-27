@@ -5,6 +5,7 @@ import os
 os.environ.setdefault("RICH_COLOR_SYSTEM", "standard")
 os.environ.setdefault("TEXTUAL_COLOR_SYSTEM", "standard")
 os.environ.setdefault("TEXTUAL_DISABLE_CURSOR_BLINK", "1")
+os.environ["NO_COLOR"] = "0"
 
 import pytest_textual_snapshot
 
