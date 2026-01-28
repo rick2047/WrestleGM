@@ -40,6 +40,10 @@ The system SHALL standardize all non-modal UI screens to a `Header → Body → 
 - **WHEN** a non-modal screen defines compact header context derived from game state
 - **THEN** the header displays that context without shifting the centered screen name
 
+#### Scenario: Body content centered by default
+- **WHEN** a non-modal screen uses the standard layout
+- **THEN** the primary body content is centered within the screen by default
+
 ### Requirement: Global navigation keys and footer
 The system SHALL use keyboard-only navigation and display a persistent footer that shows key bindings only. Enter SHALL activate the focused widget. Escape SHALL back out of the current screen or modal where a back action exists, except on the Game Hub, Main Menu, and Show Results screens where Escape has no effect. Arrow-key focus order SHALL skip disabled action buttons, loop between lists and action buttons, and wrap from last to first and first to last within a screen. Left/Right keys SHALL move between horizontal fields or buttons where applicable.
 
@@ -180,6 +184,20 @@ The system SHALL show five slots in fixed order (Match 1, Promo 1, Match 2, Prom
 - **WHEN** the player selects Back on the booking hub
 - **THEN** the Game Hub is shown
 
+#### Scenario: Promo slot alignment emoji
+- **WHEN** a promo slot is rendered in the Booking Hub with a booked wrestler
+- **THEN** the slot summary includes the wrestler alignment emoji alongside their name
+
+### Requirement: Booking hub slot selection
+The application SHALL present booking hub slots as individual, selectable buttons.
+
+#### Scenario: Interacting with the Booking Hub
+- **WHEN** the user views the booking hub screen
+- **THEN** each of the 5 show slots MUST be rendered as a distinct `Button` widget.
+- **AND** clicking a slot button MUST navigate the user to the booking screen for that specific slot.
+- **AND** the user MUST be able to move focus between slot buttons and the other booking hub actions using the same keyboard navigation patterns as before.
+- **AND** the slot button layout MUST be centered and sized to feel intentional on large screens, rather than clustered in the top-left.
+
 ### Requirement: Match booking flow
 The system SHALL edit matches in a dedicated booking screen with a single card layout, require confirmation before committing, allow selecting the wrestler count inline, render participants as a vertical list of Wrestler Views, filter stipulations by the selected wrestler count, and keep validation rules unchanged. The match booking screen SHALL show a rivalry summary header, allow changing stipulation via an inline dropdown, default the stipulation to the first available option when booking an empty slot, and keep Clear Slot/Cancel behavior consistent with current booking flows.
 
@@ -263,6 +281,15 @@ The system SHALL render a Main Menu that offers New Game, Load Game, and Quit, a
 - **WHEN** the Main Menu is shown
 - **THEN** the only options are New Game, Load Game, and Quit
 
+### Requirement: Main menu navigation
+The system SHALL present main menu options as individual, selectable buttons.
+
+#### Scenario: Interacting with the Main Menu
+- **WHEN** the user views the main menu screen
+- **THEN** the options "New Game", "Load Game", and "Quit" MUST be rendered as distinct `Button` widgets.
+- **AND** clicking one of these buttons MUST trigger the corresponding action.
+- **AND** the button group MUST be centered and sized to feel intentional on large screens, rather than clustered in the top-left.
+
 ### Requirement: MVP screen list
 The system SHALL provide the MVP screens defined in the PRD, including the startup guard screen for insufficient viewport size.
 
@@ -304,6 +331,15 @@ The system SHALL provide a Game Hub screen that displays the current show number
 #### Scenario: Exit to Main Menu from hub
 - **WHEN** the player selects Exit to Main Menu in the Game Hub
 - **THEN** the session ends and the Main Menu is shown
+
+### Requirement: Game hub navigation
+The system SHALL present game hub options as individual, selectable buttons.
+
+#### Scenario: Interacting with the Game Hub
+- **WHEN** the user views the game hub screen
+- **THEN** the options "Book Current Show", "Roster Overview", and "Exit to Main Menu" MUST be rendered as distinct `Button` widgets.
+- **AND** clicking one of these buttons MUST trigger the corresponding navigation event.
+- **AND** the button group MUST be centered and sized to feel intentional on large screens, rather than clustered in the top-left.
 
 ### Requirement: Results return to hub
 The system SHALL return to the Game Hub after results and SHALL not provide roster or main menu shortcuts on the results screen.
@@ -416,9 +452,9 @@ The system SHALL map each screen to the following primary Textual widgets.
 
 | Screen               | Primary Widgets                  |
 | -------------------- | -------------------------------- |
-| Main Menu            | ListView, Static, Footer         |
-| Game Hub             | ListView, Static, Footer         |
-| Booking Hub          | ListView, Static, Button         |
+| Main Menu            | Button, Static, Footer           |
+| Game Hub             | Button, Static, Footer           |
+| Booking Hub          | Button, Static, Button           |
 | Match Booking        | ListView, Select, Static, Button |
 | Promo Booking        | ListView, Static, Button         |
 | Wrestler Selection   | DataTable, Static, Button        |
@@ -554,6 +590,14 @@ The system SHALL provide a Save Slot Selection screen that is shared by New Game
 - **WHEN** the player selects a filled slot in Load Game mode
 - **THEN** the save is loaded and the Booking Hub is shown
 
+#### Scenario: Save/load slots use buttons
+- **WHEN** the user views the save or load slot selection screen
+- **THEN** each slot is rendered as a distinct `Button` widget.
+
+#### Scenario: Save/load slot layout
+- **WHEN** the save or load slot selection screen is shown
+- **THEN** the slot button layout is centered and sized to feel intentional on large screens, rather than clustered in the top-left.
+
 ### Requirement: Name save slot modal
 The system SHALL provide a Name Save Slot modal that captures the slot name on first save. The Confirm action SHALL be disabled until a non-empty name is provided. Cancel SHALL return to Save Slot Selection without creating a game. When invoked after an overwrite confirmation, the name field SHALL be pre-filled with the previous slot name.
 
@@ -644,6 +688,14 @@ The system SHALL provide a read-only Wrestler View inspection modal from the wre
 - **WHEN** the user presses `i` on the wrestler selection screen
 - **THEN** the inspection modal opens without changing selection
 - **AND THEN** pressing `Esc` closes the modal and returns focus to the same row
+
+### Requirement: Roster inspect behavior
+The system SHALL allow inspecting a wrestler from the roster overview.
+
+#### Scenario: Inspecting a roster entry
+- **WHEN** the user presses the inspect action on the roster overview screen
+- **THEN** the application MUST open a read-only wrestler inspection view for the highlighted wrestler.
+- **AND** closing the inspection view MUST restore focus to the roster list at the previously highlighted row.
 
 ### Requirement: Match booking rivalry summary header
 The system SHALL display an emoji-only rivalry summary in the Match Booking header by aggregating rivalries across all unordered wrestler pairs and compressing counts using ASCII `xN` (e.g., `💥 x3`). The header MUST NOT wrap, scroll, or overflow.
