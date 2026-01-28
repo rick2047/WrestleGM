@@ -51,7 +51,8 @@ class StandardScreen(Screen):
 
         with Container(classes="screen-root"):
             with Container(classes=" ".join(body_classes)):
-                yield from self.compose_body()
+                with Container(classes="screen-shell"):
+                    yield from self.compose_body()
 
             if actions:
                 with Horizontal(classes="screen-actions"):

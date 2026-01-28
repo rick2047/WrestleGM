@@ -23,6 +23,13 @@ StandardHeader {
     align: center middle;
 }
 
+.screen-shell {
+    width: 1fr;
+    max-width: 100;
+    height: auto;
+    align: center middle;
+}
+
 .screen-body--vertical {
     layout: vertical;
 }
