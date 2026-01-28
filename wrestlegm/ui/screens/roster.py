@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 from textual.app import ComposeResult
-from textual.widgets import Button, Static
+from textual.widgets import Button, DataTable, Static
 
-from ..formatting import build_name_cell, build_pop_cell
+from ..formatting import build_name_cell, build_pop_cell, row_key_to_id
 from ..widgets.data_table import EdgeAwareDataTable
+from ..widgets.wrestler_view import build_wrestler_view_data
 from .standard import StandardScreen
+from .wrestler_selection import WrestlerInspectModal
 
 
 class RosterScreen(StandardScreen):
@@ -19,12 +21,17 @@ class RosterScreen(StandardScreen):
     """
 
     BINDINGS = [
+        ("i", "inspect", "Inspect"),
         ("up", "focus_prev", "Prev"),
         ("down", "focus_next", "Next"),
         ("escape", "back", "Back"),
     ]
 
     TITLE = "Roster Overview"
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._inspect_row: int | None = None
 
     def compose_body(self) -> ComposeResult:
         """Build the roster screen layout."""
@@ -70,6 +77,24 @@ class RosterScreen(StandardScreen):
 
         self.app.pop_screen()
 
+    def action_inspect(self) -> None:
+        """Open the inspection modal for the highlighted wrestler."""
+
+        if self.table.cursor_row is None:
+            return
+        try:
+            row_key = self.table.ordered_rows[self.table.cursor_row]
+        except IndexError:
+            return
+        wrestler_id = row_key_to_id(row_key)
+        wrestler_view = build_wrestler_view_data(self.app.state, wrestler_id)
+        rivalries = self._build_rivalry_list(wrestler_id)
+        self._inspect_row = self.table.cursor_row
+        self.app.push_screen(
+            WrestlerInspectModal(wrestler_view, rivalries),
+            self._restore_focus_after_inspect,
+        )
+
     def action_focus_next(self) -> None:
         """Move focus to the next roster control."""
 
@@ -102,6 +127,33 @@ class RosterScreen(StandardScreen):
 
         if event.button.id == "back":
             self.action_back()
+
+    def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
+        """Inspect the wrestler when the row is selected."""
+
+        if event.data_table is not self.table:
+            return
+        self.action_inspect()
+
+    def _restore_focus_after_inspect(self, _: object | None = None) -> None:
+        """Restore focus to the table after closing the inspect modal."""
+
+        self.table.focus()
+        if self._inspect_row is not None and self.table.row_count:
+            row = min(self._inspect_row, self.table.row_count - 1)
+            self.table.cursor_coordinate = (row, 0)
+
+    def _build_rivalry_list(self, wrestler_id: str) -> list[str]:
+        """Build rivalry list entries for the inspected wrestler."""
+
+        entries: list[str] = []
+        for opponent_id, opponent in self.app.state.roster.items():
+            if opponent_id == wrestler_id:
+                continue
+            emoji = self.app.state.rivalry_emoji_for_pair(wrestler_id, opponent_id)
+            if emoji:
+                entries.append(f"{emoji} {opponent.name}")
+        return entries
 
     async def on_screen_resume(self) -> None:
         """Refresh roster data when returning to the screen."""

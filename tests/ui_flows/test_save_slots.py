@@ -85,6 +85,6 @@ def test_load_game_shows_partial_slots() -> None:
             assert screen.slots[0].exists is True
             assert screen.slots[1].exists is False
             assert screen.slots[2].exists is False
-            assert screen.menu.index == 0
+            assert app.focused is screen.slot_buttons[0]
 
     run_async(run_flow())

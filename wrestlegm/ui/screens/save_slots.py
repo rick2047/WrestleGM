@@ -5,12 +5,11 @@ from __future__ import annotations
 from textual.app import ComposeResult
 from textual.containers import Vertical
 from textual.screen import ModalScreen
-from textual.widgets import Button, Input, ListItem, ListView, Static
+from textual.widgets import Button, Input, Static
 
 from wrestlegm import persistence
 
 from ..routes import MAIN_MENU
-from ..widgets.list_views import FilteredListView
 from .standard import StandardScreen
 
 
@@ -28,6 +27,7 @@ class SaveSlotSelectionScreen(StandardScreen):
         super().__init__()
         self.mode = mode
         self.slots: list[persistence.SaveSlotInfo] = []
+        self.slot_buttons: list[Button] = []
 
     def header_title(self) -> str:
         return "Load Game" if self.mode == "load" else "New Game"
@@ -35,44 +35,61 @@ class SaveSlotSelectionScreen(StandardScreen):
     def compose_body(self) -> ComposeResult:
         """Build the save slot selection layout."""
 
-        self.menu = FilteredListView(
-            is_item_active=self._is_item_active,
-        )
-        yield self.menu
+        self.slots = self.app.session.list_slots()
+        with Vertical(classes="booking-slot-group") as slot_group:
+            self.slot_group = slot_group
+            for slot in self.slots:
+                button = Button(
+                    "",
+                    id=f"slot-{slot.slot_index}",
+                    classes="booking-slot-button",
+                )
+                self.slot_buttons.append(button)
+                yield button
 
     def on_mount(self) -> None:
-        """Load slots and focus the list."""
+        """Load slots and focus the selection."""
 
         super().on_mount()
         self.refresh_view()
-        self.menu.focus()
-        if self.menu.index is None and self.menu.children:
-            first_active = self._first_active_index()
-            if first_active is not None:
-                self.menu.index = first_active
-            elif self.mode != "load":
-                self.menu.index = 0
+        self._focus_default_slot()
 
-    def _first_active_index(self) -> int | None:
-        """Return the first selectable row index."""
+    def _focus_default_slot(self) -> None:
+        """Focus the first selectable slot button."""
 
-        for index, item in enumerate(self.menu.children):
-            if self._is_item_active(item):
-                return index
-        return None
+        for slot, button in zip(self.slots, self.slot_buttons):
+            if self._is_slot_active(slot) and not button.disabled:
+                button.focus()
+                return
+        if self.mode != "load" and self.slot_buttons:
+            self.slot_buttons[0].focus()
 
     def refresh_view(self) -> None:
-        """Reload slot metadata and rebuild the list."""
+        """Reload slot metadata and update the buttons."""
 
         self.slots = self.app.session.list_slots()
-        if hasattr(self.menu, "clear"):
-            self.menu.clear()
-        else:
-            for child in list(self.menu.children):
+        if len(self.slots) != len(self.slot_buttons):
+            self._rebuild_buttons()
+        for slot, button in zip(self.slots, self.slot_buttons):
+            button.label = self._slot_label(slot)
+            button.disabled = not self._is_slot_active(slot)
+
+    def _rebuild_buttons(self) -> None:
+        """Rebuild the slot buttons when slot counts change."""
+
+        if hasattr(self, "slot_group"):
+            for child in list(self.slot_group.children):
                 child.remove()
-        for slot in self.slots:
-            label = self._slot_label(slot)
-            self.menu.append(ListItem(Static(label), id=f"slot-{slot.slot_index}"))
+        self.slot_buttons = []
+        if hasattr(self, "slot_group"):
+            for slot in self.slots:
+                button = Button(
+                    "",
+                    id=f"slot-{slot.slot_index}",
+                    classes="booking-slot-button",
+                )
+                self.slot_buttons.append(button)
+                self.slot_group.mount(button)
 
     def _slot_label(self, slot: persistence.SaveSlotInfo) -> str:
         """Format a slot label for display."""
@@ -86,21 +103,20 @@ class SaveSlotSelectionScreen(StandardScreen):
             return f"[dim]{empty_label}[/dim]"
         return empty_label
 
-    def _is_item_active(self, item: ListItem) -> bool:
-        """Return whether a list item is selectable in the current mode."""
+    def _is_slot_active(self, slot: persistence.SaveSlotInfo) -> bool:
+        """Return whether a slot is selectable in the current mode."""
 
         if self.mode != "load":
             return True
-        slot = self._slot_for_item(item)
-        return slot.exists if slot else False
+        return slot.exists
 
-    def _slot_for_item(self, item: ListItem) -> persistence.SaveSlotInfo | None:
-        """Map a list item back to slot metadata."""
+    def _slot_for_button(self, button: Button) -> persistence.SaveSlotInfo | None:
+        """Map a slot button back to slot metadata."""
 
-        if item.id is None:
+        if button.id is None:
             return None
         try:
-            slot_index = int(item.id.replace("slot-", ""))
+            slot_index = int(button.id.replace("slot-", ""))
         except ValueError:
             return None
         for slot in self.slots:
@@ -111,10 +127,16 @@ class SaveSlotSelectionScreen(StandardScreen):
     def action_select(self) -> None:
         """Handle selection based on mode and slot state."""
 
-        if self.menu.index is None:
+        focused = self.app.focused
+        if isinstance(focused, Button) and focused in self.slot_buttons:
+            self._select_slot(focused)
             return
-        item = self.menu.children[self.menu.index]
-        slot = self._slot_for_item(item)
+        self._focus_default_slot()
+
+    def _select_slot(self, button: Button) -> None:
+        """Handle selection based on mode and slot state."""
+
+        slot = self._slot_for_button(button)
         if slot is None:
             return
         if self.mode == "load":
@@ -153,22 +175,39 @@ class SaveSlotSelectionScreen(StandardScreen):
             self.app.session.clear_save_slot(slot_index)
         self.app.new_game(slot_index, name)
 
-    def on_list_view_selected(self, event: ListView.Selected) -> None:
-        """Handle list selection events."""
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        """Handle slot button presses."""
 
-        if event.list_view is not self.menu:
-            return
-        self.action_select()
+        if event.button in self.slot_buttons:
+            self._select_slot(event.button)
 
     def action_focus_next(self) -> None:
         """Move focus down the slot list."""
 
-        self.menu.action_cursor_down()
+        self._move_focus(1)
 
     def action_focus_prev(self) -> None:
         """Move focus up the slot list."""
 
-        self.menu.action_cursor_up()
+        self._move_focus(-1)
+
+    def _move_focus(self, delta: int) -> None:
+        """Cycle focus between slot buttons."""
+
+        if not self.slot_buttons:
+            return
+        focused = self.app.focused
+        if focused not in self.slot_buttons:
+            self._focus_default_slot()
+            return
+        index = self.slot_buttons.index(focused)
+        next_index = index
+        for _ in range(len(self.slot_buttons)):
+            next_index = (next_index + delta) % len(self.slot_buttons)
+            candidate = self.slot_buttons[next_index]
+            if not candidate.disabled:
+                candidate.focus()
+                return
 
     def action_back(self) -> None:
         """Return to the main menu."""

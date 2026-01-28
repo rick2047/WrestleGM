@@ -9,7 +9,7 @@ from textual.widgets import Button, Static
 from wrestlegm import constants
 from wrestlegm.models import Match
 
-from ..formatting import build_match_participants, match_category_label, slot_label
+from ..formatting import build_match_participants, build_name_cell, match_category_label, slot_label
 from ..routes import (
     GAME_HUB,
     MATCH_BOOKING,
@@ -93,7 +93,7 @@ class BookingHubScreen(StandardScreen):
                 f"{category_name} · {match_type_name}"
             )
         wrestler = self.app.state.roster[slot.wrestler_id]
-        return f"{label}\n{wrestler.name}"
+        return f"{label}\n{build_name_cell(wrestler.name, wrestler.alignment)}"
 
     def action_select(self) -> None:
         """Open the booking screen for the selected slot."""
