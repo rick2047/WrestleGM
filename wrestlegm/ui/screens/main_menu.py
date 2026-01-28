@@ -42,11 +42,13 @@ class MainMenuScreen(StandardScreen):
     def action_select(self) -> None:
         """Activate the currently focused menu option."""
 
+        focus_order = list(self.query(".menu-button"))
         focused = self.app.focused
-        if isinstance(focused, Button):
+        if focused in focus_order:
             self._handle_action(focused.id)
             return
-        self._handle_action(self.new_game_button.id)
+        if focus_order:
+            focus_order[0].focus()
 
     def action_focus_next(self) -> None:
         """Move focus to the next menu button."""
@@ -61,10 +63,12 @@ class MainMenuScreen(StandardScreen):
     def _move_focus(self, delta: int) -> None:
         """Cycle focus across menu buttons."""
 
-        focus_order = [self.new_game_button, self.load_game_button, self.quit_button]
+        focus_order = list(self.query(".menu-button"))
+        if not focus_order:
+            return
         focused = self.app.focused
         if focused not in focus_order:
-            self.new_game_button.focus()
+            focus_order[0].focus()
             return
         index = focus_order.index(focused)
         focus_order[(index + delta) % len(focus_order)].focus()
