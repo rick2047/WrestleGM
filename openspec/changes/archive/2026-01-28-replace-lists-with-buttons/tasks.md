@@ -1,0 +1,34 @@
+- [x] **Standard Screen Layout**:
+    - [x] Center standard screen body content at the layout/style level so content is not clustered in the top-left on large screens.
+- [x] **`MainMenuScreen` Refactor**:
+    - [x] Change `compose_body` to yield `Button` widgets for "New Game", "Load Game", and "Quit".
+    - [x] Remove the `on_list_view_selected` event handler.
+    - [x] Implement the `on_button_pressed` event handler to manage navigation.
+    - [x] Remove the unused `on_mount` method and imports.
+- [x] **`GameHubScreen` Refactor**:
+    - [x] Change `compose_body` to yield `Button` widgets.
+    - [x] Remove the `on_list_view_selected` event handler.
+    - [x] Implement the `on_button_pressed` event handler.
+    - [x] Update `refresh_view` to modify the button's `label` property directly.
+- [x] **`BookingHubScreen` Refactor**:
+    - [x] Change `compose_body` to yield a `Button` for each show slot.
+    - [x] Remove `on_list_view_selected` and `action_edit_slot`.
+    - [x] Implement an `on_button_pressed` handler that detects which slot button was clicked and navigates accordingly.
+    - [x] Update `refresh_view` to set the `label` on each slot button.
+    - [x] Update focus management logic in `_move_focus` to correctly cycle between the new slot buttons and the action buttons.
+- [x] **`SaveSlotSelectionScreen` Refactor**:
+    - [x] Replace the list view with a button per save slot.
+    - [x] Update selection handling to use `on_button_pressed` and slot IDs.
+    - [x] Adjust focus cycling to move across the slot buttons consistently.
+    - [x] Preserve load-mode disabled slot behavior when no save exists.
+- [x] **`BookingHubScreen` Promo Alignment**:
+    - [x] Include alignment emoji in promo slot summaries.
+- [x] **`RosterScreen` Inspect Behavior**:
+    - [x] Add an inspect binding and open the wrestler inspection modal for the highlighted row.
+    - [x] Restore focus to the roster table after closing inspection.
+- [x] **Verification**:
+    - [x] Run the application and manually test the functionality of all three refactored screens.
+    - [x] Update UI tests to target `Button` widgets instead of list items where applicable.
+    - [x] Update any focus/navigation tests to reflect button-based traversal.
+    - [x] Run the automated UI tests and update any snapshots that have changed as a result of the new button layout.
+    - [x] Verify save/load slot selection, booking hub promo labels, and roster inspection behavior.

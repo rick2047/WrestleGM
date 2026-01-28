@@ -20,6 +20,14 @@ StandardHeader {
 .screen-body {
     width: 1fr;
     height: 1fr;
+    align: center middle;
+}
+
+.screen-shell {
+    width: 1fr;
+    max-width: 100;
+    height: auto;
+    align: center middle;
 }
 
 .screen-body--vertical {
@@ -51,6 +59,32 @@ StandardHeader {
 
 Button {
     width: 18;
+}
+
+.menu-button-group {
+    width: 1fr;
+    min-width: 40;
+    max-width: 60;
+    height: auto;
+    align: center middle;
+}
+
+.menu-button {
+    width: 1fr;
+    margin: 1 0;
+}
+
+.booking-slot-group {
+    width: 1fr;
+    min-width: 50;
+    max-width: 70;
+    height: auto;
+    align: center middle;
+}
+
+.booking-slot-button {
+    width: 1fr;
+    margin: 1 0;
 }
 
 ListView {

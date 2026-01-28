@@ -209,15 +209,8 @@ async def open_match_booking(pilot: Pilot, slot_index: int) -> None:
     if not isinstance(booking_hub, BookingHubScreen):
         raise AssertionError("Expected BookingHubScreen")
 
-    if booking_hub.slot_list.index is None:
-        await pilot.press("down")
-        await pilot.pause(0.05)
-
-    for _ in range(10):
-        if booking_hub.slot_list.index == slot_index:
-            break
-        await pilot.press("down")
-        await pilot.pause(0.05)
+    booking_hub.slot_buttons[slot_index].focus()
+    await pilot.pause(0.05)
     await pilot.press("enter")
     await wait_for_screen(pilot, MatchBookingScreen)
 
@@ -229,15 +222,8 @@ async def open_promo_booking(pilot: Pilot, slot_index: int) -> None:
     if not isinstance(booking_hub, BookingHubScreen):
         raise AssertionError("Expected BookingHubScreen")
 
-    if booking_hub.slot_list.index is None:
-        await pilot.press("down")
-        await pilot.pause(0.05)
-
-    for _ in range(10):
-        if booking_hub.slot_list.index == slot_index:
-            break
-        await pilot.press("down")
-        await pilot.pause(0.05)
+    booking_hub.slot_buttons[slot_index].focus()
+    await pilot.pause(0.05)
     await pilot.press("enter")
     await wait_for_screen(pilot, PromoBookingScreen)
 

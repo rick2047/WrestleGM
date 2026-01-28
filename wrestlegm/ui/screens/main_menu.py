@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 from textual.app import ComposeResult
-from textual.widgets import ListItem, ListView, Static
+from textual.containers import Vertical
+from textual.widgets import Button
 
 from ..routes import SAVE_SLOTS
-from ..widgets.list_views import EdgeAwareListView
 from .standard import StandardScreen
 
 
@@ -20,6 +20,9 @@ class MainMenuScreen(StandardScreen):
     """
 
     BINDINGS = [
+        ("enter", "select", "Select"),
+        ("up", "focus_prev", "Prev"),
+        ("down", "focus_next", "Next"),
         ("q", "app.quit", "Quit"),
     ]
 
@@ -28,25 +31,57 @@ class MainMenuScreen(StandardScreen):
     def compose_body(self) -> ComposeResult:
         """Build the main menu layout."""
 
-        self.menu = EdgeAwareListView(
-            ListItem(Static("New Game"), id="new-game"),
-            ListItem(Static("Load Game"), id="load-game"),
-            ListItem(Static("Quit"), id="quit"),
-        )
-        yield self.menu
+        with Vertical(classes="menu-button-group"):
+            self.new_game_button = Button("New Game", id="new-game", classes="menu-button")
+            self.load_game_button = Button("Load Game", id="load-game", classes="menu-button")
+            self.quit_button = Button("Quit", id="quit", classes="menu-button")
+            yield self.new_game_button
+            yield self.load_game_button
+            yield self.quit_button
 
-    def on_mount(self) -> None:
-        """Focus the menu list on entry."""
+    def action_select(self) -> None:
+        """Activate the currently focused menu option."""
 
-        super().on_mount()
-        self.menu.focus()
+        focus_order = list(self.query(".menu-button"))
+        focused = self.app.focused
+        if focused in focus_order:
+            self._handle_action(focused.id)
+            return
+        if focus_order:
+            focus_order[0].focus()
 
-    def on_list_view_selected(self, event: ListView.Selected) -> None:
-        """Handle selection of menu options."""
+    def action_focus_next(self) -> None:
+        """Move focus to the next menu button."""
 
-        if event.item.id == "new-game":
+        self._move_focus(1)
+
+    def action_focus_prev(self) -> None:
+        """Move focus to the previous menu button."""
+
+        self._move_focus(-1)
+
+    def _move_focus(self, delta: int) -> None:
+        """Cycle focus across menu buttons."""
+
+        focus_order = list(self.query(".menu-button"))
+        if not focus_order:
+            return
+        focused = self.app.focused
+        if focused not in focus_order:
+            focus_order[0].focus()
+            return
+        index = focus_order.index(focused)
+        focus_order[(index + delta) % len(focus_order)].focus()
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        """Handle button presses for menu navigation."""
+
+        self._handle_action(event.button.id)
+
+    def _handle_action(self, button_id: str | None) -> None:
+        if button_id == "new-game":
             self.app.navigate(SAVE_SLOTS, mode="new")
-        elif event.item.id == "load-game":
+        elif button_id == "load-game":
             self.app.navigate(SAVE_SLOTS, mode="load")
-        elif event.item.id == "quit":
+        elif button_id == "quit":
             self.app.exit()
