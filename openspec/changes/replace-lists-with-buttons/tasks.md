@@ -16,8 +16,19 @@
     - [x] Implement an `on_button_pressed` handler that detects which slot button was clicked and navigates accordingly.
     - [x] Update `refresh_view` to set the `label` on each slot button.
     - [x] Update focus management logic in `_move_focus` to correctly cycle between the new slot buttons and the action buttons.
+- [ ] **`SaveSlotSelectionScreen` Refactor**:
+    - [ ] Replace the list view with a button per save slot.
+    - [ ] Update selection handling to use `on_button_pressed` and slot IDs.
+    - [ ] Adjust focus cycling to move across the slot buttons consistently.
+    - [ ] Preserve load-mode disabled slot behavior when no save exists.
+- [ ] **`BookingHubScreen` Promo Alignment**:
+    - [ ] Include alignment emoji in promo slot summaries.
+- [ ] **`RosterScreen` Inspect Behavior**:
+    - [ ] Add an inspect binding and open the wrestler inspection modal for the highlighted row.
+    - [ ] Restore focus to the roster table after closing inspection.
 - [ ] **Verification**:
     - [ ] Run the application and manually test the functionality of all three refactored screens.
     - [x] Update UI tests to target `Button` widgets instead of list items where applicable.
     - [x] Update any focus/navigation tests to reflect button-based traversal.
     - [x] Run the automated UI tests and update any snapshots that have changed as a result of the new button layout.
+    - [ ] Verify save/load slot selection, booking hub promo labels, and roster inspection behavior.

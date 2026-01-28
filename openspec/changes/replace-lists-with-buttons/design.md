@@ -26,3 +26,25 @@ This change will be implemented by replacing `textual.widgets.ListView` componen
     -   The `refresh_view` method will be updated. Instead of updating `Static` widgets inside a list, it will now update the `.label` of each of the 5 `Button` widgets using the existing `slot_text` helper method.
     -   The `on_list_view_selected` and `action_edit_slot` handlers will be replaced. A new `on_button_pressed` handler will be added. It will parse the button ID (e.g., `slot-button-0`) to get the slot index and then call the appropriate navigation logic (e.g., `self.open_match_booking(index)`).
     -   Focus management logic (`_move_focus`) will need to be updated to cycle through the new slot buttons and the existing "Run Show" and "Back" buttons.
+
+### 4. `SaveSlotSelectionScreen` (`wrestlegm/ui/screens/save_slots.py`)
+
+-   **Current:** Uses a `FilteredListView` populated with `ListItem` rows for save/load slots.
+-   **Proposed:**
+    -   Replace the list view with a vertical group of `Button` widgets, one per save slot, mirroring the slot label text.
+    -   Disabled state should reflect load mode restrictions (non-existent slots should be disabled when loading).
+    -   Replace `on_list_view_selected` and list cursor logic with `on_button_pressed` handling and focus cycling over the slot buttons.
+    -   Keep the existing slot labeling logic and overwrite flow unchanged; only the selection UI and focus behavior change.
+
+### 5. `BookingHubScreen` Promo Alignment (`wrestlegm/ui/screens/booking_hub.py`)
+
+-   **Current:** Promo slot summaries show the wrestler name only.
+-   **Proposed:** Include the alignment emoji alongside the wrestler name in promo slot summaries, using the same alignment emoji mapping used elsewhere in the UI.
+
+### 6. `RosterScreen` Inspect Action (`wrestlegm/ui/screens/roster.py`)
+
+-   **Current:** Roster overview is read-only with only a Back action.
+-   **Proposed:**
+    -   Add an inspect binding (e.g., `i`) that opens a read-only wrestler inspection modal for the highlighted roster entry.
+    -   Reuse the existing wrestler inspection modal behavior from the selection screen to avoid duplicating the view layout.
+    -   Restore focus to the roster table after closing the modal, keeping the previously highlighted row selected.
