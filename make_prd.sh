@@ -4,7 +4,7 @@ set -eo pipefail
 OUT="prd.md"
 
 FILES=(
-  "openspec/project.md"
+  "openspec/config.yaml"
   "openspec/specs/data/spec.md"
   "openspec/specs/game-loop/spec.md"
   "openspec/specs/rivalry/spec.md"

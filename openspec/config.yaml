@@ -8,6 +8,73 @@ schema: spec-driven
 #     Tech stack: TypeScript, React, Node.js
 #     We use conventional commits
 #     Domain: e-commerce platform
+context: |
+  Product: WrestleGM is a terminal-first wrestling management game where you run a promotion one show at a time.
+
+  Purpose
+  - Create a fun wrestling manager sim where the core enjoyment comes from managing a roster, booking matches, and producing great shows over time.
+
+  Vision & Goals
+  - Show-driven progression: book, simulate, and advance one show at a time.
+  - Deterministic but expressive outcomes driven by roster stats and match types.
+  - Long-term roster evolution is the core reward loop.
+  - Keyboard-only Textual UI designed for narrow terminals (target >= 70x40).
+  - Systemic, not scripted: outcomes are explained by numbers, not hidden scripts.
+
+  Success Criteria
+  - After multiple shows, the roster and show quality clearly change based on booking decisions.
+
+  Core Loop & Domain
+  - The game is show-driven: book 3-match cards, simulate, apply deltas, advance.
+  - Fixed 3-match, 2-promo card with validation (no duplicate wrestlers, stamina limits).
+  - Deterministic simulation pipeline: outcome, rating, and stat deltas.
+  - Show ratings aggregate match ratings; stats update at show end.
+  - Between-show stamina recovery for wrestlers who did not appear.
+  - Data-driven roster and match types from JSON in data/.
+
+  UI / UX Constraints
+  - Keyboard-only navigation; no mouse assumptions.
+  - Textual-first UI with consistent widget and CSS usage.
+  - Keep UI and simulation layers separated for future UI migration.
+
+  Simulation Principles
+  - Deterministic simulation (same inputs + seed = same results).
+  - Explicit systems (no hidden scripts or unexplained outcomes).
+  - Extensible systems with no hardcoded content in the MVP.
+
+  Tech Stack & Tooling
+  - Python 3.11+
+  - Textual for UI
+  - pytest for tests, ruff for linting, mkdocs for docs
+  - Dependency management with uv
+
+  Code Style & Conventions
+  - Prefer clear, Zen-of-Python style implementations.
+  - Use docstrings on modules, classes, and public functions.
+  - Use detailed, descriptive commit messages.
+
+  Architecture Patterns
+  - Modular structure with clear separation between simulation and UI.
+  - Simulation core should be UI-agnostic to allow future UI swaps.
+
+  Testing Strategy
+  - Emphasize determinism and consistency in simulation tests.
+  - Cover bounds and regression cases for core simulation rules.
+
+  Current State
+  - Textual UI with main menu, booking hub, match booking, selection screens, and show results.
+  - Show ratings aggregate match ratings; stats update at show end.
+  - Data-driven roster and match types from JSON in data/.
+
+  Not Yet Included
+  - Save/load persistence.
+  - Multiple promotions, titles, storylines, or injuries.
+  - Dynamic show sizes or match weighting.
+
+  Important Constraints
+  - Keep dependencies minimal.
+  - Keep simulation and UI layers separated for future UI migration.
+  - No external dependencies for MVP.
 
 # Per-artifact rules (optional)
 # Add custom rules for specific artifacts.
