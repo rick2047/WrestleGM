@@ -64,3 +64,19 @@ uv run mkdocs serve
 - `wrestlegm/`: Game logic, UI, and simulation code.
 - `data/`: Wrestler and match type definitions.
 - `openspec/`: Specifications and archived change history.
+
+## OpenSpec Workflow
+
+OpenSpec artifacts live in `openspec/changes/<change-name>/` while a change is active and in `openspec/archive/` once completed.
+
+Core commands:
+
+```bash
+openspec new change <name>
+openspec continue <name>
+openspec apply <name>
+openspec verify <name>
+openspec archive <name>
+openspec status --change <name>
+openspec list
+```
