@@ -3,72 +3,61 @@
 # FILE: openspec/config.yaml
 ---
 
-Product: WrestleGM is a terminal-first wrestling management game where you run a promotion one show at a time.
+# Project Context
 
-Purpose
-- Create a fun wrestling manager sim where the core enjoyment comes from managing a roster, booking matches, and producing great shows over time.
+## Purpose
+Create a fun wrestling manager sim where the core enjoyment comes from managing a roster, booking matches, and producing great shows over time.
 
-Vision & Goals
+## Vision & Goals
 - Show-driven progression: book, simulate, and advance one show at a time.
 - Deterministic but expressive outcomes driven by roster stats and match types.
 - Long-term roster evolution is the core reward loop.
-- Keyboard-only Textual UI designed for narrow terminals (target >= 70x40).
+- Keyboard-only experience suitable for narrow terminals (target >= 70x40).
 - Systemic, not scripted: outcomes are explained by numbers, not hidden scripts.
 
-Success Criteria
+Success criterion:
 - After multiple shows, the roster and show quality clearly change based on booking decisions.
 
-Core Loop & Domain
-- The game is show-driven: book 3-match cards, simulate, apply deltas, advance.
-- Fixed 3-match, 2-promo card with validation (no duplicate wrestlers, stamina limits).
-- Deterministic simulation pipeline: outcome, rating, and stat deltas.
-- Show ratings aggregate match ratings; stats update at show end.
-- Between-show stamina recovery for wrestlers who did not appear.
-- Data-driven roster and match types from JSON in data/.
+## Tech Stack
+- Python (Textual for UI)
+- pytest, ruff, mkdocs
+- Minimal third-party dependencies
 
-UI / UX Constraints
-- Keyboard-only navigation; no mouse assumptions.
-- Textual-first UI with consistent widget and CSS usage.
-- Keep UI and simulation layers separated for future UI migration.
+## Project Conventions
 
-Simulation Principles
-- Deterministic simulation (same inputs + seed = same results).
-- Explicit systems (no hidden scripts or unexplained outcomes).
-- Extensible systems with no hardcoded content in the MVP.
+### Code Style
+- Prefer clear, Zen-of-Python style implementations
+- Use docstrings on modules, classes, and public functions
 
-Tech Stack & Tooling
-- Python 3.11+
-- Textual for UI
-- pytest for tests, ruff for linting, mkdocs for docs
-- Dependency management with uv
+### Architecture Patterns
+- Modular structure with a clear separation between simulation and UI
+- Simulation core should be UI-agnostic to allow future UI swaps
 
-Code Style & Conventions
-- Prefer clear, Zen-of-Python style implementations.
-- Use docstrings on modules, classes, and public functions.
-- Use detailed, descriptive commit messages.
+### Design Principles
+- Show-first design with explicit show boundaries
+- Textual-first UI with consistent widget and CSS usage
+- Data-driven domain definitions
+- Deterministic simulation (same inputs + seed = same results)
+- Keyboard-only navigation and no mouse assumptions
+- Explicit systems (no hidden scripts or unexplained outcomes)
+- Extensible systems with no hardcoded content in the MVP
 
-Architecture Patterns
-- Modular structure with clear separation between simulation and UI.
-- Simulation core should be UI-agnostic to allow future UI swaps.
+### Testing Strategy
+- Emphasize determinism and consistency in simulation tests
+- Cover bounds and regression cases for core simulation rules
 
-Testing Strategy
-- Emphasize determinism and consistency in simulation tests.
-- Cover bounds and regression cases for core simulation rules.
+### Git Workflow
+- Use detailed, descriptive commit messages
 
-Current State
-- Textual UI with main menu, booking hub, match booking, selection screens, and show results.
-- Show ratings aggregate match ratings; stats update at show end.
-- Data-driven roster and match types from JSON in data/.
+## Domain Context
+- The game is show-driven: book 3-match cards, simulate, apply deltas, advance
 
-Not Yet Included
-- Save/load persistence.
-- Multiple promotions, titles, storylines, or injuries.
-- Dynamic show sizes or match weighting.
+## Important Constraints
+- Keep dependencies minimal
+- Keep simulation and UI layers separated for future UI migration
 
-Important Constraints
-- Keep dependencies minimal.
-- Keep simulation and UI layers separated for future UI migration.
-- No external dependencies for MVP.
+## External Dependencies
+- None for MVP
 
 ---
 # FILE: openspec/specs/data/spec.md
@@ -674,26 +663,6 @@ The system SHALL provide the MVP screens defined in the PRD using Textual widget
 - **WHEN** the roster screen renders
 - **THEN** Face alignment uses 😃 and Heel alignment uses 😈
 
-### Requirement: Standard screen layout structure
-The system SHALL standardize all non-modal UI screens to a `Header → Body → Actions → Footer` structure. The Header SHALL be full-width and display the current screen name centered, rendered via the `StandardHeader` widget. The header MAY additionally display compact context outside the centered title, including screen-specific badges (e.g., emoji indicators for match booking) and/or global context derived from game state (e.g., show name/number or currency). The Body region SHALL expand to fill available space and SHALL be implemented as a dedicated layout container with a configurable layout direction; the default Body layout direction SHALL be vertical. The Actions row SHALL be visually and structurally separate from the Body, SHALL contain only `Button` widgets, and SHALL remain pinned above the Footer.
-
-#### Scenario: Header shows current screen name
-- **WHEN** any non-modal screen is shown
-- **THEN** the header displays the current screen name centered
-
-#### Scenario: Screen-specific header badges
-- **WHEN** a non-modal screen defines header context badges
-- **THEN** the header displays those badges alongside the screen name
-- **AND THEN** the badges update as the underlying screen state changes
-
-#### Scenario: Header can show compact game-state context
-- **WHEN** a non-modal screen defines compact header context derived from game state
-- **THEN** the header displays that context without shifting the centered screen name
-
-#### Scenario: Body content centered by default
-- **WHEN** a non-modal screen uses the standard layout
-- **THEN** the primary body content is centered within the screen by default
-
 ### Requirement: Global navigation keys and footer
 The system SHALL use keyboard-only navigation and display a persistent footer that shows key bindings only. Enter SHALL activate the focused widget. Escape SHALL back out of the current screen or modal where a back action exists, except on the Game Hub, Main Menu, and Show Results screens where Escape has no effect. Arrow-key focus order SHALL skip disabled action buttons, loop between lists and action buttons, and wrap from last to first and first to last within a screen. Left/Right keys SHALL move between horizontal fields or buttons where applicable.
 
@@ -834,20 +803,6 @@ The system SHALL show five slots in fixed order (Match 1, Promo 1, Match 2, Prom
 - **WHEN** the player selects Back on the booking hub
 - **THEN** the Game Hub is shown
 
-#### Scenario: Promo slot alignment emoji
-- **WHEN** a promo slot is rendered in the Booking Hub with a booked wrestler
-- **THEN** the slot summary includes the wrestler alignment emoji alongside their name
-
-### Requirement: Booking hub slot selection
-The application SHALL present booking hub slots as individual, selectable buttons.
-
-#### Scenario: Interacting with the Booking Hub
-- **WHEN** the user views the booking hub screen
-- **THEN** each of the 5 show slots MUST be rendered as a distinct `Button` widget.
-- **AND** clicking a slot button MUST navigate the user to the booking screen for that specific slot.
-- **AND** the user MUST be able to move focus between slot buttons and the other booking hub actions using the same keyboard navigation patterns as before.
-- **AND** the slot button layout MUST be centered and sized to feel intentional on large screens, rather than clustered in the top-left.
-
 ### Requirement: Match booking flow
 The system SHALL edit matches in a dedicated booking screen with a single card layout, require confirmation before committing, allow selecting the wrestler count inline, render participants as a vertical list of Wrestler Views, filter stipulations by the selected wrestler count, and keep validation rules unchanged. The match booking screen SHALL show a rivalry summary header, allow changing stipulation via an inline dropdown, default the stipulation to the first available option when booking an empty slot, and keep Clear Slot/Cancel behavior consistent with current booking flows.
 
@@ -931,15 +886,6 @@ The system SHALL render a Main Menu that offers New Game, Load Game, and Quit, a
 - **WHEN** the Main Menu is shown
 - **THEN** the only options are New Game, Load Game, and Quit
 
-### Requirement: Main menu navigation
-The system SHALL present main menu options as individual, selectable buttons.
-
-#### Scenario: Interacting with the Main Menu
-- **WHEN** the user views the main menu screen
-- **THEN** the options "New Game", "Load Game", and "Quit" MUST be rendered as distinct `Button` widgets.
-- **AND** clicking one of these buttons MUST trigger the corresponding action.
-- **AND** the button group MUST be centered and sized to feel intentional on large screens, rather than clustered in the top-left.
-
 ### Requirement: MVP screen list
 The system SHALL provide the MVP screens defined in the PRD, including the startup guard screen for insufficient viewport size.
 
@@ -981,15 +927,6 @@ The system SHALL provide a Game Hub screen that displays the current show number
 #### Scenario: Exit to Main Menu from hub
 - **WHEN** the player selects Exit to Main Menu in the Game Hub
 - **THEN** the session ends and the Main Menu is shown
-
-### Requirement: Game hub navigation
-The system SHALL present game hub options as individual, selectable buttons.
-
-#### Scenario: Interacting with the Game Hub
-- **WHEN** the user views the game hub screen
-- **THEN** the options "Book Current Show", "Roster Overview", and "Exit to Main Menu" MUST be rendered as distinct `Button` widgets.
-- **AND** clicking one of these buttons MUST trigger the corresponding navigation event.
-- **AND** the button group MUST be centered and sized to feel intentional on large screens, rather than clustered in the top-left.
 
 ### Requirement: Results return to hub
 The system SHALL return to the Game Hub after results and SHALL not provide roster or main menu shortcuts on the results screen.
@@ -1102,9 +1039,9 @@ The system SHALL map each screen to the following primary Textual widgets.
 
 | Screen               | Primary Widgets                  |
 | -------------------- | -------------------------------- |
-| Main Menu            | Button, Static, Footer           |
-| Game Hub             | Button, Static, Footer           |
-| Booking Hub          | Button, Static, Button           |
+| Main Menu            | ListView, Static, Footer         |
+| Game Hub             | ListView, Static, Footer         |
+| Booking Hub          | ListView, Static, Button         |
 | Match Booking        | ListView, Select, Static, Button |
 | Promo Booking        | ListView, Static, Button         |
 | Wrestler Selection   | DataTable, Static, Button        |
@@ -1240,14 +1177,6 @@ The system SHALL provide a Save Slot Selection screen that is shared by New Game
 - **WHEN** the player selects a filled slot in Load Game mode
 - **THEN** the save is loaded and the Booking Hub is shown
 
-#### Scenario: Save/load slots use buttons
-- **WHEN** the user views the save or load slot selection screen
-- **THEN** each slot is rendered as a distinct `Button` widget.
-
-#### Scenario: Save/load slot layout
-- **WHEN** the save or load slot selection screen is shown
-- **THEN** the slot button layout is centered and sized to feel intentional on large screens, rather than clustered in the top-left.
-
 ### Requirement: Name save slot modal
 The system SHALL provide a Name Save Slot modal that captures the slot name on first save. The Confirm action SHALL be disabled until a non-empty name is provided. Cancel SHALL return to Save Slot Selection without creating a game. When invoked after an overwrite confirmation, the name field SHALL be pre-filled with the previous slot name.
 
@@ -1339,20 +1268,206 @@ The system SHALL provide a read-only Wrestler View inspection modal from the wre
 - **THEN** the inspection modal opens without changing selection
 - **AND THEN** pressing `Esc` closes the modal and returns focus to the same row
 
-### Requirement: Roster inspect behavior
-The system SHALL allow inspecting a wrestler from the roster overview.
-
-#### Scenario: Inspecting a roster entry
-- **WHEN** the user presses the inspect action on the roster overview screen
-- **THEN** the application MUST open a read-only wrestler inspection view for the highlighted wrestler.
-- **AND** closing the inspection view MUST restore focus to the roster list at the previously highlighted row.
-
 ### Requirement: Match booking rivalry summary header
 The system SHALL display an emoji-only rivalry summary in the Match Booking header by aggregating rivalries across all unordered wrestler pairs and compressing counts using ASCII `xN` (e.g., `💥 x3`). The header MUST NOT wrap, scroll, or overflow.
 
 #### Scenario: Rivalry summary aggregation
 - **WHEN** a match has multiple rivalry pairs
 - **THEN** the header displays each rivalry emoji with an ASCII count suffix
+
+
+## UI Screen Layouts and Classes (from code)
+
+Global layout: all `Screen` instances align center/middle via `wrestlegm/ui/styles.tcss`, and most screens render a `Footer` with key bindings.
+
+### MainMenuScreen
+- Structure
+  - `Screen`
+  - `Static("WrestleGM")` → classes: `section-title`
+  - `EdgeAwareListView`
+    - `ListItem(Static("New Game"))` id: `new-game`
+    - `ListItem(Static("Load Game"))` id: `load-game`
+    - `ListItem(Static("Quit"))` id: `quit`
+  - `Footer`
+- Classes used: `section-title`
+
+### GameHubScreen
+- Structure
+  - `Screen`
+  - `Static("WrestleGM")` → classes: `section-title`
+  - `Static("Game Hub")` → classes: `section-title`
+  - `EdgeAwareListView`
+    - `ListItem(Static("Book Current Show…"))` id: `current-show`
+    - `ListItem(Static("Roster Overview"))` id: `roster`
+    - `ListItem(Static("Exit to Main Menu"))` id: `exit`
+  - `Footer`
+- Classes used: `section-title`
+
+### SaveSlotSelectionScreen
+- Structure
+  - `Screen`
+  - `Static("WrestleGM")` → classes: `section-title`
+  - `Static(title)` where title is "Load Game" or "New Game" → classes: `section-title`
+  - `FilteredListView`
+    - `ListItem(Static(slot label))` id: `slot-{index}`
+  - `Footer`
+- Classes used: `section-title`
+
+### BookingHubScreen
+- Structure
+  - `Screen`
+  - `Static("WrestleGM")` → classes: `section-title`
+  - `Static(show header)` → classes: `section-title`
+  - `EdgeAwareListView`
+    - `ListItem(Static(slot summary))` id: `slot-item-{index}`
+  - `Vertical`
+    - `Button("Run Show")` id: `run-show`
+    - `Button("Back")` id: `back`
+  - `Footer`
+- Classes used: `section-title`
+
+### MatchBookingScreen
+- Structure
+  - `Screen` → classes: `booking-screen`
+  - `Vertical` → classes: `booking-shell`
+    - `Vertical` → classes: `booking-card`
+      - `Static(header)` → classes: `match-booking-header`
+      - `Vertical` → classes: `match-booking-controls`
+        - `Horizontal` → classes: `match-booking-controls-row`
+          - `Horizontal` → classes: `match-booking-control-group`
+            - `SafeSelect` id: `match-category` → classes: `match-category-select`
+          - `Horizontal` → classes: `match-booking-control-group`
+            - `SafeSelect` id: `match-type` → classes: `match-type-select`
+      - `Static("Wrestlers")` → classes: `booking-section-title`
+      - `FilteredListView` → classes: `match-wrestlers-scroll`
+        - `ListItem(WrestlerView)` id: `field-wrestler-{index}`
+    - `Horizontal` → classes: `booking-actions`
+      - `Button("Clear Slot")` id: `clear`
+      - `Button("Confirm")` id: `confirm`
+      - `Button("Cancel")` id: `cancel`
+  - `Footer`
+- Classes used: `booking-screen`, `booking-shell`, `booking-card`, `match-booking-header`, `match-booking-controls`, `match-booking-controls-row`, `match-booking-control-group`, `booking-section-title`, `match-wrestlers-scroll`, `booking-actions`, `match-category-select`, `match-type-select`
+- WrestlerView subtree classes (applies per list item)
+  - Root: `wrestler-view`
+  - Name: `wrestler-name-header`
+  - Empty label: `wrestler-empty-label`
+  - Avatar frame: `wrestler-avatar-frame`
+  - Avatar: `wrestler-avatar`
+  - Info container: `wrestler-info`
+  - Stats: `wrestler-stats`
+  - Rivalry title: `wrestler-rivalry-title`
+  - Rivalry scroll: `wrestler-rivalry-scroll`
+  - Rivalry text: `wrestler-rivalry`
+
+### PromoBookingScreen
+- Structure
+  - `Screen` → classes: `booking-screen`
+  - `Vertical` → classes: `booking-shell`
+    - `Vertical` → classes: `booking-card`
+      - `Static(header)` → classes: `match-booking-header`
+      - `Static("Performer")` → classes: `booking-section-title`
+      - `EdgeAwareListView` → classes: `match-wrestlers-scroll`
+        - `ListItem(WrestlerView)` id: `field-wrestler`
+    - `Horizontal` → classes: `booking-actions`
+      - `Button("Clear Slot")` id: `clear`
+      - `Button("Confirm")` id: `confirm`
+      - `Button("Cancel")` id: `cancel`
+  - `Footer`
+- Classes used: `booking-screen`, `booking-shell`, `booking-card`, `match-booking-header`, `booking-section-title`, `match-wrestlers-scroll`, `booking-actions`
+- WrestlerView subtree classes (same as MatchBookingScreen, without rivalry blocks)
+
+### WrestlerSelectionScreen
+- Structure
+  - `Screen`
+  - `Static(title)`
+  - `EdgeAwareDataTable`
+  - `Static(message line)`
+  - `Horizontal`
+    - `Button("Select")` id: `select`
+    - `Button("Cancel")` id: `cancel`
+  - `Footer`
+- Classes used: none applied in compose
+
+### WrestlerInspectModal
+- Structure
+  - `ModalScreen`
+  - `Vertical` → classes: `panel inspect-panel`
+    - `Static("Wrestler Details")` → classes: `section-title`
+    - `WrestlerView`
+    - `Static("[ Esc to close ]")` → classes: `modal-hint`
+- Classes used: `panel`, `inspect-panel`, `section-title`, `modal-hint`
+- WrestlerView subtree classes: `wrestler-view`, `wrestler-name-header`, `wrestler-empty-label`, `wrestler-avatar-frame`, `wrestler-avatar`, `wrestler-info`, `wrestler-stats`, `wrestler-description`, `wrestler-rivalry-title`, `wrestler-rivalry-scroll`, `wrestler-rivalry`
+
+### RosterScreen
+- Structure
+  - `Screen`
+  - `Static("Roster Overview")` → classes: `section-title`
+  - `EdgeAwareDataTable`
+  - `Button("Back")` id: `back`
+  - `Footer`
+- Classes used: `section-title`
+
+### ResultsScreen
+- Structure
+  - `Screen`
+  - `Static("Show Results")` → classes: `section-title`
+  - `Static(results body)`
+  - `Static(show rating)`
+  - `Button("Continue")` id: `continue`
+  - `Footer`
+- Classes used: `section-title`
+
+### SimulatingScreen
+- Structure
+  - `Screen`
+  - `Static("Simulating show...")`
+  - `Footer`
+- Classes used: none applied in compose
+
+### GuardScreen
+- Structure
+  - `Screen`
+  - `Static(message)` → classes: `guard-message`
+  - `Footer`
+- Classes used: `guard-message`
+
+### ConfirmBookingModal
+- Structure
+  - `ModalScreen`
+  - `Vertical` → classes: `panel`
+    - `Static("Confirm booking?")`
+    - `Button("Confirm")` id: `confirm`
+    - `Button("Cancel")` id: `cancel`
+- Classes used: `panel`
+
+### ErrorModal
+- Structure
+  - `ModalScreen`
+  - `Vertical` → classes: `panel`
+    - `Static("Error")`
+    - `Static(message)`
+    - `Button("Ok")` id: `ok`
+- Classes used: `panel`
+
+### NameSaveSlotModal
+- Structure
+  - `ModalScreen`
+  - `Vertical` → classes: `panel`
+    - `Static("Name Save Slot")`
+    - `Input(placeholder="Slot name")`
+    - `Button("Confirm")` id: `confirm`
+    - `Button("Cancel")` id: `cancel`
+- Classes used: `panel`
+
+### OverwriteSaveSlotModal
+- Structure
+  - `ModalScreen`
+  - `Vertical` → classes: `panel`
+    - `Static("Overwrite Slot {n}?")`
+    - `Static('This will replace "{name}".')`
+    - `Button("Confirm")` id: `confirm`
+    - `Button("Cancel")` id: `cancel`
+- Classes used: `panel`
 
 ---
 # FILE: openspec/specs/ui-testing/spec.md
@@ -1377,9 +1492,6 @@ The system SHALL provide dedicated UI test fixtures for roster and match type in
 #### Scenario: Fixture-based UI data
 - **WHEN** UI tests run
 - **THEN** they load roster and match type data from `tests/fixtures/ui/`
-- **AND THEN** the fixture data is a snapshot of current production data captured intentionally, not a live mirror
-- **AND THEN** the snapshot is curated to include image-bearing wrestlers so existing tests exercise image rendering paths without extra selection logic
-- **AND THEN** the fixture snapshot includes rivalry seed data for UI tests
 
 ### Requirement: UI flow tests
 The system SHALL include UI flow tests that validate keyboard-only navigation and state progression across core gameplay screens, and SHALL organize them into modules that reflect the UI screen structure.
@@ -1446,6 +1558,7 @@ The system SHALL include UI tests that validate the startup viewport guard behav
 #### Scenario: Guard screen validation
 - **WHEN** the app starts with a viewport smaller than 60x30
 - **THEN** the guard screen is shown and only the Quit action is available
+
 
 ---
 # FILE: openspec/specs/documentation/spec.md
@@ -1601,4 +1714,3 @@ The system SHALL upload UI snapshot artifacts on both success and failure so the
 #### Scenario: Snapshot artifacts on success
 - **WHEN** UI snapshot tests succeed
 - **THEN** the workflow uploads snapshot artifacts for the latest run
-
