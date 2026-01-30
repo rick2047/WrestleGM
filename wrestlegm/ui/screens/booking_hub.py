@@ -6,7 +6,7 @@ from textual.app import ComposeResult
 from textual.containers import Vertical, VerticalScroll
 from textual.widgets import Button, Static
 
-from wrestlegm import constants
+from wrestlegm import constants, economy
 from wrestlegm.models import Match
 
 from ..formatting import (
@@ -109,7 +109,9 @@ class BookingHubScreen(StandardScreen):
             match_type_name = match_type.name if match_type else "Unknown"
             category_name = match_category_label(slot.match_category_id)
             emojis = self.app.state.rivalry_emojis_for_match(slot.wrestler_ids)
-            match_cost = match_type.base_cost if match_type else 0
+            match_cost = (match_type.base_cost if match_type else 0) + sum(
+                economy.wrestler_booking_price(wrestler.popularity) for wrestler in wrestlers
+            )
             label_text = f"{label} · {category_name} · ${match_cost:,}"
             if emojis:
                 label_text = f"{label_text}  {emojis}"
@@ -118,7 +120,9 @@ class BookingHubScreen(StandardScreen):
                 f"{category_name} · {match_type_name}"
             )
         wrestler = self.app.state.roster[slot.wrestler_id]
-        return f"{label}\n{build_name_cell(wrestler.name, wrestler.alignment)}"
+        promo_cost = economy.wrestler_booking_price(wrestler.popularity)
+        label_text = f"{label} · ${promo_cost:,}"
+        return f"{label_text}\n{build_name_cell(wrestler.name, wrestler.alignment)}"
 
     def action_select(self) -> None:
         """Open the booking screen for the selected slot."""
