@@ -17,6 +17,7 @@ from tests.ui_test_utils import (
 from wrestlegm import constants
 from wrestlegm.models import CooldownState, RivalryState, normalize_pair
 from wrestlegm.ui import (
+    BankruptcyScreen,
     BookingHubScreen,
     ConfirmBookingModal,
     ConfirmRunShowModal,
@@ -223,6 +224,21 @@ def test_snapshot_s12_show_results_default(snap_compare) -> None:
         pilot.app.state.run_show()
         pilot.app.switch_screen(ResultsScreen())
         await wait_for_screen(pilot, ResultsScreen)
+        await pilot.pause(0.1)
+        await pilot.wait_for_scheduled_animations()
+        await pilot.pause(0.1)
+
+    assert snap_compare(app, terminal_size=VIEWPORT_SIZE, run_before=run_before)
+
+
+def test_snapshot_s12c_bankruptcy_screen(snap_compare) -> None:
+    app = TestWrestleGMApp()
+
+    async def run_before(pilot):
+        await start_new_game(pilot)
+        app.state.money = 0
+        app.switch_screen(BankruptcyScreen())
+        await wait_for_screen(pilot, BankruptcyScreen)
         await pilot.pause(0.1)
         await pilot.wait_for_scheduled_animations()
         await pilot.pause(0.1)

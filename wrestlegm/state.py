@@ -265,12 +265,6 @@ class GameState:
         slots: List[ShowSlot] = [slot for slot in self.show_card if slot is not None]
         return economy.show_cost(slots, self.roster, self.match_types)
 
-    def current_rivalry_cooldown_counts(self) -> tuple[int, int]:
-        """Return rivalry and cooldown counts for the current card."""
-
-        slots: List[ShowSlot] = [slot for slot in self.show_card if slot is not None]
-        return economy.card_rivalry_cooldown_summary(slots, self.rivalry_manager)
-
     def min_valid_show_cost(self) -> int | None:
         """Return the minimum possible cost for any valid show card, or None if impossible."""
 

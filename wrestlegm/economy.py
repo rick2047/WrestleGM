@@ -161,19 +161,3 @@ def compute_economy(
         total_earned=total_earned,
     )
 
-
-def card_rivalry_cooldown_summary(
-    slots: Iterable[ShowSlot],
-    rivalry_manager: RivalryManager,
-) -> tuple[int, int]:
-    """Return rivalry and cooldown counts across the booked card."""
-
-    rivalry_count = 0
-    cooldown_count = 0
-    for slot in slots:
-        if not isinstance(slot, Match):
-            continue
-        match_rivalry, match_cooldown = rivalry_manager.count_rivalry_and_cooldown_pairs(slot.wrestler_ids)
-        rivalry_count += match_rivalry
-        cooldown_count += match_cooldown
-    return rivalry_count, cooldown_count
