@@ -4,8 +4,8 @@
 - To trigger a Gemini review, comment on the PR with `/gemini review`.
 
 ## GitHub Access
-- Use the GitHub MCP server for all GitHub issues/PRs/comments and related actions.
-- Do not use the `gh` CLI or raw API calls.
+- Always use the `gh` tool for all GitHub interactions (PR creation, issues, comments, etc.).
+- Do not use the GitHub MCP server or raw API calls.
 
 ## OpenSpec CLI Location
 - Prefer running `openspec` from `PATH`.
