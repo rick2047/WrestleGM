@@ -10,6 +10,7 @@ from textual.app import ComposeResult
 from textual.containers import Vertical, VerticalScroll
 from textual.widgets import Static
 
+from wrestlegm import economy
 from wrestlegm.state import GameState
 
 from ..formatting import ALIGNMENT_EMOJI
@@ -196,8 +197,10 @@ class WrestlerView(Vertical):
             return
 
         if self.stats_line is not None and self.wrestler is not None:
+            cost = economy.wrestler_booking_price(self.wrestler.popularity)
             self.stats_line.update(
-                f"⭐{self.wrestler.popularity}  🔋{self.wrestler.stamina}  🎤{self.wrestler.mic_skill}"
+                f"⭐{self.wrestler.popularity}  🔋{self.wrestler.stamina}  "
+                f"🎤{self.wrestler.mic_skill}  💵${cost:,}"
             )
             self.stats_line.styles.display = "block"
 

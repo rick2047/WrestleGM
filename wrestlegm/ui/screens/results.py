@@ -38,7 +38,7 @@ class ResultsScreen(StandardScreen):
         with VerticalScroll():
             self.summary = Static("", markup=True)
             yield self.summary
-            self.results = Static("")
+            self.results = Static("", markup=True)
             yield self.results
 
     def compose_actions(self) -> list[Button]:
@@ -67,6 +67,7 @@ class ResultsScreen(StandardScreen):
         total_earned = show.total_earned or 0
         money = self.app.state.money
         summary_lines = [
+            "[b]Economy[/b]",
             f"Overall Rating: {format_stars(rating)}",
             f"Audience: {audience:,}",
             f"Gate Income: {format_money(gate_income)}",
@@ -75,7 +76,7 @@ class ResultsScreen(StandardScreen):
             f"Money: {format_money(money)}",
             "",
         ]
-        lines = []
+        lines = ["[b]Match Results[/b]", ""]
         for index, (slot, result) in enumerate(
             zip(show.scheduled_slots, show.results), start=0
         ):

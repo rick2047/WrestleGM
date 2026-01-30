@@ -106,7 +106,6 @@ class ConfirmRunShowModal(ModalScreen):
             yield Static(f"Money: {format_money(self.money)}", markup=True)
             yield Static("")
             yield Static(f"Show Cost: ${self.show_cost:,}")
-            yield Static("After Show (est.): $—")
             if self.will_debt:
                 yield Static("WARNING: This will put you into debt.")
             self.confirm_button = Button("Confirm", id="confirm")

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from textual.app import ComposeResult
-from textual.containers import Vertical
+from textual.containers import Vertical, VerticalScroll
 from textual.widgets import Button, Static
 
 from wrestlegm import constants
@@ -59,11 +59,12 @@ class BookingHubScreen(StandardScreen):
         yield self.show_header
 
         self.slot_buttons: list[Button] = []
-        with Vertical(classes="booking-slot-group"):
-            for index in range(constants.SHOW_SLOT_COUNT):
-                button = Button("", id=f"slot-button-{index}", classes="booking-slot-button")
-                self.slot_buttons.append(button)
-                yield button
+        with VerticalScroll(classes="booking-slot-scroll"):
+            with Vertical(classes="booking-slot-group"):
+                for index in range(constants.SHOW_SLOT_COUNT):
+                    button = Button("", id=f"slot-button-{index}", classes="booking-slot-button")
+                    self.slot_buttons.append(button)
+                    yield button
 
     def compose_actions(self) -> list[Button]:
         self.run_button = Button("Run Show", id="run-show")
