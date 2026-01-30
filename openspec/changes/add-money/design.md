@@ -36,6 +36,7 @@ WrestleGM currently has no economic system. Booking is costless and results only
   - **Wrestler booking price (per unique wrestler per show):**
     - `wrestler_price = BASE + A * (pop ** 1.2)`
     - `pop` is popularity (0–100).
+    - **Initial defaults:** `BASE = 100`, `A = 10`.
   - **Show cost:**
     - `show_cost = sum(unique_wrestler_price) + sum(match_type.base_cost)`
     - Promos have zero direct cost.
@@ -49,11 +50,13 @@ WrestleGM currently has no economic system. Booking is costless and results only
   - **Audience curve (conceptual):**
     - `audience = base_from_pop(pop_sum) + bonus(align_score, rivalry_count) - penalty(cooldown_count) + rng_swing`
     - Apply curved/nonlinear mappings for bonus/penalty and clamp to `>= 0`.
+    - **Initial default:** `base_from_pop(pop_sum) = pop_sum * 20`.
   - **Gate income:**
     - `gate_income = audience * GATE_RATE` (linear; default `GATE_RATE = 1`).
   - **Merch income:**
     - `merch_income = audience * merch_rate(show_rating) + rng_swing`
     - `merch_rate` is a curved mapping of show rating; clamp to `>= 0`.
+    - **Initial default:** `merch_rate = clamp(0.05 + 0.02*show_rating + 0.01*show_rating^2, 0.05, 0.25)`.
   - **RNG swing (audience + merch):**
     - Apply a deterministic multiplier in the range `0.8..1.2` (±20%) using the session RNG.
     - Audience and merch use independent draws.
