@@ -7,8 +7,8 @@ WrestleGM currently has no economic system. Booking is costless and results only
 **Goals:**
 - Introduce promotion-level money with show costs and post-show income.
 - Compute audience from card composition (popularity, alignment, rivalries, cooldowns) with deterministic RNG.
-- Add gate and merch income derived from audience and show quality.
-- Allow debt after a show; enforce bankruptcy if the next valid show cannot be afforded.
+- Add gate and merch income derived from audience and show rating.
+- Allow debt after a show; enforce bankruptcy when the player tries to book the next show.
 - Surface money/audience and debt warnings in booking, confirmation, results, and game over UI.
 
 **Non-Goals:**
@@ -28,7 +28,7 @@ WrestleGM currently has no economic system. Booking is costless and results only
   2. Compute audience inputs (`pop_sum`, `align_score`, `rivalry_count`, `cooldown_count`).
   3. Compute `audience` (includes deterministic RNG swing).
   4. Compute `gate_income` from audience.
-  5. Compute `merch_income` from audience and **show quality**, where **show quality = existing `show_rating`** (mean of all slot ratings). Merch includes deterministic RNG swing.
+  5. Compute `merch_income` from audience and **show rating** (existing `show_rating`, mean of all slot ratings). Merch includes deterministic RNG swing.
   6. Compute `show_cost` and update money: `money = money - show_cost + gate_income + merch_income`.
   7. Defer bankruptcy evaluation until the next show attempt.
 
@@ -50,10 +50,13 @@ WrestleGM currently has no economic system. Booking is costless and results only
     - `audience = base_from_pop(pop_sum) + bonus(align_score, rivalry_count) - penalty(cooldown_count) + rng_swing`
     - Apply curved/nonlinear mappings for bonus/penalty and clamp to `>= 0`.
   - **Gate income:**
-    - `gate_income = audience * GATE_RATE` (linear; tune `GATE_RATE`).
+    - `gate_income = audience * GATE_RATE` (linear; default `GATE_RATE = 1`).
   - **Merch income:**
     - `merch_income = audience * merch_rate(show_rating) + rng_swing`
-    - `merch_rate` is a curved mapping of show quality; clamp to `>= 0`.
+    - `merch_rate` is a curved mapping of show rating; clamp to `>= 0`.
+  - **RNG swing (audience + merch):**
+    - Apply a deterministic multiplier in the range `0.8..1.2` (±20%) using the session RNG.
+    - Audience and merch use independent draws.
 
 - **Deterministic RNG:**
   - Use the existing session-seeded RNG for audience and merch swings.
@@ -61,7 +64,7 @@ WrestleGM currently has no economic system. Booking is costless and results only
 
 - **Bankruptcy rule (explicit):**
   - Allow running a show even if it produces negative money.
-  - Bankruptcy is checked when attempting to run the *next* show.
+  - Bankruptcy is checked when the player attempts to start booking the *next* show (after leaving results).
   - Define `min_valid_show_cost` as the minimum possible cost for any valid 3-match, 2-promo card given the current roster and match types (using the same validation rules as booking).
   - If `current_money < min_valid_show_cost`, the game transitions to **Game Over: Bankruptcy**.
   - No hard debt limit; the only constraint is whether any valid show can be afforded at next show time.
@@ -201,6 +204,5 @@ WrestleGM currently has no economic system. Booking is costless and results only
 
 ## Open Questions
 
-- Constants for `BASE`, `A`, `GATE_RATE`, and the exact curve functions for audience and merch conversion.
-- Whether merch RNG should be independent of audience RNG.
+- Constants for `BASE`, `A`, and the exact curve functions for audience and merch conversion.
 - Exact UI label wording for money/cost fields (if any conflicts with layout).
