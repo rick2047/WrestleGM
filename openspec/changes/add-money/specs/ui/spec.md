@@ -27,6 +27,10 @@ The system SHALL present a confirmation modal before running a show and warn if 
 - **WHEN** the show cost exceeds current money
 - **THEN** the modal displays `WARNING: This will put you into debt.`
 
+#### Scenario: No after-show estimate
+- **WHEN** the confirm modal is shown
+- **THEN** the After Show field displays `$—` and no estimate is provided
+
 ### Requirement: Results economy breakdown
 The system SHALL display audience, gate income, merch income, total earned, and current money on the Results screen.
 

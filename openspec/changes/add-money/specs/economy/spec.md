@@ -82,7 +82,7 @@ The system SHALL compute merch income from audience and show rating using a curv
 
 #### Scenario: Merch rate default curve
 - **WHEN** merch rate is computed
-- **THEN** `merch_rate = clamp(0.05 + 0.02*show_rating + 0.01*show_rating^2, 0.05, 0.25)`
+- **THEN** `merch_rate = clamp(0.05 + 0.02*show_rating + 0.01*show_rating^2, 0.05, 0.50)`
 
 ### Requirement: RNG swing behavior
 The system SHALL apply deterministic RNG swings to audience and merch income.

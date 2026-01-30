@@ -56,7 +56,7 @@ WrestleGM currently has no economic system. Booking is costless and results only
   - **Merch income:**
     - `merch_income = audience * merch_rate(show_rating) + rng_swing`
     - `merch_rate` is a curved mapping of show rating; clamp to `>= 0`.
-    - **Initial default:** `merch_rate = clamp(0.05 + 0.02*show_rating + 0.01*show_rating^2, 0.05, 0.25)`.
+    - **Initial default:** `merch_rate = clamp(0.05 + 0.02*show_rating + 0.01*show_rating^2, 0.05, 0.50)`.
   - **RNG swing (audience + merch):**
     - Apply a deterministic multiplier in the range `0.8..1.2` (±20%) using the session RNG.
     - Audience and merch use independent draws.
@@ -150,7 +150,7 @@ WrestleGM currently has no economic system. Booking is costless and results only
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│ Money: -$230 (red)        Show Results (Show #12)             │
+│ Money: $15,340            Show Results (Show #12)             │
 ├──────────────────────────────────────────────────────────────┤
 │ Overall Rating: ★★★★☆ (4.0)                                   │
 │ Audience: 12,450                                              │
