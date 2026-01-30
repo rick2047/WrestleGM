@@ -6,7 +6,7 @@ from textual.app import ComposeResult
 from textual.containers import Vertical
 from textual.widgets import Button
 
-from ..routes import BOOKING_HUB, MAIN_MENU, ROSTER
+from ..routes import BANKRUPTCY, BOOKING_HUB, MAIN_MENU, ROSTER
 from .standard import StandardScreen
 
 
@@ -104,7 +104,10 @@ class GameHubScreen(StandardScreen):
         """Route the selected menu option to the target screen."""
 
         if item_id == "current-show":
-            self.app.navigate(BOOKING_HUB)
+            if self.app.state.is_bankrupt():
+                self.app.navigate(BANKRUPTCY)
+            else:
+                self.app.navigate(BOOKING_HUB)
         elif item_id == "roster":
             self.app.navigate(ROSTER)
         elif item_id == "exit":

@@ -83,3 +83,11 @@ def truncate_name(name: str, max_len: int = 18) -> str:
     if len(name) <= max_len:
         return name
     return f"{name[: max_len - 3]}..."
+
+
+def format_money(amount: int) -> str:
+    """Return a money string with red styling when negative."""
+
+    if amount < 0:
+        return f"[red]-${abs(amount):,}[/red]"
+    return f"${amount:,}"

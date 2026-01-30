@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Dict, Iterable, List
 
 from wrestlegm import constants
+from wrestlegm import economy
 from wrestlegm.models import (
     Match,
     MatchTypeDefinition,
@@ -62,6 +63,7 @@ class GameState:
         self.show_index = 1
         self.show_card = [None] * constants.SHOW_SLOT_COUNT
         self.last_show = None
+        self.money = constants.STARTING_MONEY
 
     def clear_slot(self, slot_index: int) -> None:
         """Clear a show slot."""
@@ -200,6 +202,20 @@ class GameState:
         )
         show.results = results
         show.show_rating = self.engine.aggregate_show_rating(results)
+        economy_result = economy.compute_economy(
+            slots,
+            self.roster,
+            self.match_types,
+            self.rivalry_manager,
+            self.engine.rng,
+            show.show_rating,
+        )
+        show.audience = economy_result.audience
+        show.gate_income = economy_result.gate_income
+        show.merch_income = economy_result.merch_income
+        show.total_earned = economy_result.total_earned
+        show.show_cost = economy_result.show_cost
+        self.money = self.money - economy_result.show_cost + economy_result.total_earned
         self.applier.apply(show, self.roster)
         self.rivalry_manager.advance(show)
         self.last_show = show
@@ -242,6 +258,91 @@ class GameState:
         """Return rivalry emoji for a pair, ignoring cooldowns."""
 
         return self.rivalry_manager.rivalry_emoji_for_pair(wrestler_a_id, wrestler_b_id)
+
+    def current_show_cost(self) -> int:
+        """Return the cost for the currently booked slots."""
+
+        slots: List[ShowSlot] = [slot for slot in self.show_card if slot is not None]
+        return economy.show_cost(slots, self.roster, self.match_types)
+
+    def current_rivalry_cooldown_counts(self) -> tuple[int, int]:
+        """Return rivalry and cooldown counts for the current card."""
+
+        slots: List[ShowSlot] = [slot for slot in self.show_card if slot is not None]
+        return economy.card_rivalry_cooldown_summary(slots, self.rivalry_manager)
+
+    def min_valid_show_cost(self) -> int | None:
+        """Return the minimum possible cost for any valid show card, or None if impossible."""
+
+        match_types_by_category: dict[str, int] = {}
+        for category_id in constants.MATCH_CATEGORY_ORDER:
+            eligible = [
+                match_type.base_cost
+                for match_type in self.match_types.values()
+                if match_type.allowed_categories is None
+                or category_id in match_type.allowed_categories
+            ]
+            if not eligible:
+                continue
+            match_types_by_category[category_id] = min(eligible)
+
+        if not match_types_by_category:
+            return None
+
+        match_eligible = [
+            (economy.wrestler_booking_price(wrestler.popularity), wrestler.id)
+            for wrestler in self.roster.values()
+            if wrestler.stamina > constants.STAMINA_MIN_BOOKABLE
+        ]
+        match_eligible.sort(key=lambda item: item[0])
+
+        promo_eligible = [
+            (economy.wrestler_booking_price(wrestler.popularity), wrestler.id)
+            for wrestler in self.roster.values()
+        ]
+        promo_eligible.sort(key=lambda item: item[0])
+
+        min_cost: int | None = None
+        category_ids = list(match_types_by_category.keys())
+        for first in category_ids:
+            for second in category_ids:
+                for third in category_ids:
+                    match_count = (
+                        constants.MATCH_CATEGORIES[first]["size"]
+                        + constants.MATCH_CATEGORIES[second]["size"]
+                        + constants.MATCH_CATEGORIES[third]["size"]
+                    )
+                    if len(match_eligible) < match_count:
+                        continue
+                    match_pick = match_eligible[:match_count]
+                    match_ids = {wrestler_id for _, wrestler_id in match_pick}
+
+                    remaining_promos = [
+                        entry for entry in promo_eligible if entry[1] not in match_ids
+                    ]
+                    promo_needed = constants.SHOW_SLOT_TYPES.count("promo")
+                    if len(remaining_promos) < promo_needed:
+                        continue
+                    promo_pick = remaining_promos[:promo_needed]
+
+                    wrestler_cost = sum(cost for cost, _ in match_pick + promo_pick)
+                    base_cost = (
+                        match_types_by_category[first]
+                        + match_types_by_category[second]
+                        + match_types_by_category[third]
+                    )
+                    total_cost = wrestler_cost + base_cost
+                    if min_cost is None or total_cost < min_cost:
+                        min_cost = total_cost
+        return min_cost
+
+    def is_bankrupt(self) -> bool:
+        """Return True if no valid show can be afforded with current funds."""
+
+        min_cost = self.min_valid_show_cost()
+        if min_cost is None:
+            return True
+        return self.money < min_cost
 
 
 class ShowApplier:

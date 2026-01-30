@@ -8,7 +8,7 @@ from textual.widgets import Button, Static
 
 from wrestlegm.models import Match
 
-from ..formatting import build_name_cell, format_stars, match_category_label, slot_label
+from ..formatting import build_name_cell, format_money, format_stars, match_category_label, slot_label
 from ..routes import GAME_HUB
 from .standard import StandardScreen
 
@@ -36,10 +36,10 @@ class ResultsScreen(StandardScreen):
         """Build the results screen layout."""
 
         with VerticalScroll():
+            self.summary = Static("", markup=True)
+            yield self.summary
             self.results = Static("")
             yield self.results
-            self.show_rating = Static("")
-            yield self.show_rating
 
     def compose_actions(self) -> list[Button]:
         self.continue_button = Button("Continue", id="continue")
@@ -58,8 +58,23 @@ class ResultsScreen(StandardScreen):
         show = self.app.state.last_show
         if show is None:
             self.results.update("No results.")
-            self.show_rating.update("")
+            self.summary.update("")
             return
+        rating = show.show_rating or 0.0
+        audience = show.audience or 0
+        gate_income = show.gate_income or 0
+        merch_income = show.merch_income or 0
+        total_earned = show.total_earned or 0
+        money = self.app.state.money
+        summary_lines = [
+            f"Overall Rating: {format_stars(rating)}",
+            f"Audience: {audience:,}",
+            f"Gate Income: {format_money(gate_income)}",
+            f"Merch Income: {format_money(merch_income)}",
+            f"Total Earned: {format_money(total_earned)}",
+            f"Money: {format_money(money)}",
+            "",
+        ]
         lines = []
         for index, (slot, result) in enumerate(
             zip(show.scheduled_slots, show.results), start=0
@@ -89,9 +104,8 @@ class ResultsScreen(StandardScreen):
                 lines.append(f" {wrestler}")
                 lines.append(f" {format_stars(result.rating)}")
                 lines.append("")
+        self.summary.update("\n".join(summary_lines).strip())
         self.results.update("\n".join(lines).strip())
-        rating = show.show_rating or 0.0
-        self.show_rating.update(f"Show Rating: {format_stars(rating)}")
 
     def action_continue(self) -> None:
         """Return to the game hub."""

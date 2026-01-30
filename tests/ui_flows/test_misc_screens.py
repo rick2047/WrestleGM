@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from wrestlegm.ui import (
     ConfirmBookingModal,
+    ConfirmRunShowModal,
     ErrorModal,
     PromoBookingScreen,
     SimulatingScreen,
@@ -67,6 +68,8 @@ def test_confirm_modal_and_simulating_screen() -> None:
             booking_hub = app.screen
             booking_hub.refresh_view()
             await pilot.press("r")
+            await wait_for_screen(pilot, ConfirmRunShowModal)
+            await pilot.press("enter")
             await wait_for_screen(pilot, SimulatingScreen)
 
     run_async(run_flow())
