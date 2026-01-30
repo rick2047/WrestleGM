@@ -20,13 +20,13 @@
 
 - [ ] 3.1 Insert economy computation stage after ratings and before show application, preserving RNG order
 - [ ] 3.2 Ensure economy RNG uses the session-seeded RNG and does not affect match/promo RNG draws
-- [ ] 3.3 Tests: economy stage ordering and deterministic RNG call counts vs. baseline
+- [ ] 3.3 Tests: extend existing simulation determinism tests to cover economy stage ordering and RNG call counts vs. baseline
 
 ## 4. Bankruptcy gating
 
 - [ ] 4.1 Implement `min_valid_show_cost` calculation for any valid 3-match, 2-promo card
 - [ ] 4.2 Check bankruptcy when attempting to book the next show and route to Game Over: Bankruptcy when `current_money < min_valid_show_cost`
-- [ ] 4.3 Tests: bankruptcy triggers when no valid card can be afforded
+- [ ] 4.3 Tests: flow test where post-results attempt to book next show triggers bankruptcy when no valid card can be afforded
 
 ## 5. UI updates
 
@@ -34,4 +34,5 @@
 - [ ] 5.2 Run Show confirmation modal: add debt warning when cost exceeds money and keep After Show as `$—`
 - [ ] 5.3 Results screen: display audience, gate income, merch income, total earned, and current money
 - [ ] 5.4 Game Over: Bankruptcy screen with final money and Main Menu action
-- [ ] 5.5 Tests: UI renders economy fields, debt warning, and bankruptcy screen copy
+- [ ] 5.5 Tests: UI flow from booking → results → next booking triggers bankruptcy screen when funds insufficient
+- [ ] 5.6 Tests: UI renders economy fields and debt warning in booking/results
