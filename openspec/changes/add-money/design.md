@@ -23,34 +23,174 @@ WrestleGM currently has no economic system. Booking is costless and results only
   - Add `MatchType.base_cost: int` in `data/match_types.json` and loader (default 0 if missing).
   - Do not store a wrestler booking cost; compute from popularity at runtime.
 
-- **Economy computation flow:**
-  - Pre-show cost: `sum(unique_wrestler_price) + sum(match_type.base_cost)`; promos cost 0.
-  - Wrestler price: `BASE + A * (pop ^ 1.2)` using popularity only; charged once per unique wrestler per show.
-  - Post-show income: compute audience after simulation, then gate income from audience and merch income from audience × show quality conversion. Apply income after results are computed.
+- **Economy computation flow (order matters for determinism):**
+  1. Simulate matches and promos to compute per-slot ratings.
+  2. Compute audience inputs (`pop_sum`, `align_score`, `rivalry_count`, `cooldown_count`).
+  3. Compute `audience` (includes deterministic RNG swing).
+  4. Compute `gate_income` from audience.
+  5. Compute `merch_income` from audience and **show quality**, where **show quality = existing `show_rating`** (mean of all slot ratings). Merch includes deterministic RNG swing.
+  6. Compute `show_cost` and update money: `money = money - show_cost + gate_income + merch_income`.
+  7. Defer bankruptcy evaluation until the next show attempt.
 
-- **Audience model:**
-  - Inputs: `pop_sum` (unique booked wrestlers, including promos), `align_score`, `rivalry_count`, `cooldown_count`, plus a small deterministic RNG swing.
-  - Apply curved mapping for rivalry/alignment bonuses and cooldown penalties; enforce a non-negative floor.
-  - Promos influence audience only through wrestler popularity (no promo-quality effect).
+- **Formulas / algorithms (initial defaults; tuned later):**
+  - **Wrestler booking price (per unique wrestler per show):**
+    - `wrestler_price = BASE + A * (pop ** 1.2)`
+    - `pop` is popularity (0–100).
+  - **Show cost:**
+    - `show_cost = sum(unique_wrestler_price) + sum(match_type.base_cost)`
+    - Promos have zero direct cost.
+  - **Audience inputs:**
+    - `pop_sum`: sum of popularity for all unique booked wrestlers (matches + promos).
+    - `align_score`: total count of Face-vs-Heel pairs across all matchups on the card.
+      - Singles: `1` if face vs heel, else `0`.
+      - Multi-man: count all unordered pairs; increment for each pair with opposite alignment.
+    - `rivalry_count`: count of active rivalry pairs featured on the card (unordered pairs across all matches).
+    - `cooldown_count`: count of cooldown pairs featured on the card (unordered pairs across all matches).
+  - **Audience curve (conceptual):**
+    - `audience = base_from_pop(pop_sum) + bonus(align_score, rivalry_count) - penalty(cooldown_count) + rng_swing`
+    - Apply curved/nonlinear mappings for bonus/penalty and clamp to `>= 0`.
+  - **Gate income:**
+    - `gate_income = audience * GATE_RATE` (linear; tune `GATE_RATE`).
+  - **Merch income:**
+    - `merch_income = audience * merch_rate(show_rating) + rng_swing`
+    - `merch_rate` is a curved mapping of show quality; clamp to `>= 0`.
 
 - **Deterministic RNG:**
-  - Use the existing session-seeded RNG for audience and merch swings to preserve determinism.
+  - Use the existing session-seeded RNG for audience and merch swings.
   - Keep RNG calls isolated and ordered to avoid unintended changes to match simulation outputs.
 
-- **Bankruptcy rule:**
+- **Bankruptcy rule (explicit):**
   - Allow running a show even if it produces negative money.
-  - At next show attempt, if no valid show can be afforded, transition to a terminal “Game Over: Bankruptcy” screen.
+  - Bankruptcy is checked when attempting to run the *next* show.
+  - Define `min_valid_show_cost` as the minimum possible cost for any valid 3-match, 2-promo card given the current roster and match types (using the same validation rules as booking).
+  - If `current_money < min_valid_show_cost`, the game transitions to **Game Over: Bankruptcy**.
+  - No hard debt limit; the only constraint is whether any valid show can be afforded at next show time.
 
-- **UI updates:**
-  - Booking hub shows per-slot match cost, total show cost, and current money (red if negative).
-  - Run-show confirmation modal always appears; display debt warning when cost exceeds current money.
-  - Results screen shows audience, gate income, merch income, total earned, and current money.
+- **UI updates (authoritative mockups embedded for implementation fidelity):**
+
+### Booking Hub
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│ Money: $1,250     Booking Hub (Show #12)        Cost: $1,480 │
+│                 ⚡ x1  🔥 x1  ⚔️ x1   🧊 x1                    │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│               Slots (each is a Button)                        │
+│                                                              │
+│   [ Match 1 · Singles · $450     Riv ⚡ x1 ]                   │
+│     😃 Okada vs 😈 Jay White                                   │
+│                                                              │
+│   [ Promo 1 ]                                                 │
+│     😃 Kazuchika Okada                                        │
+│                                                              │
+│   [ Match 2 · Triple Threat · $520  Riv 🔥 x1  Cool 🧊 x1 ]     │
+│     😃 Omega vs 😈 Switchblade vs 😃 Naito                    │
+│                                                              │
+│   [ Promo 2 ]                                                 │
+│     😈 Jay White                                              │
+│                                                              │
+│   [ Match 3 · Singles · $510     Riv ⚔️ x1 ]                   │
+│     😃 Omega vs 😈 Jay White                                   │
+│                                                              │
+├──────────────────────────────────────────────────────────────┤
+│ [ Run Show ]   [ Roster ]   [ Back ]                          │
+├──────────────────────────────────────────────────────────────┤
+│ ↑/↓ Focus   Enter Select   Esc Back   R Run Show              │
+└──────────────────────────────────────────────────────────────┘
+```
+
+### Confirm Run Show (Modal)
+
+**Variant A: No debt**
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│ Money: $1,250                 Confirm Run Show                │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│ Run this show now?                                            │
+│                                                              │
+│ Show Cost: $1,480                                             │
+│ After Show (est.): $—                                          │
+│                                                              │
+├──────────────────────────────────────────────────────────────┤
+│ [ Confirm ]                         [ Cancel ]                │
+├──────────────────────────────────────────────────────────────┤
+│ Enter Confirm   Esc Cancel                                    │
+└──────────────────────────────────────────────────────────────┘
+```
+
+**Variant B: Will enter debt**
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│ Money: $900                  Confirm Run Show                 │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│ Run this show now?                                            │
+│                                                              │
+│ Show Cost: $1,480                                             │
+│ WARNING: This will put you into debt.                         │
+│                                                              │
+├──────────────────────────────────────────────────────────────┤
+│ [ Confirm ]                         [ Cancel ]                │
+├──────────────────────────────────────────────────────────────┤
+│ Enter Confirm   Esc Cancel                                    │
+└──────────────────────────────────────────────────────────────┘
+```
+
+### Show Results
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│ Money: -$230 (red)        Show Results (Show #12)             │
+├──────────────────────────────────────────────────────────────┤
+│ Overall Rating: ★★★★☆ (4.0)                                   │
+│ Audience: 12,450                                              │
+│ Gate Income: $12,450                                          │
+│ Merch Income: $3,120                                          │
+│ Total Earned: $15,570                                         │
+│ Featured: ⚡ x1  🔥 x1  ⚔️ x1   🧊 x1                           │
+│                                                              │
+│ Results                                                      │
+│  • 😃 Okada def. 😈 Jay White       ★★★★☆                     │
+│  • Promo: 😃 Okada                  ★★★☆☆                     │
+│  • 😃 Omega def. 😈 Jay White ...   ★★★★☆                     │
+│  • Promo: 😈 Jay White              ★★★★☆                     │
+│  • 😃 Naito def. 😈 Switchblade...  ★★★☆☆                     │
+│                                                              │
+├──────────────────────────────────────────────────────────────┤
+│ [ Continue ]                                                  │
+├──────────────────────────────────────────────────────────────┤
+│ Enter Continue                                                │
+└──────────────────────────────────────────────────────────────┘
+```
+
+### Game Over: Bankruptcy
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│ Money: -$780 (red)          Game Over: Bankruptcy             │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│ You cannot run a valid show with your current funds.          │
+│                                                              │
+│ Final Show: #12                                               │
+│ Final Money: -$780                                            │
+│                                                              │
+├──────────────────────────────────────────────────────────────┤
+│ [ Main Menu ]                                                 │
+├──────────────────────────────────────────────────────────────┤
+│ Enter Main Menu                                               │
+└──────────────────────────────────────────────────────────────┘
+```
 
 ## Risks / Trade-offs
 
 - **Economy tuning may skew difficulty** → Use conservative constants and add tests for bounds; keep constants centralized for tuning.
 - **RNG usage could affect determinism** → Isolate RNG calls in a dedicated economy step; add deterministic tests.
-- **Bankruptcy rule ambiguity (what is a “valid” show?)** → Define and test “valid” as existing card validation with minimum possible cost.
+- **Bankruptcy rule depends on a "min valid cost" algorithm** → Implement a deterministic lower-bound calculation and document it in code.
 - **Audience curve could overshoot or go negative** → Apply clamped curves with a floor and cap.
 
 ## Migration Plan
@@ -61,7 +201,6 @@ WrestleGM currently has no economic system. Booking is costless and results only
 
 ## Open Questions
 
-- Constants for `BASE` and `A`, and the exact curve functions for audience and merch conversion.
-- Multi-man rivalry/cooldown counting (all pairs vs. primary pairs).
+- Constants for `BASE`, `A`, `GATE_RATE`, and the exact curve functions for audience and merch conversion.
 - Whether merch RNG should be independent of audience RNG.
-- Definition of “minimum cost” for bankruptcy checks (cheapest valid card vs. any valid card).
+- Exact UI label wording for money/cost fields (if any conflicts with layout).
