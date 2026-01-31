@@ -29,6 +29,17 @@ The system SHALL have `GameState` apply economy results from the simulator to up
 - **WHEN** a show completes simulation
 - **THEN** `Show.show_cost`, `Show.audience`, `Show.gate_income`, `Show.merch_income`, and `Show.total_earned` are populated from the simulator results
 
+### Requirement: Show slots carry wrestler state
+The system SHALL store `WrestlerState` objects directly in show slots instead of wrestler IDs.
+
+#### Scenario: Match slots contain wrestler state
+- **WHEN** a match slot is stored on the show card
+- **THEN** it contains a list of `WrestlerState` objects for the booked wrestlers
+
+#### Scenario: Promo slots contain wrestler state
+- **WHEN** a promo slot is stored on the show card
+- **THEN** it contains a `WrestlerState` object for the booked wrestler
+
 ### Requirement: Bankruptcy is based on money only
 The system SHALL treat the game as bankrupt when `GameState.money <= 0`.
 
@@ -39,6 +50,13 @@ The system SHALL treat the game as bankrupt when `GameState.money <= 0`.
 #### Scenario: Not bankrupt with positive money
 - **WHEN** `GameState.money` is greater than `0`
 - **THEN** `GameState.is_bankrupt()` returns `False`
+
+### Requirement: No minimum show cost calculation
+The system SHALL NOT compute a `min_valid_show_cost` for bankruptcy or booking flow checks.
+
+#### Scenario: Bankruptcy ignores affordability checks
+- **WHEN** bankruptcy status is evaluated
+- **THEN** it does not consider any minimum show cost calculation
 
 ### Requirement: GameState is the UI economy access point
 The system SHALL provide economy-related data to the UI exclusively through `GameState` accessors.
