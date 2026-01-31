@@ -50,11 +50,6 @@ class WrestlerDefinition:
     description: str = ""
     avatar_path: str = ""
 
-    def booking_price(self) -> int:
-        """Return the booking price based on base popularity."""
-
-        return booking_price_from_popularity(self.popularity)
-
 
 def booking_price_from_popularity(popularity: int) -> int:
     """Return the booking price for a wrestler based on popularity."""

@@ -191,7 +191,5 @@ def test_booking_price_helpers_match_formula() -> None:
     expected = booking_price_from_popularity(popularity)
 
     wrestler = WrestlerState("a", "A", "Face", popularity, 20, 50)
-    definition = WrestlerDefinition("a", "A", "Face", popularity, 20, 50)
 
     assert wrestler.booking_price() == expected
-    assert definition.booking_price() == expected
