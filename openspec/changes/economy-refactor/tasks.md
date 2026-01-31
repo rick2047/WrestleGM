@@ -2,12 +2,12 @@
 
 - [x] 1.1 Add model-level pricing helper(s) (e.g., `WrestlerState.booking_price`) and update economy calculations to use them
 - [x] 1.2 Implement `EconomySimulator` with stateless `compute_show(...)` returning show economy results
-- [x] 1.3 Move show-level aggregation logic (unique billing, show cost, min valid show cost) into `EconomySimulator`
+- [x] 1.3 Move show-level aggregation logic (unique billing, show cost) into `EconomySimulator`
 
 ## 2. GameState Integration
 
 - [x] 2.1 Wire `GameState.run_show()` to call `EconomySimulator.compute_show(...)` and apply money/show outputs locally
-- [x] 2.2 Update `GameState.current_show_cost()` / `min_valid_show_cost()` to use the simulator; `is_bankrupt()` checks `money <= 0`
+- [x] 2.2 Update `GameState.current_show_cost()` to use the simulator; `is_bankrupt()` checks `money <= 0`
 - [x] 2.3 Add `GameState` economy accessors needed by UI
 - [x] 2.4 Refactor UI economy usage to call `GameState` accessors instead of economy helpers
 

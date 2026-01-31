@@ -30,7 +30,7 @@ The system SHALL have `GameState` apply economy results from the simulator to up
 - **THEN** `Show.show_cost`, `Show.audience`, `Show.gate_income`, `Show.merch_income`, and `Show.total_earned` are populated from the simulator results
 
 ### Requirement: Bankruptcy is based on money only
-The system SHALL treat the game as bankrupt when `GameState.money <= 0`, independent of `min_valid_show_cost`.
+The system SHALL treat the game as bankrupt when `GameState.money <= 0`.
 
 #### Scenario: Bankruptcy at non-positive money
 - **WHEN** `GameState.money` is `0` or negative

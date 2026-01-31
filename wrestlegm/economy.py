@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from itertools import combinations, product
+from itertools import combinations
 from dataclasses import dataclass
 from typing import Iterable
 
@@ -159,74 +159,6 @@ class EconomySimulator:
             merch_income=merch_income,
             total_earned=total_earned,
         )
-
-    def min_valid_show_cost(
-        self,
-        roster: dict[str, WrestlerState],
-        match_types: dict[str, MatchTypeDefinition],
-    ) -> int | None:
-        """Return the minimum possible cost for any valid show card, or None if impossible."""
-
-        match_types_by_category: dict[str, int] = {}
-        for category_id in constants.MATCH_CATEGORY_ORDER:
-            eligible = [
-                match_type.base_cost
-                for match_type in match_types.values()
-                if match_type.allowed_categories is None
-                or category_id in match_type.allowed_categories
-            ]
-            if not eligible:
-                continue
-            match_types_by_category[category_id] = min(eligible)
-
-        if not match_types_by_category:
-            return None
-
-        match_eligible = [
-            (wrestler.booking_price(), wrestler.id)
-            for wrestler in roster.values()
-            if wrestler.stamina > constants.STAMINA_MIN_BOOKABLE
-        ]
-        match_eligible.sort(key=lambda item: item[0])
-
-        promo_eligible = [
-            (wrestler.booking_price(), wrestler.id)
-            for wrestler in roster.values()
-        ]
-        promo_eligible.sort(key=lambda item: item[0])
-
-        min_cost: int | None = None
-        category_ids = list(match_types_by_category.keys())
-        match_slot_count = constants.SHOW_SLOT_TYPES.count("match")
-        promo_needed = constants.SHOW_SLOT_TYPES.count("promo")
-
-        for category_combo in product(category_ids, repeat=match_slot_count):
-            match_count = sum(
-                constants.MATCH_CATEGORIES[category_id]["size"]
-                for category_id in category_combo
-            )
-            if len(match_eligible) < match_count:
-                continue
-            match_pick = match_eligible[:match_count]
-            match_ids = {wrestler_id for _, wrestler_id in match_pick}
-
-            remaining_promos = [
-                entry for entry in promo_eligible if entry[1] not in match_ids
-            ]
-            if len(remaining_promos) < promo_needed:
-                continue
-            promo_pick = remaining_promos[:promo_needed]
-
-            wrestler_cost = sum(cost for cost, _ in match_pick + promo_pick)
-            base_cost = sum(
-                match_types_by_category[category_id]
-                for category_id in category_combo
-            )
-            total_cost = wrestler_cost + base_cost
-            if min_cost is None or total_cost < min_cost:
-                min_cost = total_cost
-        return min_cost
-
 
 def show_cost(
     slots: Iterable[ShowSlot],

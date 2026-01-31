@@ -7,7 +7,7 @@ Economy calculations are currently split across `wrestlegm/economy.py` functions
 **Goals:**
 - Introduce a stateless `EconomySimulator` that is invoked in the show simulation pipeline.
 - Move per-entity pricing logic (wrestler booking price) onto model helpers.
-- Centralize cross-entity aggregation rules (unique billing, show cost, min valid show cost) inside `EconomySimulator`.
+- Centralize cross-entity aggregation rules (unique billing, show cost) inside `EconomySimulator`.
 - Refactor UI modules to use `GameState` economy accessors instead of calling economy helpers directly.
 - Keep persistence on `GameState` (money remains `GameState` state).
 
@@ -26,7 +26,7 @@ Economy calculations are currently split across `wrestlegm/economy.py` functions
   - Rationale: Pricing rules live with the priced entity; changes to booking price no longer require touching economy logic.
   - Alternative considered: A separate `pricing.py` module. Deferred to keep scope small and avoid new modules unless needed.
 
-- **Aggregation belongs to EconomySimulator**: Unique billing across a show card, total show cost, and minimum valid show cost calculations live in `EconomySimulator` (not in UI or free functions).
+- **Aggregation belongs to EconomySimulator**: Unique billing across a show card and total show cost calculations live in `EconomySimulator` (not in UI or free functions).
   - Rationale: These computations combine multiple entities and are part of the economy domain.
 
 - **ShowSlot stores wrestler state**: `Match` and `Promo` store `WrestlerState` objects directly instead of wrestler IDs.
@@ -39,7 +39,7 @@ Economy calculations are currently split across `wrestlegm/economy.py` functions
 - **Persistence stays in GameState**: Money and show outputs remain serialized by `GameState`, with no backward-compatibility guarantees for older saves.
   - Rationale: Keeps state management centralized and allows schema changes without migration work.
 
-- **Bankruptcy triggers at non-positive money**: `GameState.is_bankrupt()` checks `money <= 0` and does not gate on `min_valid_show_cost`.
+- **Bankruptcy triggers at non-positive money**: `GameState.is_bankrupt()` checks `money <= 0` without additional affordability checks.
   - Rationale: Bankruptcy should occur as soon as the player runs out of money, independent of hypothetical minimum card cost.
 
 ## Risks / Trade-offs

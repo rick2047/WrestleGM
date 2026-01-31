@@ -278,11 +278,6 @@ class GameState:
         slots: List[ShowSlot] = [slot for slot in self.show_card if slot is not None]
         return self.economy_simulator.show_cost(slots, self.match_types)
 
-    def min_valid_show_cost(self) -> int | None:
-        """Return the minimum possible cost for any valid show card, or None if impossible."""
-
-        return self.economy_simulator.min_valid_show_cost(self.roster, self.match_types)
-
     def is_bankrupt(self) -> bool:
         """Return True if the promotion has run out of money."""
 
