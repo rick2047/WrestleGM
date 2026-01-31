@@ -15,6 +15,7 @@ from wrestlegm.state import GameState
 
 from .routes import (
     BOOKING_HUB,
+    BANKRUPTCY,
     GAME_HUB,
     MAIN_MENU,
     MATCH_BOOKING,
@@ -25,6 +26,7 @@ from .routes import (
     SIMULATING,
 )
 from .screens.booking_hub import BookingHubScreen
+from .screens.bankruptcy import BankruptcyScreen
 from .screens.guard import GuardScreen
 from .screens.game_hub import GameHubScreen
 from .screens.main_menu import MainMenuScreen
@@ -112,6 +114,7 @@ ROUTES: dict[str, Route] = {
     SAVE_SLOTS: Route("switch", lambda mode: SaveSlotSelectionScreen(mode=mode)),
     GAME_HUB: Route("switch", lambda **_: GameHubScreen()),
     BOOKING_HUB: Route("switch", lambda **_: BookingHubScreen()),
+    BANKRUPTCY: Route("switch", lambda **_: BankruptcyScreen()),
     ROSTER: Route("push", lambda **_: RosterScreen()),
     MATCH_BOOKING: Route(
         "push",

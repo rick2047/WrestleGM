@@ -66,6 +66,7 @@ class MatchTypeDefinition:
     name: str
     description: str
     modifiers: MatchTypeModifiers
+    base_cost: int = 0
     allowed_categories: List[str] | None = None
 
 
@@ -154,3 +155,8 @@ class Show:
     scheduled_slots: List[ShowSlot]
     results: List[ShowResult]
     show_rating: float | None = None
+    audience: int | None = None
+    gate_income: int | None = None
+    merch_income: int | None = None
+    total_earned: int | None = None
+    show_cost: int | None = None

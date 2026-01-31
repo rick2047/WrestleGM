@@ -5,6 +5,7 @@ from __future__ import annotations
 from wrestlegm import constants
 from wrestlegm.ui import (
     BookingHubScreen,
+    ConfirmRunShowModal,
     GameHubScreen,
     MainMenuScreen,
     ResultsScreen,
@@ -79,6 +80,8 @@ def test_core_flow_new_game_booking_results_roster() -> None:
             booking_hub = app.screen
             assert not booking_hub.run_button.disabled
             await pilot.press("r")
+            await wait_for_screen(pilot, ConfirmRunShowModal)
+            await pilot.press("enter")
             await wait_for_screen(pilot, ResultsScreen)
 
             await pilot.press("enter")

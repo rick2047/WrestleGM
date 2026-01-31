@@ -12,6 +12,7 @@ from wrestlegm.models import (
     PairKey,
     RivalryState,
     Show,
+    ShowSlot,
     normalize_pair,
 )
 from wrestlegm.sim import RivalryRatingContext
@@ -98,14 +99,33 @@ class RivalryManager:
             cooldown = self.cooldown_states.get(key)
             if cooldown:
                 emoji = self._cooldown_emoji(cooldown.remaining_shows)
-                if emoji in counts:
-                    counts[emoji] += 1
+                counts[emoji] += 1
                 continue
             rivalry = self.rivalry_states.get(key)
             if rivalry and rivalry.rivalry_value > 0:
                 emoji = self._rivalry_emoji(rivalry.rivalry_value)
-                if emoji in counts:
-                    counts[emoji] += 1
+                counts[emoji] += 1
+        parts = [f"{emoji} x{count}" for emoji, count in counts.items() if count]
+        return "  ".join(parts)
+
+    def rivalry_and_cooldown_summary_for_card(self, slots: Iterable[ShowSlot]) -> str:
+        """Return aggregated rivalry and cooldown emojis for the full card."""
+
+        counts = {"⚡": 0, "🔥": 0, "⚔️": 0, "💥": 0, "🧊": 0, "❄️": 0, "💧": 0}
+        for slot in slots:
+            if not isinstance(slot, Match):
+                continue
+            for wrestler_a_id, wrestler_b_id in ordered_pairs(slot.wrestler_ids):
+                key = normalize_pair(wrestler_a_id, wrestler_b_id)
+                cooldown = self.cooldown_states.get(key)
+            if cooldown:
+                emoji = self._cooldown_emoji(cooldown.remaining_shows)
+                counts[emoji] += 1
+                continue
+            rivalry = self.rivalry_states.get(key)
+            if rivalry and rivalry.rivalry_value > 0:
+                emoji = self._rivalry_emoji(rivalry.rivalry_value)
+                counts[emoji] += 1
         parts = [f"{emoji} x{count}" for emoji, count in counts.items() if count]
         return "  ".join(parts)
 
@@ -141,6 +161,21 @@ class RivalryManager:
             blowoff_pairs=blowoff_pairs,
             has_cooldown=has_cooldown,
         )
+
+    def count_rivalry_and_cooldown_pairs(self, wrestler_ids: Iterable[str]) -> tuple[int, int]:
+        """Return counts of rivalry and cooldown pairs for a match."""
+
+        rivalry_count = 0
+        cooldown_count = 0
+        for wrestler_a_id, wrestler_b_id in ordered_pairs(wrestler_ids):
+            key = normalize_pair(wrestler_a_id, wrestler_b_id)
+            if key in self.cooldown_states:
+                cooldown_count += 1
+                continue
+            rivalry = self.rivalry_states.get(key)
+            if rivalry and rivalry.rivalry_value > 0:
+                rivalry_count += 1
+        return rivalry_count, cooldown_count
 
     def advance(self, show: Show) -> None:
         """Advance rivalry and cooldown state at show end."""

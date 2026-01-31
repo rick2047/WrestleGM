@@ -3,13 +3,19 @@
 from __future__ import annotations
 
 from textual.app import ComposeResult
-from textual.containers import Vertical
+from textual.containers import Vertical, VerticalScroll
 from textual.widgets import Button, Static
 
-from wrestlegm import constants
+from wrestlegm import constants, economy
 from wrestlegm.models import Match
 
-from ..formatting import build_match_participants, build_name_cell, match_category_label, slot_label
+from ..formatting import (
+    build_match_participants,
+    build_name_cell,
+    format_money,
+    match_category_label,
+    slot_label,
+)
 from ..routes import (
     GAME_HUB,
     MATCH_BOOKING,
@@ -17,6 +23,7 @@ from ..routes import (
     SIMULATING,
 )
 from .standard import StandardScreen
+from .modals import ConfirmRunShowModal
 
 
 class BookingHubScreen(StandardScreen):
@@ -38,6 +45,13 @@ class BookingHubScreen(StandardScreen):
 
     TITLE = "Booking Hub"
 
+    def header_left(self) -> str:
+        cost = self.app.state.current_show_cost()
+        return f"Cost: {format_money(cost)}"
+
+    def header_right(self) -> str:
+        return f"Money: {format_money(self.app.state.money)}"
+
     def compose_body(self) -> ComposeResult:
         """Build the booking hub layout."""
 
@@ -45,11 +59,12 @@ class BookingHubScreen(StandardScreen):
         yield self.show_header
 
         self.slot_buttons: list[Button] = []
-        with Vertical(classes="booking-slot-group"):
-            for index in range(constants.SHOW_SLOT_COUNT):
-                button = Button("", id=f"slot-button-{index}", classes="booking-slot-button")
-                self.slot_buttons.append(button)
-                yield button
+        with VerticalScroll(classes="booking-slot-scroll"):
+            with Vertical(classes="booking-slot-group"):
+                for index in range(constants.SHOW_SLOT_COUNT):
+                    button = Button("", id=f"slot-button-{index}", classes="booking-slot-button")
+                    self.slot_buttons.append(button)
+                    yield button
 
     def compose_actions(self) -> list[Button]:
         self.run_button = Button("Run Show", id="run-show")
@@ -68,10 +83,17 @@ class BookingHubScreen(StandardScreen):
     def refresh_view(self) -> None:
         """Update slot text and Run Show enablement."""
 
-        self.show_header.update(f"Show #{self.app.state.show_index}")
+        summary = self.app.state.rivalry_manager.rivalry_and_cooldown_summary_for_card(
+            [slot for slot in self.app.state.show_card if slot is not None]
+        )
+        if summary:
+            self.show_header.update(f"Show #{self.app.state.show_index}\n{summary}")
+        else:
+            self.show_header.update(f"Show #{self.app.state.show_index}")
         for index, button in enumerate(self.slot_buttons):
             button.label = self.slot_text(index)
         self.run_button.disabled = bool(self.app.state.validate_show())
+        self.update_header()
 
     def slot_text(self, index: int) -> str:
         """Render the slot summary text for a match slot."""
@@ -87,13 +109,20 @@ class BookingHubScreen(StandardScreen):
             match_type_name = match_type.name if match_type else "Unknown"
             category_name = match_category_label(slot.match_category_id)
             emojis = self.app.state.rivalry_emojis_for_match(slot.wrestler_ids)
-            label_text = f"{label}  {emojis}" if emojis else label
+            match_cost = (match_type.base_cost if match_type else 0) + sum(
+                economy.wrestler_booking_price(wrestler.popularity) for wrestler in wrestlers
+            )
+            label_text = f"{label} · {category_name} · ${match_cost:,}"
+            if emojis:
+                label_text = f"{label_text}  {emojis}"
             return (
                 f"{label_text}\n{build_match_participants(wrestlers)}\n"
                 f"{category_name} · {match_type_name}"
             )
         wrestler = self.app.state.roster[slot.wrestler_id]
-        return f"{label}\n{build_name_cell(wrestler.name, wrestler.alignment)}"
+        promo_cost = economy.wrestler_booking_price(wrestler.popularity)
+        label_text = f"{label} · ${promo_cost:,}"
+        return f"{label_text}\n{build_name_cell(wrestler.name, wrestler.alignment)}"
 
     def action_select(self) -> None:
         """Open the booking screen for the selected slot."""
@@ -124,7 +153,21 @@ class BookingHubScreen(StandardScreen):
 
         if self.app.state.validate_show():
             return
-        self.app.navigate(SIMULATING)
+        show_cost = self.app.state.current_show_cost()
+        will_debt = show_cost > self.app.state.money
+
+        def _handle_confirm(result: bool | None) -> None:
+            if result:
+                self.app.navigate(SIMULATING)
+
+        self.app.push_screen(
+            ConfirmRunShowModal(
+                money=self.app.state.money,
+                show_cost=show_cost,
+                will_debt=will_debt,
+            ),
+            _handle_confirm,
+        )
 
     def action_back(self) -> None:
         """Return to the game hub."""

@@ -42,9 +42,9 @@ class StandardHeader(Widget):
         self.state = state
 
     def render(self) -> Table:
-        left = Text(self.state.left, style="dim")
+        left = Text.from_markup(self.state.left or "", style="dim")
         title = Text(self.state.title, style="bold")
-        right = Text(self.state.right, style="dim")
+        right = Text.from_markup(self.state.right or "", style="dim")
 
         left.truncate(self.side_width, overflow="ellipsis")
         right.truncate(self.side_width, overflow="ellipsis")

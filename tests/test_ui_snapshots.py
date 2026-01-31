@@ -17,8 +17,10 @@ from tests.ui_test_utils import (
 from wrestlegm import constants
 from wrestlegm.models import CooldownState, RivalryState, normalize_pair
 from wrestlegm.ui import (
+    BankruptcyScreen,
     BookingHubScreen,
     ConfirmBookingModal,
+    ConfirmRunShowModal,
     GameHubScreen,
     NameSaveSlotModal,
     OverwriteSaveSlotModal,
@@ -222,6 +224,41 @@ def test_snapshot_s12_show_results_default(snap_compare) -> None:
         pilot.app.state.run_show()
         pilot.app.switch_screen(ResultsScreen())
         await wait_for_screen(pilot, ResultsScreen)
+        await pilot.pause(0.1)
+        await pilot.wait_for_scheduled_animations()
+        await pilot.pause(0.1)
+
+    assert snap_compare(app, terminal_size=VIEWPORT_SIZE, run_before=run_before)
+
+
+def test_snapshot_s12c_bankruptcy_screen(snap_compare) -> None:
+    app = TestWrestleGMApp()
+
+    async def run_before(pilot):
+        await start_new_game(pilot)
+        app.state.money = 0
+        app.switch_screen(BankruptcyScreen())
+        await wait_for_screen(pilot, BankruptcyScreen)
+        await pilot.pause(0.1)
+        await pilot.wait_for_scheduled_animations()
+        await pilot.pause(0.1)
+
+    assert snap_compare(app, terminal_size=VIEWPORT_SIZE, run_before=run_before)
+
+
+def test_snapshot_s12b_confirm_run_show_debt_warning(snap_compare) -> None:
+    app = TestWrestleGMApp()
+
+    async def run_before(pilot):
+        await start_new_game(pilot)
+        await open_booking_hub(pilot)
+        seed_show_card(pilot.app.state)
+        pilot.app.state.money = 0
+        if isinstance(pilot.app.screen, BookingHubScreen):
+            pilot.app.screen.refresh_view()
+        await wait_for_screen(pilot, BookingHubScreen)
+        await pilot.press("r")
+        await wait_for_screen(pilot, ConfirmRunShowModal)
         await pilot.pause(0.1)
         await pilot.wait_for_scheduled_animations()
         await pilot.pause(0.1)

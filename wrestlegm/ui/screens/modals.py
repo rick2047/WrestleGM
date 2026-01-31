@@ -7,6 +7,8 @@ from textual.containers import Vertical
 from textual.screen import ModalScreen
 from textual.widgets import Button, Static
 
+from ..formatting import format_money
+
 
 class ConfirmBookingModal(ModalScreen):
     """Confirmation modal to guard match commits.
@@ -35,6 +37,89 @@ class ConfirmBookingModal(ModalScreen):
 
     def on_mount(self) -> None:
         """Focus the first action button."""
+
+        self.confirm_button.focus()
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        """Handle confirmation and cancellation actions."""
+
+        if event.button.id == "confirm":
+            self.dismiss(result=True)
+        elif event.button.id == "cancel":
+            self.dismiss(result=False)
+
+    def action_cancel(self) -> None:
+        """Cancel the modal with a false result."""
+
+        self.dismiss(result=False)
+
+    def action_activate(self) -> None:
+        """Activate the focused button."""
+
+        focused = self.app.focused
+        if isinstance(focused, Button) and not focused.disabled:
+            focused.press()
+            return
+        if self.confirm_button is not None:
+            self.confirm_button.press()
+
+    def action_focus_next(self) -> None:
+        """Move focus to the next modal action."""
+
+        self._move_focus(1)
+
+    def action_focus_prev(self) -> None:
+        """Move focus to the previous modal action."""
+
+        self._move_focus(-1)
+
+    def _move_focus(self, delta: int) -> None:
+        """Cycle focus across modal action buttons."""
+
+        focus_order = [self.confirm_button, self.cancel_button]
+        focused = self.app.focused
+        if focused not in focus_order:
+            focus_order[0].focus()
+            return
+        index = focus_order.index(focused)
+        focus_order[(index + delta) % len(focus_order)].focus()
+
+
+class ConfirmRunShowModal(ModalScreen):
+    """Confirmation modal before running a show."""
+
+    BINDINGS = [
+        ("up", "focus_prev", "Prev"),
+        ("down", "focus_next", "Next"),
+        ("enter", "activate", "Select"),
+        ("escape", "cancel", "Cancel"),
+    ]
+
+    def __init__(self, *, money: int, show_cost: int, will_debt: bool) -> None:
+        super().__init__()
+        self.money = money
+        self.show_cost = show_cost
+        self.will_debt = will_debt
+
+    def compose(self) -> ComposeResult:
+        """Build the confirm run show modal layout."""
+
+        with Vertical(classes="panel"):
+            yield Static("Confirm Run Show")
+            yield Static(f"Money: {format_money(self.money)}", markup=True)
+            yield Static("")
+            yield Static("Run this show now?")
+            yield Static("")
+            yield Static(f"Show Cost: ${self.show_cost:,}")
+            if self.will_debt:
+                yield Static("WARNING: This will put you into debt.")
+            self.confirm_button = Button("Confirm", id="confirm")
+            self.cancel_button = Button("Cancel", id="cancel")
+            yield self.confirm_button
+            yield self.cancel_button
+
+    def on_mount(self) -> None:
+        """Focus the confirm button."""
 
         self.confirm_button.focus()
 

@@ -133,6 +133,7 @@ def serialize_game_state(state: GameState) -> dict[str, Any]:
         "cooldown_states": [
             asdict(cooldown) for cooldown in state.rivalry_manager.cooldown_states.values()
         ],
+        "money": state.money,
         "show_index": state.show_index,
         "show_card": [_serialize_slot(slot) for slot in state.show_card],
         "rng_seed": state.engine.seed,
@@ -201,6 +202,7 @@ def deserialize_game_state(state: GameState, payload: dict[str, Any]) -> None:
 
     show_index = payload.get("show_index", 1)
     state.show_index = show_index if isinstance(show_index, int) else 1
+    state.money = _coerce_int(payload.get("money"), state.money)
     show_card_data = payload.get("show_card", [])
     show_card = (
         [_deserialize_slot(slot_data) for slot_data in show_card_data]
