@@ -22,25 +22,25 @@ Economy calculations are currently split across `wrestlegm/economy.py` functions
   - Rationale: Centralizes calculation while keeping ownership of economy state in `GameState`.
   - Alternative considered: A stateful manager owning money. Rejected to keep state localized to `GameState` and simplify persistence.
 
-- **Model-level pricing helpers**: Introduce `WrestlerState.booking_price()` (and/or `WrestlerState.booking_price_for(popularity)`) in `wrestlegm/models.py`. `EconomyManager` consumes these helpers when computing show costs.
+- **Model-level pricing helpers**: Introduce `WrestlerState.booking_price()` (and/or `WrestlerState.booking_price_for(popularity)`) in `wrestlegm/models.py`. `EconomySimulator` consumes these helpers when computing show costs.
   - Rationale: Pricing rules live with the priced entity; changes to booking price no longer require touching economy logic.
   - Alternative considered: A separate `pricing.py` module. Deferred to keep scope small and avoid new modules unless needed.
 
 - **Aggregation belongs to EconomySimulator**: Unique billing across a show card, total show cost, and minimum valid show cost calculations live in `EconomySimulator` (not in UI or free functions).
   - Rationale: These computations combine multiple entities and are part of the economy domain.
 
-- **UI remains unchanged, GameState is the economy interface**: UI modules are not modified. `GameState` will expose economy accessors (e.g., `current_show_cost()`, booking price helpers) that wrap `EconomySimulator`/model helpers. Existing `economy` module functions used by UI will be preserved as thin wrappers (compatibility layer) to avoid UI edits in this change.
+- **UI remains unchanged, GameState is the economy interface**: UI modules are not modified. `GameState` will expose economy accessors (e.g., `current_show_cost()`, booking price helpers) that wrap `EconomySimulator`/model helpers. Existing `economy` module functions used by UI will be preserved as thin wrappers to avoid UI edits in this change.
   - Rationale: Keeps UI stable while enabling a single economy access point for new frontends.
   - Alternative considered: Update UI imports to call `GameState` directly. Rejected to meet the “no UI changes” goal.
 
-- **Persistence stays in GameState**: Money and show outputs remain serialized by `GameState` as they are today.
-  - Rationale: Keeps state management centralized and avoids new payload formats.
+- **Persistence stays in GameState**: Money and show outputs remain serialized by `GameState`, with no backward-compatibility guarantees for older saves.
+  - Rationale: Keeps state management centralized and allows schema changes without migration work.
 
 ## Risks / Trade-offs
 
 - **State drift risk** → Mitigation: `compute_show(...)` uses current inputs from `GameState` and returns a full result object; `GameState` applies it immediately.
 - **Compatibility layer masks direct UI calls** → Mitigation: mark wrappers as legacy in docstrings and ensure `GameState` accessors are the preferred path for new code.
-- **Persistence schema change** → Mitigation: tolerate missing economy payload fields with defaults; add tests for backward compatibility.
+- **Persistence schema break** → Mitigation: none; save compatibility is explicitly out of scope for this change.
 
 ## Migration Plan
 

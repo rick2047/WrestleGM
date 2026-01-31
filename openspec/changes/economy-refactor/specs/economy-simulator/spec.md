@@ -29,9 +29,9 @@ The system SHALL have `GameState` apply economy results from the simulator to up
 - **WHEN** a show completes simulation
 - **THEN** `Show.show_cost`, `Show.audience`, `Show.gate_income`, `Show.merch_income`, and `Show.total_earned` are populated from the simulator results
 
-### Requirement: GameState is the UI economy access point
-The system SHALL expose economy-related data to the UI through `GameState` accessors rather than direct economy module usage.
+### Requirement: GameState provides economy accessors
+The system SHALL expose economy-related data through `GameState` accessors for UI consumption.
 
 #### Scenario: Booking cost available via GameState
-- **WHEN** the UI requests the current show cost
-- **THEN** `GameState.current_show_cost()` provides that value without the UI calling economy calculation functions directly
+- **WHEN** the UI requests the current show cost via `GameState`
+- **THEN** `GameState.current_show_cost()` provides that value
