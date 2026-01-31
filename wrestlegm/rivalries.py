@@ -99,14 +99,12 @@ class RivalryManager:
             cooldown = self.cooldown_states.get(key)
             if cooldown:
                 emoji = self._cooldown_emoji(cooldown.remaining_shows)
-                if emoji in counts:
-                    counts[emoji] += 1
+                counts[emoji] += 1
                 continue
             rivalry = self.rivalry_states.get(key)
             if rivalry and rivalry.rivalry_value > 0:
                 emoji = self._rivalry_emoji(rivalry.rivalry_value)
-                if emoji in counts:
-                    counts[emoji] += 1
+                counts[emoji] += 1
         parts = [f"{emoji} x{count}" for emoji, count in counts.items() if count]
         return "  ".join(parts)
 
@@ -120,16 +118,14 @@ class RivalryManager:
             for wrestler_a_id, wrestler_b_id in ordered_pairs(slot.wrestler_ids):
                 key = normalize_pair(wrestler_a_id, wrestler_b_id)
                 cooldown = self.cooldown_states.get(key)
-                if cooldown:
-                    emoji = self._cooldown_emoji(cooldown.remaining_shows)
-                    if emoji in counts:
-                        counts[emoji] += 1
-                    continue
-                rivalry = self.rivalry_states.get(key)
-                if rivalry and rivalry.rivalry_value > 0:
-                    emoji = self._rivalry_emoji(rivalry.rivalry_value)
-                    if emoji in counts:
-                        counts[emoji] += 1
+            if cooldown:
+                emoji = self._cooldown_emoji(cooldown.remaining_shows)
+                counts[emoji] += 1
+                continue
+            rivalry = self.rivalry_states.get(key)
+            if rivalry and rivalry.rivalry_value > 0:
+                emoji = self._rivalry_emoji(rivalry.rivalry_value)
+                counts[emoji] += 1
         parts = [f"{emoji} x{count}" for emoji, count in counts.items() if count]
         return "  ".join(parts)
 
