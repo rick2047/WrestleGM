@@ -8,10 +8,12 @@ import pytest
 
 from wrestlegm import constants, economy
 from wrestlegm.models import (
+    CooldownState,
     Match,
     MatchTypeDefinition,
     MatchTypeModifiers,
     Promo,
+    RivalryState,
     WrestlerDefinition,
     WrestlerState,
 )
@@ -86,6 +88,20 @@ def test_economy_inputs_alignment_and_pop_sum() -> None:
     inputs = economy.economy_inputs_for_slots(slots, roster, rivalry)
     assert inputs.pop_sum == roster["a"].popularity + roster["b"].popularity + roster["c"].popularity
     assert inputs.align_score == 1
+
+
+def test_economy_inputs_rivalry_and_cooldown_counts() -> None:
+    roster = build_roster()
+    rivalry = RivalryManager()
+    rivalry.rivalry_states[("a", "b")] = RivalryState("a", "b", rivalry_value=1)
+    rivalry.rivalry_states[("b", "c")] = RivalryState("b", "c", rivalry_value=2)
+    rivalry.cooldown_states[("a", "c")] = CooldownState("a", "c", remaining_shows=4)
+    slots = [Match(["a", "b", "c"], "triple-threat", "standard")]
+
+    inputs = economy.economy_inputs_for_slots(slots, roster, rivalry)
+
+    assert inputs.rivalry_count == 2
+    assert inputs.cooldown_count == 1
 
 
 def test_compute_audience_base_and_curve() -> None:
