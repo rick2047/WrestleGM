@@ -25,3 +25,4 @@ Match categories are core game data but are split between `wrestlegm/models.py` 
 - `wrestlegm/constants.py` no longer stores match category definitions.
 - `GameState`, UI formatting helpers, and match booking flows will move to category objects/registry lookups.
 - `wrestlegm/data.py` and other JSON-loading paths for match types will be replaced by the hardcoded definitions in `wrestlegm/models.py`.
+- Direct updates needed in: `wrestlegm/state.py`, `wrestlegm/ui/formatting.py`, `wrestlegm/ui/screens/match_booking.py`, and `wrestlegm/ui/screens/booking_hub.py`.
