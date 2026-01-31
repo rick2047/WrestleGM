@@ -231,9 +231,6 @@ class EconomySimulator:
         return min_cost
 
 
-_DEFAULT_SIMULATOR = EconomySimulator()
-
-
 def show_cost(
     slots: Iterable[ShowSlot],
     roster: dict[str, WrestlerState],
@@ -241,7 +238,7 @@ def show_cost(
 ) -> int:
     """Compute the total show cost for the given slots."""
 
-    return _DEFAULT_SIMULATOR.show_cost(slots, roster, match_types)
+    return EconomySimulator().show_cost(slots, roster, match_types)
 
 
 def compute_economy(
@@ -254,7 +251,7 @@ def compute_economy(
 ) -> EconomyResult:
     """Compute show economy values using the provided RNG."""
 
-    return _DEFAULT_SIMULATOR.compute_show(
+    return EconomySimulator().compute_show(
         slots,
         roster,
         match_types,
