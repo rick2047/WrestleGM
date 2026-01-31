@@ -5,6 +5,7 @@ from __future__ import annotations
 from textual.app import ComposeResult
 from textual.widgets import Static
 
+from ..formatting import format_money
 from ..routes import RESULTS
 from .standard import StandardScreen
 
@@ -19,6 +20,9 @@ class SimulatingScreen(StandardScreen):
 
     TITLE = "Simulating"
 
+    def header_right(self) -> str:
+        return f"Money: {format_money(self.app.state.money)}"
+
     def compose_body(self) -> ComposeResult:
         """Build the simulating screen layout."""
 
@@ -29,6 +33,7 @@ class SimulatingScreen(StandardScreen):
 
         super().on_mount()
         self.app.state.run_show()
+        self.update_header()
         self.set_timer(0.4, self.advance)
 
     def advance(self) -> None:

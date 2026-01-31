@@ -9,7 +9,7 @@ from textual.widgets import Button, ListItem, ListView, Static
 from wrestlegm.models import Match, Promo
 
 from ..drafts import PromoDraft
-from ..formatting import slot_label
+from ..formatting import format_money, slot_label
 from ..widgets.list_views import EdgeAwareListView
 from ..widgets.wrestler_view import WrestlerView, WrestlerViewConfig, build_wrestler_view_data
 from .modals import ConfirmBookingModal
@@ -34,6 +34,9 @@ class PromoBookingScreen(StandardScreen):
 
     def header_title(self) -> str:
         return slot_label(self.slot_index, "promo")
+
+    def header_right(self) -> str:
+        return f"Money: {format_money(self.app.state.money)}"
 
     def compose_body(self) -> ComposeResult:
         with Vertical(classes="booking-shell"):

@@ -12,7 +12,7 @@ from wrestlegm import constants
 from wrestlegm.models import Match, MatchTypeDefinition
 
 from ..drafts import BookingDraft
-from ..formatting import match_category_size, slot_label
+from ..formatting import format_money, match_category_size, slot_label
 from ..widgets import SafeSelect
 from ..widgets.list_views import FilteredListView
 from ..widgets.wrestler_view import (
@@ -54,9 +54,12 @@ class MatchBookingScreen(StandardScreen):
     def header_title(self) -> str:
         return slot_label(self.slot_index, "match")
 
-    def header_right(self) -> str:
+    def header_left(self) -> str:
         selected_ids = [wrestler_id for wrestler_id in self.draft.wrestler_ids if wrestler_id]
         return self.app.state.rivalry_and_cooldown_summary_for_match(selected_ids)
+
+    def header_right(self) -> str:
+        return f"Money: {format_money(self.app.state.money)}"
 
     def compose_body(self) -> ComposeResult:
         """Build the match booking layout."""

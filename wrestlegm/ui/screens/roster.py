@@ -7,7 +7,7 @@ from textual.widgets import Button, DataTable, Static
 
 from wrestlegm import economy
 
-from ..formatting import build_name_cell, build_pop_cell, row_key_to_id
+from ..formatting import build_name_cell, build_pop_cell, format_money, row_key_to_id
 from ..widgets.data_table import EdgeAwareDataTable
 from ..widgets.wrestler_view import build_wrestler_view_data
 from .standard import StandardScreen
@@ -30,6 +30,9 @@ class RosterScreen(StandardScreen):
     ]
 
     TITLE = "Roster Overview"
+
+    def header_right(self) -> str:
+        return f"Money: {format_money(self.app.state.money)}"
 
     def __init__(self) -> None:
         super().__init__()

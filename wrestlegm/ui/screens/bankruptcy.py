@@ -22,6 +22,9 @@ class BankruptcyScreen(StandardScreen):
 
     TITLE = "Game Over: Bankruptcy"
 
+    def header_right(self) -> str:
+        return f"Money: {format_money(self.app.state.money)}"
+
     def compose_body(self) -> ComposeResult:
         """Build the bankruptcy layout."""
 

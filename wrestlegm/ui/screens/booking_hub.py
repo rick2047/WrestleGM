@@ -46,11 +46,11 @@ class BookingHubScreen(StandardScreen):
     TITLE = "Booking Hub"
 
     def header_left(self) -> str:
-        return f"Money: {format_money(self.app.state.money)}"
-
-    def header_right(self) -> str:
         cost = self.app.state.current_show_cost()
         return f"Cost: {format_money(cost)}"
+
+    def header_right(self) -> str:
+        return f"Money: {format_money(self.app.state.money)}"
 
     def compose_body(self) -> ComposeResult:
         """Build the booking hub layout."""

@@ -6,6 +6,7 @@ from textual.app import ComposeResult
 from textual.containers import Vertical
 from textual.widgets import Button
 
+from ..formatting import format_money
 from ..routes import BANKRUPTCY, BOOKING_HUB, MAIN_MENU, ROSTER
 from .standard import StandardScreen
 
@@ -27,6 +28,9 @@ class GameHubScreen(StandardScreen):
     ]
 
     TITLE = "Game Hub"
+
+    def header_right(self) -> str:
+        return f"Money: {format_money(self.app.state.money)}"
 
     def compose_body(self) -> ComposeResult:
         """Build the game hub layout."""

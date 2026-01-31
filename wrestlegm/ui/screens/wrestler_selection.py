@@ -15,6 +15,7 @@ from ..formatting import (
     ALIGNMENT_EMOJI,
     BLOCK_ICON,
     build_pop_cell,
+    format_money,
     row_key_to_id,
     truncate_name,
 )
@@ -63,6 +64,9 @@ class WrestlerSelectionScreen(StandardScreen):
 
     def header_title(self) -> str:
         return self.title
+
+    def header_right(self) -> str:
+        return f"Money: {format_money(self.app.state.money)}"
 
     def compose_body(self) -> ComposeResult:
         """Build the wrestler selection layout."""
