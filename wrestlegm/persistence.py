@@ -205,7 +205,7 @@ def deserialize_game_state(state: GameState, payload: dict[str, Any]) -> None:
     state.money = _coerce_int(payload.get("money"), state.money)
     show_card_data = payload.get("show_card", [])
     show_card = (
-        [_deserialize_slot(slot_data) for slot_data in show_card_data]
+        [_deserialize_slot(slot_data, roster) for slot_data in show_card_data]
         if isinstance(show_card_data, list)
         else []
     )
@@ -303,15 +303,22 @@ def _serialize_slot(slot: Match | Promo | None) -> dict[str, Any] | None:
     if slot is None:
         return None
     if isinstance(slot, Match):
-        data = asdict(slot)
-        data["type"] = "match"
-        return data
-    data = asdict(slot)
-    data["type"] = "promo"
-    return data
+        return {
+            "type": "match",
+            "wrestler_ids": [wrestler.id for wrestler in slot.wrestlers],
+            "match_category_id": slot.match_category_id,
+            "match_type_id": slot.match_type_id,
+        }
+    return {
+        "type": "promo",
+        "wrestler_id": slot.wrestler.id,
+    }
 
 
-def _deserialize_slot(data: dict[str, Any] | None) -> Match | Promo | None:
+def _deserialize_slot(
+    data: dict[str, Any] | None,
+    roster: dict[str, WrestlerState],
+) -> Match | Promo | None:
     """Deserialize a show slot from persistence data."""
 
     if data is None:
@@ -320,12 +327,20 @@ def _deserialize_slot(data: dict[str, Any] | None) -> Match | Promo | None:
         wrestler_ids = data.get("wrestler_ids", [])
         if not isinstance(wrestler_ids, list):
             wrestler_ids = []
+        wrestlers = [
+            roster[wrestler_id]
+            for wrestler_id in wrestler_ids
+            if wrestler_id in roster
+        ]
         return Match(
-            wrestler_ids=list(wrestler_ids),
+            wrestlers=wrestlers,
             match_category_id=data.get("match_category_id", ""),
             match_type_id=data.get("match_type_id", ""),
         )
-    return Promo(wrestler_id=data.get("wrestler_id", ""))
+    wrestler_id = data.get("wrestler_id", "")
+    if not isinstance(wrestler_id, str) or wrestler_id not in roster:
+        return None
+    return Promo(wrestler=roster[wrestler_id])
 
 
 def _to_jsonable(value: Any) -> Any:

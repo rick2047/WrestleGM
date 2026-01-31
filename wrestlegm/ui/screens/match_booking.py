@@ -260,8 +260,19 @@ class MatchBookingScreen(StandardScreen):
         if not self.draft.is_complete(required_count):
             return ["incomplete"]
         wrestler_ids = [wrestler_id for wrestler_id in self.draft.wrestler_ids if wrestler_id]
+        missing = [
+            wrestler_id
+            for wrestler_id in wrestler_ids
+            if wrestler_id not in self.app.state.roster
+        ]
+        if missing:
+            return ["unknown_wrestler"]
+        wrestlers = [
+            self.app.state.roster[wrestler_id]
+            for wrestler_id in wrestler_ids
+        ]
         match = Match(
-            wrestler_ids=wrestler_ids,
+            wrestlers=wrestlers,
             match_category_id=self.draft.match_category_id or "",
             match_type_id=self.draft.match_type_id or "",
         )
@@ -398,8 +409,10 @@ class MatchBookingScreen(StandardScreen):
         """Commit the draft match to the show card."""
 
         match = Match(
-            wrestler_ids=[
-                wrestler_id for wrestler_id in self.draft.wrestler_ids if wrestler_id
+            wrestlers=[
+                self.app.state.roster[wrestler_id]
+                for wrestler_id in self.draft.wrestler_ids
+                if wrestler_id and wrestler_id in self.app.state.roster
             ],
             match_category_id=self.draft.match_category_id or "",
             match_type_id=self.draft.match_type_id or "",

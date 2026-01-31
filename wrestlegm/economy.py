@@ -33,16 +33,17 @@ class EconomyResult:
     total_earned: int
 
 
-def _unique_wrestler_ids(slots: Iterable[ShowSlot]) -> set[str]:
-    """Return the unique wrestler ids booked on the card."""
+def _unique_wrestlers(slots: Iterable[ShowSlot]) -> dict[str, WrestlerState]:
+    """Return unique wrestlers booked on the card keyed by id."""
 
-    ids: set[str] = set()
+    booked: dict[str, WrestlerState] = {}
     for slot in slots:
         if isinstance(slot, Match):
-            ids.update(slot.wrestler_ids)
+            for wrestler in slot.wrestlers:
+                booked[wrestler.id] = wrestler
         else:
-            ids.add(slot.wrestler_id)
-    return ids
+            booked[slot.wrestler.id] = slot.wrestler
+    return booked
 
 
 def _curve_bonus(value: int, scale: int) -> float:
@@ -59,14 +60,12 @@ class EconomySimulator:
     def show_cost(
         self,
         slots: Iterable[ShowSlot],
-        roster: dict[str, WrestlerState],
         match_types: dict[str, MatchTypeDefinition],
     ) -> int:
         """Compute the total show cost for the given slots."""
 
         cost = 0
-        for wrestler_id in _unique_wrestler_ids(slots):
-            wrestler = roster[wrestler_id]
+        for wrestler in _unique_wrestlers(slots).values():
             cost += wrestler.booking_price()
 
         for slot in slots:
@@ -79,13 +78,12 @@ class EconomySimulator:
     def audience_inputs_for_slots(
         self,
         slots: Iterable[ShowSlot],
-        roster: dict[str, WrestlerState],
         rivalry_manager: RivalryManager,
     ) -> EconomyInputs:
         """Compute economy inputs for a show card."""
 
-        booked_ids = _unique_wrestler_ids(slots)
-        pop_sum = sum(roster[wrestler_id].popularity for wrestler_id in booked_ids)
+        booked = _unique_wrestlers(slots)
+        pop_sum = sum(wrestler.popularity for wrestler in booked.values())
 
         align_score = 0
         rivalry_count = 0
@@ -94,8 +92,9 @@ class EconomySimulator:
         for slot in slots:
             if not isinstance(slot, Match):
                 continue
+            alignment_map = {wrestler.id: wrestler.alignment for wrestler in slot.wrestlers}
             for wrestler_a, wrestler_b in ordered_pairs(slot.wrestler_ids):
-                if roster[wrestler_a].alignment != roster[wrestler_b].alignment:
+                if alignment_map[wrestler_a] != alignment_map[wrestler_b]:
                     align_score += 1
 
             match_rivalry, match_cooldown = rivalry_manager.count_rivalry_and_cooldown_pairs(
@@ -112,7 +111,7 @@ class EconomySimulator:
         )
 
     @staticmethod
-    def compute_audience(inputs: EconomyInputs, rng_multiplier: float) -> int:
+    def _compute_audience(inputs: EconomyInputs, rng_multiplier: float) -> int:
         """Compute audience size using inputs and RNG multiplier."""
 
         base = inputs.pop_sum * constants.AUDIENCE_POP_MULTIPLIER
@@ -123,7 +122,7 @@ class EconomySimulator:
         return max(0, int(round(raw)))
 
     @staticmethod
-    def merch_rate(show_rating: float) -> float:
+    def _merch_rate(show_rating: float) -> float:
         """Return the merch conversion rate from show rating."""
 
         rate = (
@@ -136,7 +135,6 @@ class EconomySimulator:
     def compute_show(
         self,
         slots: Iterable[ShowSlot],
-        roster: dict[str, WrestlerState],
         match_types: dict[str, MatchTypeDefinition],
         rivalry_manager: RivalryManager,
         rng,
@@ -144,15 +142,15 @@ class EconomySimulator:
     ) -> EconomyResult:
         """Compute show economy values using the provided RNG."""
 
-        cost = self.show_cost(slots, roster, match_types)
-        inputs = self.audience_inputs_for_slots(slots, roster, rivalry_manager)
+        cost = self.show_cost(slots, match_types)
+        inputs = self.audience_inputs_for_slots(slots, rivalry_manager)
         audience_multiplier = rng.uniform(constants.ECONOMY_RNG_MIN, constants.ECONOMY_RNG_MAX)
-        audience = self.compute_audience(inputs, audience_multiplier)
+        audience = self._compute_audience(inputs, audience_multiplier)
 
         gate_income = int(round(audience * constants.GATE_RATE))
 
         merch_multiplier = rng.uniform(constants.ECONOMY_RNG_MIN, constants.ECONOMY_RNG_MAX)
-        merch_income = int(round(audience * self.merch_rate(show_rating) * merch_multiplier))
+        merch_income = int(round(audience * self._merch_rate(show_rating) * merch_multiplier))
 
         total_earned = gate_income + merch_income
         return EconomyResult(
@@ -233,17 +231,15 @@ class EconomySimulator:
 
 def show_cost(
     slots: Iterable[ShowSlot],
-    roster: dict[str, WrestlerState],
     match_types: dict[str, MatchTypeDefinition],
 ) -> int:
     """Compute the total show cost for the given slots."""
 
-    return EconomySimulator().show_cost(slots, roster, match_types)
+    return EconomySimulator().show_cost(slots, match_types)
 
 
 def compute_economy(
     slots: Iterable[ShowSlot],
-    roster: dict[str, WrestlerState],
     match_types: dict[str, MatchTypeDefinition],
     rivalry_manager: RivalryManager,
     rng,
@@ -253,7 +249,6 @@ def compute_economy(
 
     return EconomySimulator().compute_show(
         slots,
-        roster,
         match_types,
         rivalry_manager,
         rng,

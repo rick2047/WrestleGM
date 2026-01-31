@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Dict, Iterable, List
 
 from wrestlegm import constants
-from wrestlegm import economy
+from wrestlegm.economy import EconomySimulator
 from wrestlegm.models import (
     Match,
     MatchTypeDefinition,
@@ -60,7 +60,7 @@ class GameState:
         }
         self.match_types = {match_type.id: match_type for match_type in match_types}
         self.rivalry_manager = RivalryManager()
-        self.economy_simulator = economy.EconomySimulator()
+        self.economy_simulator = EconomySimulator()
         self.show_index = 1
         self.show_card = [None] * constants.SHOW_SLOT_COUNT
         self.last_show = None
@@ -197,7 +197,6 @@ class GameState:
         show = Show(show_index=self.show_index, scheduled_slots=slots, results=[])
         results = self.engine.simulate_show(
             slots,
-            self.roster,
             self.match_types,
             rivalry_context_provider=self.rivalry_manager.rivalry_context_for_match,
         )
@@ -205,7 +204,6 @@ class GameState:
         show.show_rating = self.engine.aggregate_show_rating(results)
         economy_result = self.economy_simulator.compute_show(
             slots,
-            self.roster,
             self.match_types,
             self.rivalry_manager,
             self.engine.rng,
@@ -278,7 +276,7 @@ class GameState:
         """Return the cost for the currently booked slots."""
 
         slots: List[ShowSlot] = [slot for slot in self.show_card if slot is not None]
-        return self.economy_simulator.show_cost(slots, self.roster, self.match_types)
+        return self.economy_simulator.show_cost(slots, self.match_types)
 
     def min_valid_show_cost(self) -> int | None:
         """Return the minimum possible cost for any valid show card, or None if impossible."""
@@ -286,12 +284,9 @@ class GameState:
         return self.economy_simulator.min_valid_show_cost(self.roster, self.match_types)
 
     def is_bankrupt(self) -> bool:
-        """Return True if no valid show can be afforded with current funds."""
+        """Return True if the promotion has run out of money."""
 
-        min_cost = self.min_valid_show_cost()
-        if min_cost is None:
-            return True
-        return self.money < min_cost
+        return self.money <= 0
 
 
 class ShowApplier:

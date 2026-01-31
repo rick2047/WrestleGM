@@ -104,14 +104,17 @@ def build_test_slots(state: GameState) -> list[Match | Promo]:
             wrestler_count = constants.MATCH_CATEGORIES[match_category_id]["size"]
             slots.append(
                 Match(
-                    wrestler_ids=wrestler_ids[cursor : cursor + wrestler_count],
+                    wrestlers=[
+                        state.roster[wrestler_id]
+                        for wrestler_id in wrestler_ids[cursor : cursor + wrestler_count]
+                    ],
                     match_category_id=match_category_id,
                     match_type_id=match_type_id,
                 )
             )
             cursor += wrestler_count
         else:
-            slots.append(Promo(wrestler_id=wrestler_ids[cursor]))
+            slots.append(Promo(wrestler=state.roster[wrestler_ids[cursor]]))
             cursor += 1
     return slots
 

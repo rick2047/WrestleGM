@@ -93,16 +93,24 @@ class MatchCategoryDefinition:
 class Match:
     """Booked match within a show."""
 
-    wrestler_ids: List[str]
+    wrestlers: List[WrestlerState]
     match_category_id: str
     match_type_id: str
+
+    @property
+    def wrestler_ids(self) -> List[str]:
+        return [wrestler.id for wrestler in self.wrestlers]
 
 
 @dataclass(frozen=True)
 class Promo:
     """Booked promo within a show."""
 
-    wrestler_id: str
+    wrestler: WrestlerState
+
+    @property
+    def wrestler_id(self) -> str:
+        return self.wrestler.id
 
 
 @dataclass(frozen=True)

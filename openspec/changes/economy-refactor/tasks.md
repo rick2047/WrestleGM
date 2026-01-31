@@ -7,7 +7,7 @@
 ## 2. GameState Integration
 
 - [x] 2.1 Wire `GameState.run_show()` to call `EconomySimulator.compute_show(...)` and apply money/show outputs locally
-- [x] 2.2 Update `GameState.current_show_cost()` / `min_valid_show_cost()` / `is_bankrupt()` to use the simulator
+- [x] 2.2 Update `GameState.current_show_cost()` / `min_valid_show_cost()` to use the simulator; `is_bankrupt()` checks `money <= 0`
 - [x] 2.3 Add `GameState` economy accessors needed by UI
 - [x] 2.4 Refactor UI economy usage to call `GameState` accessors instead of economy helpers
 

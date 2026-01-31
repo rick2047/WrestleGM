@@ -29,6 +29,17 @@ The system SHALL have `GameState` apply economy results from the simulator to up
 - **WHEN** a show completes simulation
 - **THEN** `Show.show_cost`, `Show.audience`, `Show.gate_income`, `Show.merch_income`, and `Show.total_earned` are populated from the simulator results
 
+### Requirement: Bankruptcy is based on money only
+The system SHALL treat the game as bankrupt when `GameState.money <= 0`, independent of `min_valid_show_cost`.
+
+#### Scenario: Bankruptcy at non-positive money
+- **WHEN** `GameState.money` is `0` or negative
+- **THEN** `GameState.is_bankrupt()` returns `True`
+
+#### Scenario: Not bankrupt with positive money
+- **WHEN** `GameState.money` is greater than `0`
+- **THEN** `GameState.is_bankrupt()` returns `False`
+
 ### Requirement: GameState is the UI economy access point
 The system SHALL provide economy-related data to the UI exclusively through `GameState` accessors.
 

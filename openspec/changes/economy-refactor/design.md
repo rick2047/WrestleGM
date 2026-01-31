@@ -29,12 +29,18 @@ Economy calculations are currently split across `wrestlegm/economy.py` functions
 - **Aggregation belongs to EconomySimulator**: Unique billing across a show card, total show cost, and minimum valid show cost calculations live in `EconomySimulator` (not in UI or free functions).
   - Rationale: These computations combine multiple entities and are part of the economy domain.
 
+- **ShowSlot stores wrestler state**: `Match` and `Promo` store `WrestlerState` objects directly instead of wrestler IDs.
+  - Rationale: Avoids roster lookups during economy calculations and keeps show card data self-contained.
+
 - **UI uses GameState accessors**: UI modules will be updated to call `GameState` accessors (e.g., `current_show_cost()`, `wrestler_booking_price(...)`) instead of economy helpers.
   - Rationale: Ensures a single UI integration surface for future frontends.
   - Alternative considered: Preserve economy helpers for UI. Rejected to enforce the single access point requirement.
 
 - **Persistence stays in GameState**: Money and show outputs remain serialized by `GameState`, with no backward-compatibility guarantees for older saves.
   - Rationale: Keeps state management centralized and allows schema changes without migration work.
+
+- **Bankruptcy triggers at non-positive money**: `GameState.is_bankrupt()` checks `money <= 0` and does not gate on `min_valid_show_cost`.
+  - Rationale: Bankruptcy should occur as soon as the player runs out of money, independent of hypothetical minimum card cost.
 
 ## Risks / Trade-offs
 
