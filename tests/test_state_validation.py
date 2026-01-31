@@ -5,16 +5,14 @@ from __future__ import annotations
 from wrestlegm import constants
 from wrestlegm.models import (
     Match,
-    match_category_by_id,
+    MATCH_CATEGORIES,
     MatchTypeDefinition,
     MatchTypeModifiers,
     WrestlerDefinition,
 )
 from wrestlegm.state import GameState
 
-SINGLES = match_category_by_id(1)
-if SINGLES is None:
-    raise AssertionError("Missing singles match category.")
+SINGLES = sorted(MATCH_CATEGORIES, key=lambda item: item.id)[0]
 
 
 def build_match_type() -> MatchTypeDefinition:

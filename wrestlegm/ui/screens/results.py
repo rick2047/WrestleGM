@@ -95,7 +95,7 @@ class ResultsScreen(StandardScreen):
                 )
                 match_type = self.app.state.match_types.get(result.match_type_id)
                 match_type_name = match_type.name if match_type else "Unknown"
-                category_name = match_category_label(result.match_category_id)
+                category_name = match_category_label(result.match_category)
                 lines.append(label)
                 lines.append(f" {build_name_cell(winner.name, winner.alignment)} def. {non_winners}")
                 lines.append(f" {category_name} · {match_type_name}")

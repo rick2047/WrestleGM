@@ -8,7 +8,7 @@ from wrestlegm import constants, economy
 from wrestlegm.models import (
     CooldownState,
     Match,
-    match_category_by_id,
+    MATCH_CATEGORIES,
     MatchTypeDefinition,
     MatchTypeModifiers,
     Promo,
@@ -19,10 +19,9 @@ from wrestlegm.models import (
 from wrestlegm.rivalries import RivalryManager
 from wrestlegm.state import GameState
 
-SINGLES = match_category_by_id(1)
-TRIPLE_THREAT = match_category_by_id(2)
-if SINGLES is None or TRIPLE_THREAT is None:
-    raise AssertionError("Missing match categories for tests.")
+ORDERED_CATEGORIES = sorted(MATCH_CATEGORIES, key=lambda item: item.id)
+SINGLES = ORDERED_CATEGORIES[0]
+TRIPLE_THREAT = ORDERED_CATEGORIES[1]
 
 
 def build_match_type(base_cost: int = 100) -> MatchTypeDefinition:
@@ -152,7 +151,7 @@ def test_rng_swing_bounds_applied() -> None:
     simulator = economy.EconomySimulator()
     roster = build_roster()
     match_types = {"standard": build_match_type(base_cost=0)}
-    slots = [Match([roster["a"], roster["b"]], "singles", "standard"), Promo(roster["c"])]
+    slots = [Match([roster["a"], roster["b"]], SINGLES, "standard"), Promo(roster["c"])]
     rivalry = RivalryManager()
     rng = FixedRNG([constants.ECONOMY_RNG_MIN, constants.ECONOMY_RNG_MAX])
     result = simulator.compute_show(slots, match_types, rivalry, rng, 3.0)
@@ -164,7 +163,7 @@ def test_economy_determinism_with_seed() -> None:
     simulator = economy.EconomySimulator()
     roster = build_roster()
     match_types = {"standard": build_match_type(base_cost=100)}
-    slots = [Match([roster["a"], roster["b"]], "singles", "standard"), Promo(roster["c"])]
+    slots = [Match([roster["a"], roster["b"]], SINGLES, "standard"), Promo(roster["c"])]
     rivalry = RivalryManager()
     rng_one = random.Random(42)
     rng_two = random.Random(42)

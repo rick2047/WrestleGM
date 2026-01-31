@@ -7,12 +7,13 @@ Match categories are currently defined as dictionaries and a separate order tupl
 **Goals:**
 - Promote match categories to first-class domain objects (`MatchCategory`) and use them directly in `GameState`, `Match`, and `MatchResult`.
 - Hardcode the three existing categories in code and remove the constants dict/order.
-- Use a numeric `MatchCategory.id` for persistence and ordering (compatibility with older saves is not required).
+- Persist full `MatchCategory` object data (id/name/size) in saves; compatibility with older saves is not required.
+- Simplify match type availability by removing `allowed_categories` filtering.
 
 **Non-Goals:**
 - Changing simulation logic, ratings, or booking rules.
 - Introducing new match categories or match types beyond the current set.
-- Changing match type definitions or match type loading behavior.
+- Changing match type definitions beyond removing `allowed_categories`.
 
 ## Decisions
 
@@ -25,7 +26,10 @@ Match categories are currently defined as dictionaries and a separate order tupl
   - Remove `MATCH_CATEGORY_ORDER` and sort categories by numeric `id` (1, 2, 3).
 - **Object usage:**
   - Update `Match` and `MatchResult` to carry a `MatchCategory` object, not an ID string.
-  - Persist numeric category IDs derived from the `MatchCategory` object; older save compatibility is not required.
+  - Persist full `MatchCategory` object data (id/name/size) without relying on an ID lookup helper.
+- **Match type availability:**
+  - Remove `allowed_categories` from match type data/fixtures.
+  - Match types are available for all categories; no category-based filtering.
 
 ## Risks / Trade-offs
 
@@ -38,8 +42,9 @@ Match categories are currently defined as dictionaries and a separate order tupl
 - Introduce `MatchCategory` rename in `wrestlegm/models.py` and define the hardcoded list under the class.
 - Update `WrestleGMApp`, `SessionManager`, and `GameState` to use the hardcoded list instead of constants.
 - Update all call sites that referenced `constants.MATCH_CATEGORIES` / `MATCH_CATEGORY_ORDER` to use the new registries.
-- Update persistence serialization/deserialization to store numeric category IDs derived from `MatchCategory` objects.
+- Update persistence serialization/deserialization to store full category object data derived from `MatchCategory` objects.
 - Remove `MATCH_CATEGORIES` and `MATCH_CATEGORY_ORDER` from `wrestlegm/constants.py`.
+- Remove `allowed_categories` handling from match type loading and booking UI filtering.
 
 ## Open Questions
 

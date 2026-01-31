@@ -6,7 +6,7 @@
 ## 2. State and Persistence Integration
 
 - [x] 2.1 Update `Match` and `MatchResult` to store `MatchCategory` objects and adjust constructors/usages accordingly.
-- [x] 2.2 Update persistence serialization/deserialization to store numeric category IDs and map them back to `MatchCategory` objects.
+- [x] 2.2 Update persistence serialization/deserialization to store full category object data (id/name/size) without an ID lookup helper.
 - [x] 2.3 Update `GameState` initialization and validation to use category objects/list instead of constants.
 
 ## 3. UI and Formatting Updates
@@ -18,3 +18,7 @@
 ## 4. Verification
 
 - [x] 4.1 Run targeted tests or a quick manual TUI smoke check to confirm match booking and show flow still work with category objects.
+
+## 5. Match Type Availability Simplification
+
+- [x] 5.1 Remove `allowed_categories` from match type data/fixtures and treat all match types as available for all categories.

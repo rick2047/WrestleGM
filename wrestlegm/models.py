@@ -95,15 +95,6 @@ MATCH_CATEGORIES: list[MatchCategory] = [
 ]
 
 
-def match_category_by_id(category_id: int) -> MatchCategory | None:
-    """Return the match category for the numeric id."""
-
-    for category in MATCH_CATEGORIES:
-        if category.id == category_id:
-            return category
-    return None
-
-
 @dataclass(frozen=True)
 class Match:
     """Booked match within a show."""

@@ -7,8 +7,9 @@ Match categories are core game data but are split between `wrestlegm/models.py` 
 - Rename `MatchCategoryDefinition` to `MatchCategory` and treat match categories as a primary domain model.
 - Hardcode the current three categories in one place (replacing the constants dict/order).
 - Update `GameState` and callers to use match category objects/list rather than scattered ID lookups.
-- Update `Match`/`MatchResult` to carry `MatchCategory` objects (older save compatibility is not required).
+- Update `Match`/`MatchResult` to carry `MatchCategory` objects and serialize full category data in saves (older save compatibility is not required).
 - Replace `MATCH_CATEGORY_ORDER` by ordering categories via their numeric IDs. For now the hardcoded categories use numeric IDs 1, 2, and 3, ordered in that sequence.
+- Remove `allowed_categories` from match type data and treat all match types as available for all categories.
 
 ## Capabilities
 
@@ -24,3 +25,4 @@ Match categories are core game data but are split between `wrestlegm/models.py` 
 - `wrestlegm/constants.py` no longer stores match category definitions.
 - `GameState`, UI formatting helpers, and match booking flows will move to category objects/list lookups keyed by numeric IDs.
 - Direct updates needed in: `wrestlegm/state.py`, `wrestlegm/ui/formatting.py`, `wrestlegm/ui/screens/match_booking.py`, and `wrestlegm/ui/screens/booking_hub.py`.
+- Match type data/fixtures and booking UI match type filtering will drop `allowed_categories`.

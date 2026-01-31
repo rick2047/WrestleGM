@@ -118,8 +118,8 @@ ROUTES: dict[str, Route] = {
     ROSTER: Route("push", lambda **_: RosterScreen()),
     MATCH_BOOKING: Route(
         "push",
-        lambda slot_index, match_category_id: MatchBookingScreen(
-            slot_index, match_category_id
+        lambda slot_index, match_category: MatchBookingScreen(
+            slot_index, match_category
         ),
     ),
     PROMO_BOOKING: Route("push", lambda slot_index: PromoBookingScreen(slot_index)),

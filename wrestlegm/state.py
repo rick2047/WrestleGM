@@ -8,7 +8,7 @@ from wrestlegm import constants
 from wrestlegm.economy import EconomySimulator
 from wrestlegm.models import (
     Match,
-    match_category_by_id,
+    MATCH_CATEGORIES,
     MatchTypeDefinition,
     Promo,
     PromoResult,
@@ -92,7 +92,7 @@ class GameState:
 
         errors: List[str] = []
         category = match.match_category
-        if match_category_by_id(category.id) is None:
+        if category not in MATCH_CATEGORIES:
             errors.append("unknown_match_category")
         if match.match_type_id not in self.match_types:
             errors.append("unknown_match_type")

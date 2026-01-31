@@ -6,7 +6,7 @@ from wrestlegm import constants
 from wrestlegm.models import (
     Match,
     MatchResult,
-    match_category_by_id,
+    MATCH_CATEGORIES,
     MatchTypeDefinition,
     MatchTypeModifiers,
     Promo,
@@ -25,10 +25,9 @@ from wrestlegm.sim import (
 )
 from wrestlegm.state import ShowApplier
 
-SINGLES = match_category_by_id(1)
-TRIPLE_THREAT = match_category_by_id(2)
-if SINGLES is None or TRIPLE_THREAT is None:
-    raise AssertionError("Missing match categories for tests.")
+ORDERED_CATEGORIES = sorted(MATCH_CATEGORIES, key=lambda item: item.id)
+SINGLES = ORDERED_CATEGORIES[0]
+TRIPLE_THREAT = ORDERED_CATEGORIES[1]
 
 
 def build_roster() -> list[WrestlerDefinition]:

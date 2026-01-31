@@ -10,7 +10,7 @@ from typing import Any, Iterable, TYPE_CHECKING
 from wrestlegm.models import (
     CooldownState,
     Match,
-    match_category_by_id,
+    MatchCategory,
     Promo,
     RivalryState,
     WrestlerState,
@@ -307,7 +307,11 @@ def _serialize_slot(slot: Match | Promo | None) -> dict[str, Any] | None:
         return {
             "type": "match",
             "wrestler_ids": [wrestler.id for wrestler in slot.wrestlers],
-            "match_category_id": slot.match_category_id,
+            "match_category": {
+                "id": slot.match_category.id,
+                "name": slot.match_category.name,
+                "size": slot.match_category.size,
+            },
             "match_type_id": slot.match_type_id,
         }
     return {
@@ -333,12 +337,23 @@ def _deserialize_slot(
             for wrestler_id in wrestler_ids
             if wrestler_id in roster
         ]
-        match_category_id = data.get("match_category_id")
-        if not isinstance(match_category_id, int):
+        match_category_data = data.get("match_category")
+        if not isinstance(match_category_data, dict):
             return None
-        match_category = match_category_by_id(match_category_id)
-        if match_category is None:
+        category_id = match_category_data.get("id")
+        category_name = match_category_data.get("name")
+        category_size = match_category_data.get("size")
+        if (
+            not isinstance(category_id, int)
+            or not isinstance(category_name, str)
+            or not isinstance(category_size, int)
+        ):
             return None
+        match_category = MatchCategory(
+            id=category_id,
+            name=category_name,
+            size=category_size,
+        )
         return Match(
             wrestlers=wrestlers,
             match_category=match_category,

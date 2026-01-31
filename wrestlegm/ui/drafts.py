@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Optional
 
+from wrestlegm.models import MatchCategory
+
 
 @dataclass
 class BookingDraft:
@@ -16,13 +18,13 @@ class BookingDraft:
     """
 
     wrestler_ids: list[Optional[str]] = field(default_factory=list)
-    match_category_id: Optional[int] = None
+    match_category: Optional[MatchCategory] = None
     match_type_id: Optional[str] = None
 
     def is_complete(self, required_count: int) -> bool:
         """Return True when all booking fields are set."""
 
-        if self.match_category_id is None or not self.match_type_id:
+        if self.match_category is None or not self.match_type_id:
             return False
         if len(self.wrestler_ids) != required_count:
             return False

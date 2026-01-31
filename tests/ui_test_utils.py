@@ -15,7 +15,6 @@ from wrestlegm import constants
 from wrestlegm.data import load_match_types, load_wrestlers
 from wrestlegm.models import (
     Match,
-    match_category_by_id,
     MATCH_CATEGORIES,
     Promo,
     RivalryState,
@@ -103,10 +102,7 @@ def build_test_slots(state: GameState) -> list[Match | Promo]:
 
     wrestler_ids = list(state.roster.keys())
     match_type_id = next(iter(state.match_types))
-    match_category_id = 1
-    match_category = match_category_by_id(match_category_id)
-    if match_category is None:
-        raise AssertionError("Missing singles match category.")
+    match_category = sorted(MATCH_CATEGORIES, key=lambda item: item.id)[0]
     slots: list[Match | Promo] = []
     cursor = 0
     for slot_type in constants.SHOW_SLOT_TYPES:
@@ -259,9 +255,9 @@ async def select_match_category(pilot: Pilot, category_index: int = 0) -> None:
     if isinstance(screen, MatchBookingScreen):
         categories = sorted(MATCH_CATEGORIES, key=lambda item: item.id)
         if category_index < len(categories):
-            category_id = categories[category_index].id
-            screen.draft.match_category_id = category_id
-            screen.match_category_select.value = category_id
+            category = categories[category_index]
+            screen.draft.match_category = category
+            screen.match_category_select.value = category
             screen._apply_match_category_change()
             screen._refresh_match_type_options()
             screen.refresh_view()
