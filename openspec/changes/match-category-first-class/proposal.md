@@ -1,6 +1,6 @@
 ## Why
 
-Match categories are core game data but are split between `wrestlegm/models.py` and `wrestlegm/constants.py` and passed around as IDs, which causes repeated lookups and fragile coupling. Making match categories a first-class object clarifies ownership, improves consistency, and aligns the model with other domain objects.
+Match categories are core game data but are split between `wrestlegm/models.py` and `wrestlegm/constants.py` and passed around as IDs, which causes repeated lookups and fragile coupling. Making match categories a first-class object clarifies ownership, improves consistency, and aligns the model with other domain objects (including match types).
 
 ## What Changes
 
@@ -8,6 +8,8 @@ Match categories are core game data but are split between `wrestlegm/models.py` 
 - Hardcode the current three categories in one place (replacing the constants dict/order).
 - Update `GameState` and callers to use match category objects/registry rather than scattered ID lookups.
 - Retain category IDs for persistence and selection, but centralize them in the category definitions.
+- Update match types to reference `MatchCategory` objects (not IDs), and rename `MatchTypeDefinition` to `MatchType`.
+- Move match type definitions out of JSON and into a new hardcoded `wrestlegm/match_types.py`.
 
 ## Capabilities
 
@@ -19,6 +21,7 @@ Match categories are core game data but are split between `wrestlegm/models.py` 
 
 ## Impact
 
-- Domain modeling: `MatchCategoryDefinition` becomes the source of truth for category metadata.
+- Domain modeling: `MatchCategory` becomes the source of truth for category metadata, and `MatchType` references `MatchCategory` objects.
 - `wrestlegm/constants.py` no longer stores match category definitions.
 - `GameState`, UI formatting helpers, and match booking flows will move to category objects/registry lookups.
+- `wrestlegm/data.py` and other JSON-loading paths for match types will be replaced by the hardcoded `wrestlegm/match_types.py`.
