@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+from itertools import product
 from dataclasses import dataclass
 from typing import Iterable
 
@@ -199,36 +200,34 @@ class EconomySimulator:
 
         min_cost: int | None = None
         category_ids = list(match_types_by_category.keys())
-        for first in category_ids:
-            for second in category_ids:
-                for third in category_ids:
-                    match_count = (
-                        constants.MATCH_CATEGORIES[first]["size"]
-                        + constants.MATCH_CATEGORIES[second]["size"]
-                        + constants.MATCH_CATEGORIES[third]["size"]
-                    )
-                    if len(match_eligible) < match_count:
-                        continue
-                    match_pick = match_eligible[:match_count]
-                    match_ids = {wrestler_id for _, wrestler_id in match_pick}
+        match_slot_count = constants.SHOW_SLOT_TYPES.count("match")
+        promo_needed = constants.SHOW_SLOT_TYPES.count("promo")
 
-                    remaining_promos = [
-                        entry for entry in promo_eligible if entry[1] not in match_ids
-                    ]
-                    promo_needed = constants.SHOW_SLOT_TYPES.count("promo")
-                    if len(remaining_promos) < promo_needed:
-                        continue
-                    promo_pick = remaining_promos[:promo_needed]
+        for category_combo in product(category_ids, repeat=match_slot_count):
+            match_count = sum(
+                constants.MATCH_CATEGORIES[category_id]["size"]
+                for category_id in category_combo
+            )
+            if len(match_eligible) < match_count:
+                continue
+            match_pick = match_eligible[:match_count]
+            match_ids = {wrestler_id for _, wrestler_id in match_pick}
 
-                    wrestler_cost = sum(cost for cost, _ in match_pick + promo_pick)
-                    base_cost = (
-                        match_types_by_category[first]
-                        + match_types_by_category[second]
-                        + match_types_by_category[third]
-                    )
-                    total_cost = wrestler_cost + base_cost
-                    if min_cost is None or total_cost < min_cost:
-                        min_cost = total_cost
+            remaining_promos = [
+                entry for entry in promo_eligible if entry[1] not in match_ids
+            ]
+            if len(remaining_promos) < promo_needed:
+                continue
+            promo_pick = remaining_promos[:promo_needed]
+
+            wrestler_cost = sum(cost for cost, _ in match_pick + promo_pick)
+            base_cost = sum(
+                match_types_by_category[category_id]
+                for category_id in category_combo
+            )
+            total_cost = wrestler_cost + base_cost
+            if min_cost is None or total_cost < min_cost:
+                min_cost = total_cost
         return min_cost
 
 
