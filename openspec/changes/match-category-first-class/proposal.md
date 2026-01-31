@@ -10,7 +10,7 @@ Match categories are core game data but are split between `wrestlegm/models.py` 
 - Update `Match`/`MatchResult` to carry `MatchCategory` objects (with IDs retained for persistence and selection).
 - Update match types to reference `MatchCategory` objects (not IDs), and rename `MatchTypeDefinition` to `MatchType`.
 - Hardcode match type definitions in `wrestlegm/models.py`, colocated beneath the `MatchType` class.
-- Replace `MATCH_CATEGORY_ORDER` with a stable ordering derived from category IDs.
+- Replace `MATCH_CATEGORY_ORDER` with a stable ordering derived from category IDs (`singles`, `triple-threat`, `fatal-4-way`).
 
 ## Capabilities
 
