@@ -7,7 +7,7 @@ Match categories are core game data but are split between `wrestlegm/models.py` 
 - Define match categories as `MatchCategory` objects and treat them as a primary domain model.
 - Hardcode the current three categories in one place (replacing the constants dict/order).
 - Update `GameState` and callers to use match category objects/registry rather than scattered ID lookups.
-- Retain category IDs for persistence and selection, but centralize them in the category definitions.
+- Update `Match`/`MatchResult` to carry `MatchCategory` objects (with IDs retained for persistence and selection).
 - Update match types to reference `MatchCategory` objects (not IDs), and rename `MatchTypeDefinition` to `MatchType`.
 - Move match type definitions out of JSON and into a new hardcoded `wrestlegm/match_types.py`.
 
