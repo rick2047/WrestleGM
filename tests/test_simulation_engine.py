@@ -25,6 +25,11 @@ from wrestlegm.sim import (
 )
 from wrestlegm.state import ShowApplier
 
+SINGLES = match_category_by_id(1)
+TRIPLE_THREAT = match_category_by_id(2)
+if SINGLES is None or TRIPLE_THREAT is None:
+    raise AssertionError("Missing match categories for tests.")
+
 
 def build_roster() -> list[WrestlerDefinition]:
     return [
@@ -94,13 +99,10 @@ class TestDeterminism:
         roster_state = build_roster_state()
         match_types = build_match_types()
         match_type_map = {m.id: m for m in match_types}
-        singles = match_category_by_id(1)
-        if singles is None:
-            raise AssertionError("Missing singles match category.")
         matches = [
             Match(
                 wrestlers=[roster_state["a"], roster_state["b"]],
-                match_category=singles,
+                match_category=SINGLES,
                 match_type_id="singles",
             )
         ]
@@ -119,12 +121,9 @@ class TestDeterminism:
         roster_state = build_roster_state()
         match_types = build_match_types()
         match_type_map = {m.id: m for m in match_types}
-        singles = match_category_by_id(1)
-        if singles is None:
-            raise AssertionError("Missing singles match category.")
         match = Match(
             wrestlers=[roster_state["a"], roster_state["b"]],
-            match_category=singles,
+            match_category=SINGLES,
             match_type_id="singles",
         )
 
@@ -150,12 +149,9 @@ class TestDeterminism:
             modifiers=modifiers,
         )
         match_type_map = {match_type.id: match_type}
-        triple = match_category_by_id(2)
-        if triple is None:
-            raise AssertionError("Missing triple-threat match category.")
         match = Match(
             wrestlers=[roster_state["a"], roster_state["b"], roster_state["c"]],
-            match_category=triple,
+            match_category=TRIPLE_THREAT,
             match_type_id="triple",
         )
 
@@ -295,12 +291,9 @@ class TestMatchSimulation:
         roster_state = build_roster_state()
         match_types = build_match_types()
         match_type_map = {m.id: m for m in match_types}
-        singles = match_category_by_id(1)
-        if singles is None:
-            raise AssertionError("Missing singles match category.")
         match = Match(
             wrestlers=[roster_state["a"], roster_state["b"]],
-            match_category=singles,
+            match_category=SINGLES,
             match_type_id="singles",
         )
 
@@ -366,15 +359,12 @@ class TestPromoSimulation:
 
 class TestShowSimulation:
     def test_show_rating_aggregation(self) -> None:
-        singles = match_category_by_id(1)
-        if singles is None:
-            raise AssertionError("Missing singles match category.")
         results = [
             MatchResult(
                 winner_id="a",
                 non_winner_ids=["b"],
                 rating=4.0,
-                match_category=singles,
+                match_category=SINGLES,
                 match_type_id="singles",
                 applied_modifiers=build_match_types()[0].modifiers,
                 stat_deltas={},
@@ -388,7 +378,7 @@ class TestShowSimulation:
                 winner_id="b",
                 non_winner_ids=["a"],
                 rating=2.0,
-                match_category=singles,
+                match_category=SINGLES,
                 match_type_id="singles",
                 applied_modifiers=build_match_types()[0].modifiers,
                 stat_deltas={},
@@ -442,15 +432,12 @@ class TestMutation:
             for w in roster
         }
         match_types = build_match_types()
-        singles = match_category_by_id(1)
-        if singles is None:
-            raise AssertionError("Missing singles match category.")
 
         result = MatchResult(
             winner_id="a",
             non_winner_ids=["b"],
             rating=3.0,
-            match_category=singles,
+            match_category=SINGLES,
             match_type_id="singles",
             applied_modifiers=match_types[0].modifiers,
             stat_deltas={

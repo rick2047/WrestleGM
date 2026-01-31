@@ -12,6 +12,10 @@ from wrestlegm.models import (
 )
 from wrestlegm.state import GameState
 
+SINGLES = match_category_by_id(1)
+if SINGLES is None:
+    raise AssertionError("Missing singles match category.")
+
 
 def build_match_type() -> MatchTypeDefinition:
     modifiers = MatchTypeModifiers(
@@ -41,12 +45,9 @@ def build_roster() -> list[WrestlerDefinition]:
 
 def test_validate_match_size_mismatch() -> None:
     state = GameState(build_roster(), [build_match_type()])
-    singles = match_category_by_id(1)
-    if singles is None:
-        raise AssertionError("Missing singles match category.")
     match = Match(
         wrestlers=[state.roster["a"], state.roster["b"], state.roster["c"]],
-        match_category=singles,
+        match_category=SINGLES,
         match_type_id="multi",
     )
     assert "invalid_wrestler_count" in state.validate_match(match, slot_index=0)
@@ -54,12 +55,9 @@ def test_validate_match_size_mismatch() -> None:
 
 def test_validate_match_duplicate_wrestlers() -> None:
     state = GameState(build_roster(), [build_match_type()])
-    singles = match_category_by_id(1)
-    if singles is None:
-        raise AssertionError("Missing singles match category.")
     match = Match(
         wrestlers=[state.roster["a"], state.roster["a"]],
-        match_category=singles,
+        match_category=SINGLES,
         match_type_id="multi",
     )
     assert "duplicate_wrestler" in state.validate_match(match, slot_index=0)
@@ -76,12 +74,9 @@ def test_validate_match_low_stamina_blocked() -> None:
         mic_skill=40,
     )
     state = GameState(roster, [build_match_type()])
-    singles = match_category_by_id(1)
-    if singles is None:
-        raise AssertionError("Missing singles match category.")
     match = Match(
         wrestlers=[state.roster["a"], state.roster["b"]],
-        match_category=singles,
+        match_category=SINGLES,
         match_type_id="multi",
     )
     assert "not_enough_stamina" in state.validate_match(match, slot_index=0)

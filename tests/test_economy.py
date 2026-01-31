@@ -19,6 +19,11 @@ from wrestlegm.models import (
 from wrestlegm.rivalries import RivalryManager
 from wrestlegm.state import GameState
 
+SINGLES = match_category_by_id(1)
+TRIPLE_THREAT = match_category_by_id(2)
+if SINGLES is None or TRIPLE_THREAT is None:
+    raise AssertionError("Missing match categories for tests.")
+
 
 def build_match_type(base_cost: int = 100) -> MatchTypeDefinition:
     modifiers = MatchTypeModifiers(
@@ -62,15 +67,12 @@ def build_definitions() -> tuple[list[WrestlerDefinition], list[MatchTypeDefinit
 
 
 def build_state_slots(state: GameState) -> list[Match | Promo]:
-    singles = match_category_by_id(1)
-    if singles is None:
-        raise AssertionError("Missing singles match category.")
     return [
-        Match([state.roster["a"], state.roster["b"]], singles, "standard"),
+        Match([state.roster["a"], state.roster["b"]], SINGLES, "standard"),
         Promo(state.roster["c"]),
-        Match([state.roster["d"], state.roster["e"]], singles, "standard"),
+        Match([state.roster["d"], state.roster["e"]], SINGLES, "standard"),
         Promo(state.roster["f"]),
-        Match([state.roster["g"], state.roster["h"]], singles, "standard"),
+        Match([state.roster["g"], state.roster["h"]], SINGLES, "standard"),
     ]
 
 
@@ -78,11 +80,8 @@ def test_show_cost_unique_wrestler_billing() -> None:
     simulator = economy.EconomySimulator()
     roster = build_roster()
     match_types = {"standard": build_match_type(base_cost=200)}
-    singles = match_category_by_id(1)
-    if singles is None:
-        raise AssertionError("Missing singles match category.")
     slots = [
-        Match([roster["a"], roster["b"]], singles, "standard"),
+        Match([roster["a"], roster["b"]], SINGLES, "standard"),
         Promo(roster["a"]),
     ]
     cost = simulator.show_cost(slots, match_types)
@@ -98,11 +97,8 @@ def test_economy_inputs_alignment_and_pop_sum() -> None:
     simulator = economy.EconomySimulator()
     roster = build_roster()
     rivalry = RivalryManager()
-    singles = match_category_by_id(1)
-    if singles is None:
-        raise AssertionError("Missing singles match category.")
     slots = [
-        Match([roster["a"], roster["b"]], singles, "standard"),
+        Match([roster["a"], roster["b"]], SINGLES, "standard"),
         Promo(roster["c"]),
     ]
     inputs = simulator.audience_inputs_for_slots(slots, rivalry)
@@ -117,10 +113,7 @@ def test_economy_inputs_rivalry_and_cooldown_counts() -> None:
     rivalry.rivalry_states[("a", "b")] = RivalryState("a", "b", rivalry_value=1)
     rivalry.rivalry_states[("b", "c")] = RivalryState("b", "c", rivalry_value=2)
     rivalry.cooldown_states[("a", "c")] = CooldownState("a", "c", remaining_shows=4)
-    triple = match_category_by_id(2)
-    if triple is None:
-        raise AssertionError("Missing triple-threat match category.")
-    slots = [Match([roster["a"], roster["b"], roster["c"]], triple, "standard")]
+    slots = [Match([roster["a"], roster["b"], roster["c"]], TRIPLE_THREAT, "standard")]
 
     inputs = simulator.audience_inputs_for_slots(slots, rivalry)
 
