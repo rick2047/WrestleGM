@@ -10,6 +10,7 @@ from typing import Any, Iterable, TYPE_CHECKING
 from wrestlegm.models import (
     CooldownState,
     Match,
+    match_category_by_id,
     Promo,
     RivalryState,
     WrestlerState,
@@ -332,9 +333,15 @@ def _deserialize_slot(
             for wrestler_id in wrestler_ids
             if wrestler_id in roster
         ]
+        match_category_id = data.get("match_category_id")
+        if not isinstance(match_category_id, int):
+            return None
+        match_category = match_category_by_id(match_category_id)
+        if match_category is None:
+            return None
         return Match(
             wrestlers=wrestlers,
-            match_category_id=data.get("match_category_id", ""),
+            match_category=match_category,
             match_type_id=data.get("match_type_id", ""),
         )
     wrestler_id = data.get("wrestler_id", "")

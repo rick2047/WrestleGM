@@ -77,16 +77,31 @@ class MatchTypeDefinition:
     description: str
     modifiers: MatchTypeModifiers
     base_cost: int = 0
-    allowed_categories: List[str] | None = None
 
 
 @dataclass(frozen=True)
-class MatchCategoryDefinition:
+class MatchCategory:
     """Static match category definition for wrestler count."""
 
-    id: str
+    id: int
     name: str
     size: int
+
+
+MATCH_CATEGORIES: list[MatchCategory] = [
+    MatchCategory(id=1, name="Singles", size=2),
+    MatchCategory(id=2, name="Triple Threat", size=3),
+    MatchCategory(id=3, name="Fatal 4-Way", size=4),
+]
+
+
+def match_category_by_id(category_id: int) -> MatchCategory | None:
+    """Return the match category for the numeric id."""
+
+    for category in MATCH_CATEGORIES:
+        if category.id == category_id:
+            return category
+    return None
 
 
 @dataclass(frozen=True)
@@ -94,12 +109,16 @@ class Match:
     """Booked match within a show."""
 
     wrestlers: List[WrestlerState]
-    match_category_id: str
+    match_category: MatchCategory
     match_type_id: str
 
     @property
     def wrestler_ids(self) -> List[str]:
         return [wrestler.id for wrestler in self.wrestlers]
+
+    @property
+    def match_category_id(self) -> int:
+        return self.match_category.id
 
 
 @dataclass(frozen=True)
@@ -146,10 +165,14 @@ class MatchResult:
     winner_id: str
     non_winner_ids: List[str]
     rating: float
-    match_category_id: str
+    match_category: MatchCategory
     match_type_id: str
     applied_modifiers: MatchTypeModifiers
     stat_deltas: Dict[str, StatDelta]
+
+    @property
+    def match_category_id(self) -> int:
+        return self.match_category.id
 
 
 @dataclass(frozen=True)

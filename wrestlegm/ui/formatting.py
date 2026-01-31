@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from wrestlegm import constants
-from wrestlegm.models import WrestlerState
+from wrestlegm.models import match_category_by_id, WrestlerState
 
 FATIGUE_ICON = "🥱"
 EMPTY_ICON = "⚠️"
@@ -43,18 +43,18 @@ def build_match_participants(wrestlers: list[WrestlerState]) -> str:
     )
 
 
-def match_category_label(match_category_id: str) -> str:
+def match_category_label(match_category_id: int) -> str:
     """Return the display name for a match category."""
 
-    category = constants.MATCH_CATEGORIES.get(match_category_id)
-    return category["name"] if category else "Unknown"
+    category = match_category_by_id(match_category_id)
+    return category.name if category else "Unknown"
 
 
-def match_category_size(match_category_id: str) -> int:
+def match_category_size(match_category_id: int) -> int:
     """Return the wrestler count for a match category."""
 
-    category = constants.MATCH_CATEGORIES.get(match_category_id)
-    return category["size"] if category else 0
+    category = match_category_by_id(match_category_id)
+    return category.size if category else 0
 
 
 def slot_label(slot_index: int, slot_type: str) -> str:

@@ -5,6 +5,7 @@ from __future__ import annotations
 from wrestlegm import constants
 from wrestlegm.models import (
     Match,
+    match_category_by_id,
     MatchTypeDefinition,
     MatchTypeModifiers,
     Promo,
@@ -49,22 +50,25 @@ def build_roster() -> list[WrestlerDefinition]:
 
 def seed_show(state: GameState) -> None:
     match_type_id = next(iter(state.match_types))
+    singles = match_category_by_id(1)
+    if singles is None:
+        raise AssertionError("Missing singles match category.")
     slots = [
         Match(
             wrestlers=[state.roster["a"], state.roster["b"]],
-            match_category_id="singles",
+            match_category=singles,
             match_type_id=match_type_id,
         ),
         Promo(wrestler=state.roster["c"]),
         Match(
             wrestlers=[state.roster["d"], state.roster["e"]],
-            match_category_id="singles",
+            match_category=singles,
             match_type_id=match_type_id,
         ),
         Promo(wrestler=state.roster["f"]),
         Match(
             wrestlers=[state.roster["g"], state.roster["h"]],
-            match_category_id="singles",
+            match_category=singles,
             match_type_id=match_type_id,
         ),
     ]

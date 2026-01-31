@@ -7,7 +7,7 @@ from textual.containers import Vertical, VerticalScroll
 from textual.widgets import Button, Static
 
 from wrestlegm import constants
-from wrestlegm.models import Match
+from wrestlegm.models import Match, MATCH_CATEGORIES
 
 from ..formatting import (
     build_match_participants,
@@ -141,7 +141,7 @@ class BookingHubScreen(StandardScreen):
         if isinstance(existing, Match):
             match_category_id = existing.match_category_id
         else:
-            match_category_id = constants.MATCH_CATEGORY_ORDER[0]
+            match_category_id = sorted(MATCH_CATEGORIES, key=lambda item: item.id)[0].id
         self.app.navigate(
             MATCH_BOOKING,
             slot_index=slot_index,
