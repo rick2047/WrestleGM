@@ -60,6 +60,16 @@ def build_definitions() -> tuple[list[WrestlerDefinition], list[MatchTypeDefinit
     return wrestlers, [build_match_type(base_cost=100)]
 
 
+def build_state_slots(state: GameState) -> list[Match | Promo]:
+    return [
+        Match([state.roster["a"], state.roster["b"]], "singles", "standard"),
+        Promo(state.roster["c"]),
+        Match([state.roster["d"], state.roster["e"]], "singles", "standard"),
+        Promo(state.roster["f"]),
+        Match([state.roster["g"], state.roster["h"]], "singles", "standard"),
+    ]
+
+
 def test_show_cost_unique_wrestler_billing() -> None:
     simulator = economy.EconomySimulator()
     roster = build_roster()
@@ -162,22 +172,8 @@ def test_game_state_show_economy_is_deterministic() -> None:
     state_one = GameState(wrestlers, match_types, seed=123)
     state_two = GameState(wrestlers, match_types, seed=123)
 
-    slots_one = [
-        Match([state_one.roster["a"], state_one.roster["b"]], "singles", "standard"),
-        Promo(state_one.roster["c"]),
-        Match([state_one.roster["d"], state_one.roster["e"]], "singles", "standard"),
-        Promo(state_one.roster["f"]),
-        Match([state_one.roster["g"], state_one.roster["h"]], "singles", "standard"),
-    ]
-    slots_two = [
-        Match([state_two.roster["a"], state_two.roster["b"]], "singles", "standard"),
-        Promo(state_two.roster["c"]),
-        Match([state_two.roster["d"], state_two.roster["e"]], "singles", "standard"),
-        Promo(state_two.roster["f"]),
-        Match([state_two.roster["g"], state_two.roster["h"]], "singles", "standard"),
-    ]
-    state_one.show_card = slots_one
-    state_two.show_card = slots_two
+    state_one.show_card = build_state_slots(state_one)
+    state_two.show_card = build_state_slots(state_two)
 
     show_one = state_one.run_show()
     show_two = state_two.run_show()

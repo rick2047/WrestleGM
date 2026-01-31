@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from itertools import product
+from itertools import combinations, product
 from dataclasses import dataclass
 from typing import Iterable
 
@@ -92,9 +92,8 @@ class EconomySimulator:
         for slot in slots:
             if not isinstance(slot, Match):
                 continue
-            alignment_map = {wrestler.id: wrestler.alignment for wrestler in slot.wrestlers}
-            for wrestler_a, wrestler_b in ordered_pairs(slot.wrestler_ids):
-                if alignment_map[wrestler_a] != alignment_map[wrestler_b]:
+            for wrestler_a, wrestler_b in combinations(slot.wrestlers, 2):
+                if wrestler_a.alignment != wrestler_b.alignment:
                     align_score += 1
 
             match_rivalry, match_cooldown = rivalry_manager.count_rivalry_and_cooldown_pairs(
