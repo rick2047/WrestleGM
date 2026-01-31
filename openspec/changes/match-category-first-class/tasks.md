@@ -1,12 +1,12 @@
 ## 1. Model and Registry Updates
 
-- [ ] 1.1 Rename `MatchCategoryDefinition` to `MatchCategory` and add a hardcoded list of the three categories in `wrestlegm/models.py`.
+- [ ] 1.1 Rename `MatchCategoryDefinition` to `MatchCategory` and add a hardcoded list of the three categories in `wrestlegm/models.py` with numeric IDs 1, 2, and 3.
 - [ ] 1.2 Remove `MATCH_CATEGORIES` and `MATCH_CATEGORY_ORDER` from `wrestlegm/constants.py`.
 
 ## 2. State and Persistence Integration
 
 - [ ] 2.1 Update `Match` and `MatchResult` to store `MatchCategory` objects and adjust constructors/usages accordingly.
-- [ ] 2.2 Update persistence serialization/deserialization to store category IDs and map them back to `MatchCategory` objects.
+- [ ] 2.2 Update persistence serialization/deserialization to store numeric category IDs and map them back to `MatchCategory` objects.
 - [ ] 2.3 Update `GameState` initialization and validation to use category objects/list instead of constants.
 
 ## 3. UI and Formatting Updates
