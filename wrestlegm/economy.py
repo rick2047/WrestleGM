@@ -7,7 +7,14 @@ from dataclasses import dataclass
 from typing import Iterable
 
 from wrestlegm import constants
-from wrestlegm.models import Match, MatchTypeDefinition, Promo, ShowSlot, WrestlerState
+from wrestlegm.models import (
+    Match,
+    MatchTypeDefinition,
+    Promo,
+    ShowSlot,
+    WrestlerState,
+    booking_price_from_popularity,
+)
 from wrestlegm.rivalries import RivalryManager, ordered_pairs
 
 
@@ -35,12 +42,10 @@ class EconomyResult:
 def wrestler_booking_price(popularity: int) -> int:
     """Return the booking price for a wrestler based on popularity."""
 
-    base = constants.BOOKING_PRICE_BASE
-    a = constants.BOOKING_PRICE_A
-    return int(round(base + a * (popularity ** constants.BOOKING_PRICE_EXPONENT)))
+    return booking_price_from_popularity(popularity)
 
 
-def unique_wrestler_ids(slots: Iterable[ShowSlot]) -> set[str]:
+def _unique_wrestler_ids(slots: Iterable[ShowSlot]) -> set[str]:
     """Return the unique wrestler ids booked on the card."""
 
     ids: set[str] = set()
@@ -52,56 +57,6 @@ def unique_wrestler_ids(slots: Iterable[ShowSlot]) -> set[str]:
     return ids
 
 
-def show_cost(slots: Iterable[ShowSlot], roster: dict[str, WrestlerState], match_types: dict[str, MatchTypeDefinition]) -> int:
-    """Compute the total show cost for the given slots."""
-
-    cost = 0
-    for wrestler_id in unique_wrestler_ids(slots):
-        wrestler = roster[wrestler_id]
-        cost += wrestler_booking_price(wrestler.popularity)
-
-    for slot in slots:
-        if isinstance(slot, Match):
-            match_type = match_types.get(slot.match_type_id)
-            if match_type is not None:
-                cost += match_type.base_cost
-    return cost
-
-
-def economy_inputs_for_slots(
-    slots: Iterable[ShowSlot],
-    roster: dict[str, WrestlerState],
-    rivalry_manager: RivalryManager,
-) -> EconomyInputs:
-    """Compute economy inputs for a show card."""
-
-    booked_ids = unique_wrestler_ids(slots)
-    pop_sum = sum(roster[wrestler_id].popularity for wrestler_id in booked_ids)
-
-    align_score = 0
-    rivalry_count = 0
-    cooldown_count = 0
-
-    for slot in slots:
-        if not isinstance(slot, Match):
-            continue
-        wrestlers = [roster[wrestler_id] for wrestler_id in slot.wrestler_ids]
-        for wrestler_a, wrestler_b in ordered_pairs([w.id for w in wrestlers]):
-            if roster[wrestler_a].alignment != roster[wrestler_b].alignment:
-                align_score += 1
-
-        match_rivalry, match_cooldown = rivalry_manager.count_rivalry_and_cooldown_pairs(slot.wrestler_ids)
-        rivalry_count += match_rivalry
-        cooldown_count += match_cooldown
-
-    return EconomyInputs(
-        pop_sum=pop_sum,
-        align_score=align_score,
-        rivalry_count=rivalry_count,
-        cooldown_count=cooldown_count,
-    )
-
-
 def _curve_bonus(value: int, scale: int) -> float:
     """Return a curved bonus using a square-root scale."""
 
@@ -110,26 +65,197 @@ def _curve_bonus(value: int, scale: int) -> float:
     return math.sqrt(value) * scale
 
 
-def compute_audience(inputs: EconomyInputs, rng_multiplier: float) -> int:
-    """Compute audience size using inputs and RNG multiplier."""
+class EconomySimulator:
+    """Stateless economy calculator for show outcomes."""
 
-    base = inputs.pop_sum * constants.AUDIENCE_POP_MULTIPLIER
-    bonus = _curve_bonus(inputs.align_score, constants.AUDIENCE_ALIGN_BONUS)
-    bonus += _curve_bonus(inputs.rivalry_count, constants.AUDIENCE_RIVALRY_BONUS)
-    penalty = _curve_bonus(inputs.cooldown_count, constants.AUDIENCE_COOLDOWN_PENALTY)
-    raw = (base + bonus - penalty) * rng_multiplier
-    return max(0, int(round(raw)))
+    def show_cost(
+        self,
+        slots: Iterable[ShowSlot],
+        roster: dict[str, WrestlerState],
+        match_types: dict[str, MatchTypeDefinition],
+    ) -> int:
+        """Compute the total show cost for the given slots."""
+
+        cost = 0
+        for wrestler_id in _unique_wrestler_ids(slots):
+            wrestler = roster[wrestler_id]
+            cost += wrestler.booking_price()
+
+        for slot in slots:
+            if isinstance(slot, Match):
+                match_type = match_types.get(slot.match_type_id)
+                if match_type is not None:
+                    cost += match_type.base_cost
+        return cost
+
+    def audience_inputs_for_slots(
+        self,
+        slots: Iterable[ShowSlot],
+        roster: dict[str, WrestlerState],
+        rivalry_manager: RivalryManager,
+    ) -> EconomyInputs:
+        """Compute economy inputs for a show card."""
+
+        booked_ids = _unique_wrestler_ids(slots)
+        pop_sum = sum(roster[wrestler_id].popularity for wrestler_id in booked_ids)
+
+        align_score = 0
+        rivalry_count = 0
+        cooldown_count = 0
+
+        for slot in slots:
+            if not isinstance(slot, Match):
+                continue
+            for wrestler_a, wrestler_b in ordered_pairs(slot.wrestler_ids):
+                if roster[wrestler_a].alignment != roster[wrestler_b].alignment:
+                    align_score += 1
+
+            match_rivalry, match_cooldown = rivalry_manager.count_rivalry_and_cooldown_pairs(
+                slot.wrestler_ids
+            )
+            rivalry_count += match_rivalry
+            cooldown_count += match_cooldown
+
+        return EconomyInputs(
+            pop_sum=pop_sum,
+            align_score=align_score,
+            rivalry_count=rivalry_count,
+            cooldown_count=cooldown_count,
+        )
+
+    @staticmethod
+    def compute_audience(inputs: EconomyInputs, rng_multiplier: float) -> int:
+        """Compute audience size using inputs and RNG multiplier."""
+
+        base = inputs.pop_sum * constants.AUDIENCE_POP_MULTIPLIER
+        bonus = _curve_bonus(inputs.align_score, constants.AUDIENCE_ALIGN_BONUS)
+        bonus += _curve_bonus(inputs.rivalry_count, constants.AUDIENCE_RIVALRY_BONUS)
+        penalty = _curve_bonus(inputs.cooldown_count, constants.AUDIENCE_COOLDOWN_PENALTY)
+        raw = (base + bonus - penalty) * rng_multiplier
+        return max(0, int(round(raw)))
+
+    @staticmethod
+    def merch_rate(show_rating: float) -> float:
+        """Return the merch conversion rate from show rating."""
+
+        rate = (
+            constants.MERCH_RATE_MIN
+            + constants.MERCH_RATE_LINEAR * show_rating
+            + constants.MERCH_RATE_QUAD * (show_rating ** 2)
+        )
+        return max(constants.MERCH_RATE_MIN, min(constants.MERCH_RATE_MAX, rate))
+
+    def compute_show(
+        self,
+        slots: Iterable[ShowSlot],
+        roster: dict[str, WrestlerState],
+        match_types: dict[str, MatchTypeDefinition],
+        rivalry_manager: RivalryManager,
+        rng,
+        show_rating: float,
+    ) -> EconomyResult:
+        """Compute show economy values using the provided RNG."""
+
+        cost = self.show_cost(slots, roster, match_types)
+        inputs = self.audience_inputs_for_slots(slots, roster, rivalry_manager)
+        audience_multiplier = rng.uniform(constants.ECONOMY_RNG_MIN, constants.ECONOMY_RNG_MAX)
+        audience = self.compute_audience(inputs, audience_multiplier)
+
+        gate_income = int(round(audience * constants.GATE_RATE))
+
+        merch_multiplier = rng.uniform(constants.ECONOMY_RNG_MIN, constants.ECONOMY_RNG_MAX)
+        merch_income = int(round(audience * self.merch_rate(show_rating) * merch_multiplier))
+
+        total_earned = gate_income + merch_income
+        return EconomyResult(
+            show_cost=cost,
+            audience=audience,
+            gate_income=gate_income,
+            merch_income=merch_income,
+            total_earned=total_earned,
+        )
+
+    def min_valid_show_cost(
+        self,
+        roster: dict[str, WrestlerState],
+        match_types: dict[str, MatchTypeDefinition],
+    ) -> int | None:
+        """Return the minimum possible cost for any valid show card, or None if impossible."""
+
+        match_types_by_category: dict[str, int] = {}
+        for category_id in constants.MATCH_CATEGORY_ORDER:
+            eligible = [
+                match_type.base_cost
+                for match_type in match_types.values()
+                if match_type.allowed_categories is None
+                or category_id in match_type.allowed_categories
+            ]
+            if not eligible:
+                continue
+            match_types_by_category[category_id] = min(eligible)
+
+        if not match_types_by_category:
+            return None
+
+        match_eligible = [
+            (wrestler.booking_price(), wrestler.id)
+            for wrestler in roster.values()
+            if wrestler.stamina > constants.STAMINA_MIN_BOOKABLE
+        ]
+        match_eligible.sort(key=lambda item: item[0])
+
+        promo_eligible = [
+            (wrestler.booking_price(), wrestler.id)
+            for wrestler in roster.values()
+        ]
+        promo_eligible.sort(key=lambda item: item[0])
+
+        min_cost: int | None = None
+        category_ids = list(match_types_by_category.keys())
+        for first in category_ids:
+            for second in category_ids:
+                for third in category_ids:
+                    match_count = (
+                        constants.MATCH_CATEGORIES[first]["size"]
+                        + constants.MATCH_CATEGORIES[second]["size"]
+                        + constants.MATCH_CATEGORIES[third]["size"]
+                    )
+                    if len(match_eligible) < match_count:
+                        continue
+                    match_pick = match_eligible[:match_count]
+                    match_ids = {wrestler_id for _, wrestler_id in match_pick}
+
+                    remaining_promos = [
+                        entry for entry in promo_eligible if entry[1] not in match_ids
+                    ]
+                    promo_needed = constants.SHOW_SLOT_TYPES.count("promo")
+                    if len(remaining_promos) < promo_needed:
+                        continue
+                    promo_pick = remaining_promos[:promo_needed]
+
+                    wrestler_cost = sum(cost for cost, _ in match_pick + promo_pick)
+                    base_cost = (
+                        match_types_by_category[first]
+                        + match_types_by_category[second]
+                        + match_types_by_category[third]
+                    )
+                    total_cost = wrestler_cost + base_cost
+                    if min_cost is None or total_cost < min_cost:
+                        min_cost = total_cost
+        return min_cost
 
 
-def merch_rate(show_rating: float) -> float:
-    """Return the merch conversion rate from show rating."""
+_DEFAULT_SIMULATOR = EconomySimulator()
 
-    rate = (
-        constants.MERCH_RATE_MIN
-        + constants.MERCH_RATE_LINEAR * show_rating
-        + constants.MERCH_RATE_QUAD * (show_rating ** 2)
-    )
-    return max(constants.MERCH_RATE_MIN, min(constants.MERCH_RATE_MAX, rate))
+
+def show_cost(
+    slots: Iterable[ShowSlot],
+    roster: dict[str, WrestlerState],
+    match_types: dict[str, MatchTypeDefinition],
+) -> int:
+    """Compute the total show cost for the given slots."""
+
+    return _DEFAULT_SIMULATOR.show_cost(slots, roster, match_types)
 
 
 def compute_economy(
@@ -142,22 +268,11 @@ def compute_economy(
 ) -> EconomyResult:
     """Compute show economy values using the provided RNG."""
 
-    cost = show_cost(slots, roster, match_types)
-    inputs = economy_inputs_for_slots(slots, roster, rivalry_manager)
-    audience_multiplier = rng.uniform(constants.ECONOMY_RNG_MIN, constants.ECONOMY_RNG_MAX)
-    audience = compute_audience(inputs, audience_multiplier)
-
-    gate_income = int(round(audience * constants.GATE_RATE))
-
-    merch_multiplier = rng.uniform(constants.ECONOMY_RNG_MIN, constants.ECONOMY_RNG_MAX)
-    merch_income = int(round(audience * merch_rate(show_rating) * merch_multiplier))
-
-    total_earned = gate_income + merch_income
-    return EconomyResult(
-        show_cost=cost,
-        audience=audience,
-        gate_income=gate_income,
-        merch_income=merch_income,
-        total_earned=total_earned,
+    return _DEFAULT_SIMULATOR.compute_show(
+        slots,
+        roster,
+        match_types,
+        rivalry_manager,
+        rng,
+        show_rating,
     )
-

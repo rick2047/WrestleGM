@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Dict, List, Literal, Union
 
+from wrestlegm import constants
 Alignment = Literal["Face", "Heel"]
 PairKey = tuple[str, str]
 
@@ -30,6 +31,11 @@ class WrestlerState:
     stamina: int
     mic_skill: int
 
+    def booking_price(self) -> int:
+        """Return the booking price based on current popularity."""
+
+        return booking_price_from_popularity(self.popularity)
+
 
 @dataclass(frozen=True)
 class WrestlerDefinition:
@@ -43,6 +49,19 @@ class WrestlerDefinition:
     mic_skill: int
     description: str = ""
     avatar_path: str = ""
+
+    def booking_price(self) -> int:
+        """Return the booking price based on base popularity."""
+
+        return booking_price_from_popularity(self.popularity)
+
+
+def booking_price_from_popularity(popularity: int) -> int:
+    """Return the booking price for a wrestler based on popularity."""
+
+    base = constants.BOOKING_PRICE_BASE
+    a = constants.BOOKING_PRICE_A
+    return int(round(base + a * (popularity ** constants.BOOKING_PRICE_EXPONENT)))
 
 
 @dataclass(frozen=True)
