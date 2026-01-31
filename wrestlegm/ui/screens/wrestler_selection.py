@@ -9,7 +9,7 @@ from textual.containers import Vertical
 from textual.screen import ModalScreen
 from textual.widgets import Button, DataTable, Static
 
-from wrestlegm import constants, economy
+from wrestlegm import constants
 
 from ..formatting import (
     ALIGNMENT_EMOJI,
@@ -92,7 +92,7 @@ class WrestlerSelectionScreen(StandardScreen):
             self.table.add_row(
                 truncate_name(wrestler.name),
                 build_pop_cell(wrestler.popularity, wrestler.stamina, booked_marker),
-                f"${economy.wrestler_booking_price(wrestler.popularity):,}",
+                f"${self.app.state.wrestler_booking_price(wrestler.id):,}",
                 f"{wrestler.stamina:>3}",
                 f"{wrestler.mic_skill:>3}",
                 ALIGNMENT_EMOJI.get(wrestler.alignment, ""),

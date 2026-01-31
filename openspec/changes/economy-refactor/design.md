@@ -8,7 +8,7 @@ Economy calculations are currently split across `wrestlegm/economy.py` functions
 - Introduce a stateless `EconomySimulator` that is invoked in the show simulation pipeline.
 - Move per-entity pricing logic (wrestler booking price) onto model helpers.
 - Centralize cross-entity aggregation rules (unique billing, show cost, min valid show cost) inside `EconomySimulator`.
-- Preserve UI modules unchanged while ensuring new economy access is exposed through `GameState`.
+- Refactor UI modules to use `GameState` economy accessors instead of calling economy helpers directly.
 - Keep persistence on `GameState` (money remains `GameState` state).
 
 **Non-Goals:**
@@ -29,9 +29,9 @@ Economy calculations are currently split across `wrestlegm/economy.py` functions
 - **Aggregation belongs to EconomySimulator**: Unique billing across a show card, total show cost, and minimum valid show cost calculations live in `EconomySimulator` (not in UI or free functions).
   - Rationale: These computations combine multiple entities and are part of the economy domain.
 
-- **UI remains unchanged, GameState is the economy interface**: UI modules are not modified. `GameState` will expose economy accessors (e.g., `current_show_cost()`, booking price helpers) that wrap `EconomySimulator`/model helpers. Existing `economy` module functions used by UI will be preserved as thin wrappers to avoid UI edits in this change.
-  - Rationale: Keeps UI stable while enabling a single economy access point for new frontends.
-  - Alternative considered: Update UI imports to call `GameState` directly. Rejected to meet the “no UI changes” goal.
+- **UI uses GameState accessors**: UI modules will be updated to call `GameState` accessors (e.g., `current_show_cost()`, `wrestler_booking_price(...)`) instead of economy helpers.
+  - Rationale: Ensures a single UI integration surface for future frontends.
+  - Alternative considered: Preserve economy helpers for UI. Rejected to enforce the single access point requirement.
 
 - **Persistence stays in GameState**: Money and show outputs remain serialized by `GameState`, with no backward-compatibility guarantees for older saves.
   - Rationale: Keeps state management centralized and allows schema changes without migration work.
@@ -39,7 +39,6 @@ Economy calculations are currently split across `wrestlegm/economy.py` functions
 ## Risks / Trade-offs
 
 - **State drift risk** → Mitigation: `compute_show(...)` uses current inputs from `GameState` and returns a full result object; `GameState` applies it immediately.
-- **Compatibility layer masks direct UI calls** → Mitigation: mark wrappers as legacy in docstrings and ensure `GameState` accessors are the preferred path for new code.
 - **Persistence schema break** → Mitigation: none; save compatibility is explicitly out of scope for this change.
 
 ## Migration Plan
@@ -47,7 +46,7 @@ Economy calculations are currently split across `wrestlegm/economy.py` functions
 1. Introduce `EconomySimulator` with `compute_show(...)` that mirrors existing formulas.
 2. Move wrestler booking price logic to `WrestlerState` helper(s); update simulator calculations to use them.
 3. Add `EconomySimulator` accessors on `GameState` and route existing economy call sites through the simulator.
-4. Preserve economy module wrappers used by UI (no UI edits).
+4. Refactor UI economy usage to go through `GameState` accessors.
 5. Update tests to validate determinism and unchanged outcomes.
 
 ## Open Questions

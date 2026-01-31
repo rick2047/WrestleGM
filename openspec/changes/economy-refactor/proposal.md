@@ -8,7 +8,7 @@ Economy logic is currently split across free functions in `wrestlegm/economy.py`
 - Move per-entity pricing logic (e.g., wrestler booking price) onto model helpers so pricing rules live with the entities they price.
 - Centralize show-level aggregation rules (unique billing, show cost, min valid show cost) in the simulator instead of scattered call sites.
 - Keep economy state (money) owned and persisted by `GameState`, applying deltas from simulator results.
-- Keep UI interaction limited to `GameState` by providing economy accessors there; this change should not require edits to UI modules.
+- Refactor UI call sites to use `GameState` economy accessors instead of economy helpers.
 
 ## Capabilities
 
@@ -23,5 +23,5 @@ Economy logic is currently split across free functions in `wrestlegm/economy.py`
 - `wrestlegm/economy.py` refactor into a simulator-based API.
 - `wrestlegm/state.py` pipeline updates to delegate economy to the simulator and apply deltas locally.
 - `wrestlegm/models.py` gains pricing helpers (e.g., wrestler booking price).
-- UI modules should remain unchanged; any new access patterns are exposed on `GameState`.
+- UI modules updated to use `GameState` accessors for economy data.
 - Persistence remains on `GameState` for economy state (money).

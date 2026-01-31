@@ -7,14 +7,7 @@ from dataclasses import dataclass
 from typing import Iterable
 
 from wrestlegm import constants
-from wrestlegm.models import (
-    Match,
-    MatchTypeDefinition,
-    Promo,
-    ShowSlot,
-    WrestlerState,
-    booking_price_from_popularity,
-)
+from wrestlegm.models import Match, MatchTypeDefinition, Promo, ShowSlot, WrestlerState
 from wrestlegm.rivalries import RivalryManager, ordered_pairs
 
 
@@ -37,12 +30,6 @@ class EconomyResult:
     gate_income: int
     merch_income: int
     total_earned: int
-
-
-def wrestler_booking_price(popularity: int) -> int:
-    """Return the booking price for a wrestler based on popularity."""
-
-    return booking_price_from_popularity(popularity)
 
 
 def _unique_wrestler_ids(slots: Iterable[ShowSlot]) -> set[str]:

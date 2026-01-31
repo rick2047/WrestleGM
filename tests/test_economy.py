@@ -14,7 +14,6 @@ from wrestlegm.models import (
     RivalryState,
     WrestlerDefinition,
     WrestlerState,
-    booking_price_from_popularity,
 )
 from wrestlegm.rivalries import RivalryManager
 from wrestlegm.state import GameState
@@ -188,7 +187,12 @@ def test_game_state_show_economy_is_deterministic() -> None:
 
 def test_booking_price_helpers_match_formula() -> None:
     popularity = 50
-    expected = booking_price_from_popularity(popularity)
+    expected = int(
+        round(
+            constants.BOOKING_PRICE_BASE
+            + constants.BOOKING_PRICE_A * (popularity ** constants.BOOKING_PRICE_EXPONENT)
+        )
+    )
 
     wrestler = WrestlerState("a", "A", "Face", popularity, 20, 50)
 

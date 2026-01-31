@@ -17,7 +17,6 @@ from wrestlegm.models import (
     StatDelta,
     WrestlerDefinition,
     WrestlerState,
-    booking_price_from_popularity,
 )
 from wrestlegm.sim import SimulationEngine
 from wrestlegm.rivalries import RivalryManager
@@ -265,12 +264,9 @@ class GameState:
         """Return the booking price for a wrestler by id."""
 
         wrestler = self.roster.get(wrestler_id)
-        if wrestler is not None:
-            return wrestler.booking_price()
-        definition = self.wrestler_defs.get(wrestler_id)
-        if definition is None:
+        if wrestler is None:
             raise KeyError(f"Unknown wrestler: {wrestler_id}")
-        return booking_price_from_popularity(definition.popularity)
+        return wrestler.booking_price()
 
     def match_type_base_cost(self, match_type_id: str) -> int:
         """Return the base cost for a match type id."""

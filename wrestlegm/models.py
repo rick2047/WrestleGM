@@ -34,7 +34,9 @@ class WrestlerState:
     def booking_price(self) -> int:
         """Return the booking price based on current popularity."""
 
-        return booking_price_from_popularity(self.popularity)
+        base = constants.BOOKING_PRICE_BASE
+        a = constants.BOOKING_PRICE_A
+        return int(round(base + a * (self.popularity ** constants.BOOKING_PRICE_EXPONENT)))
 
 
 @dataclass(frozen=True)
@@ -51,12 +53,6 @@ class WrestlerDefinition:
     avatar_path: str = ""
 
 
-def booking_price_from_popularity(popularity: int) -> int:
-    """Return the booking price for a wrestler based on popularity."""
-
-    base = constants.BOOKING_PRICE_BASE
-    a = constants.BOOKING_PRICE_A
-    return int(round(base + a * (popularity ** constants.BOOKING_PRICE_EXPONENT)))
 
 
 @dataclass(frozen=True)
