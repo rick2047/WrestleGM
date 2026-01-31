@@ -276,14 +276,13 @@ class SimulationEngine:
     def simulate_match(
         self,
         match: Match,
-        roster: Dict[str, WrestlerState],
         match_types: Dict[str, MatchTypeDefinition],
         rivalry_context: RivalryRatingContext | None = None,
     ) -> MatchResult:
         """Run the deterministic simulation pipeline for a match."""
 
         match_type = match_types[match.match_type_id]
-        wrestlers = [roster[wrestler_id] for wrestler_id in match.wrestler_ids]
+        wrestlers = match.wrestlers
         context = MatchContext(
             wrestlers=wrestlers,
             match_type=match_type,
@@ -322,11 +321,10 @@ class SimulationEngine:
     def simulate_promo(
         self,
         promo: Promo,
-        roster: Dict[str, WrestlerState],
     ) -> PromoResult:
         """Run the deterministic simulation pipeline for a promo."""
 
-        wrestler = roster[promo.wrestler_id]
+        wrestler = promo.wrestler
         rating, rating_100, _ = self.simulate_promo_rating(wrestler)
         deltas = self.simulate_promo_deltas(rating_100)
         deltas = {promo.wrestler_id: deltas}
@@ -339,7 +337,6 @@ class SimulationEngine:
     def simulate_show(
         self,
         slots: Iterable[ShowSlot],
-        roster: Dict[str, WrestlerState],
         match_types: Dict[str, MatchTypeDefinition],
         rivalry_context_provider: Callable[[Match], RivalryRatingContext] | None = None,
     ) -> List[ShowResult]:
@@ -351,9 +348,9 @@ class SimulationEngine:
                 context = None
                 if rivalry_context_provider is not None:
                     context = rivalry_context_provider(slot)
-                results.append(self.simulate_match(slot, roster, match_types, context))
+                results.append(self.simulate_match(slot, match_types, context))
             else:
-                results.append(self.simulate_promo(slot, roster))
+                results.append(self.simulate_promo(slot))
         return results
 
     def aggregate_show_rating(self, results: Iterable[ShowResult]) -> float:

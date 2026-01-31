@@ -93,13 +93,19 @@ class TestDeterminism:
         roster_state = build_roster_state()
         match_types = build_match_types()
         match_type_map = {m.id: m for m in match_types}
-        matches = [Match(wrestler_ids=["a", "b"], match_category_id="singles", match_type_id="singles")]
+        matches = [
+            Match(
+                wrestlers=[roster_state["a"], roster_state["b"]],
+                match_category_id="singles",
+                match_type_id="singles",
+            )
+        ]
 
         engine_one = SimulationEngine(seed=123)
         engine_two = SimulationEngine(seed=123)
 
-        results_one = engine_one.simulate_show(matches, roster_state, match_type_map)
-        results_two = engine_two.simulate_show(matches, roster_state, match_type_map)
+        results_one = engine_one.simulate_show(matches, match_type_map)
+        results_two = engine_two.simulate_show(matches, match_type_map)
 
         assert [(r.winner_id, r.non_winner_ids, r.rating) for r in results_one] == [
             (r.winner_id, r.non_winner_ids, r.rating) for r in results_two
@@ -109,13 +115,17 @@ class TestDeterminism:
         roster_state = build_roster_state()
         match_types = build_match_types()
         match_type_map = {m.id: m for m in match_types}
-        match = Match(wrestler_ids=["a", "b"], match_category_id="singles", match_type_id="singles")
+        match = Match(
+            wrestlers=[roster_state["a"], roster_state["b"]],
+            match_category_id="singles",
+            match_type_id="singles",
+        )
 
         engine_one = SimulationEngine(seed=321)
         engine_two = SimulationEngine(seed=321)
 
-        result_one = engine_one.simulate_match(match, roster_state, match_type_map)
-        result_two = engine_two.simulate_match(match, roster_state, match_type_map)
+        result_one = engine_one.simulate_match(match, match_type_map)
+        result_two = engine_two.simulate_match(match, match_type_map)
 
         assert (result_one.winner_id, result_one.non_winner_ids, result_one.rating) == (
             result_two.winner_id,
@@ -133,13 +143,17 @@ class TestDeterminism:
             modifiers=modifiers,
         )
         match_type_map = {match_type.id: match_type}
-        match = Match(wrestler_ids=["a", "b", "c"], match_category_id="triple-threat", match_type_id="triple")
+        match = Match(
+            wrestlers=[roster_state["a"], roster_state["b"], roster_state["c"]],
+            match_category_id="triple-threat",
+            match_type_id="triple",
+        )
 
         engine_one = SimulationEngine(seed=555)
         engine_two = SimulationEngine(seed=555)
 
-        result_one = engine_one.simulate_match(match, roster_state, match_type_map)
-        result_two = engine_two.simulate_match(match, roster_state, match_type_map)
+        result_one = engine_one.simulate_match(match, match_type_map)
+        result_two = engine_two.simulate_match(match, match_type_map)
 
         assert (result_one.winner_id, result_one.non_winner_ids, result_one.rating) == (
             result_two.winner_id,
@@ -271,16 +285,19 @@ class TestMatchSimulation:
         roster_state = build_roster_state()
         match_types = build_match_types()
         match_type_map = {m.id: m for m in match_types}
-        match = Match(wrestler_ids=["a", "b"], match_category_id="singles", match_type_id="singles")
+        match = Match(
+            wrestlers=[roster_state["a"], roster_state["b"]],
+            match_category_id="singles",
+            match_type_id="singles",
+        )
 
         base_engine = SimulationEngine(seed=42)
-        base_result = base_engine.simulate_match(match, roster_state, match_type_map)
+        base_result = base_engine.simulate_match(match, match_type_map)
 
         context = RivalryRatingContext(active_pairs=1, blowoff_pairs=1, has_cooldown=True)
         adjusted_engine = SimulationEngine(seed=42)
         adjusted_result = adjusted_engine.simulate_match(
             match,
-            roster_state,
             match_type_map,
             rivalry_context=context,
         )
@@ -319,9 +336,9 @@ class TestPromoSimulation:
         engine_one = SimulationEngine(seed=101)
         engine_two = SimulationEngine(seed=101)
 
-        promo = Promo(wrestler_id="a")
-        result_one = engine_one.simulate_promo(promo, roster_state)
-        result_two = engine_two.simulate_promo(promo, roster_state)
+        promo = Promo(wrestler=roster_state["a"])
+        result_one = engine_one.simulate_promo(promo)
+        result_two = engine_two.simulate_promo(promo)
 
         assert result_one.rating == result_two.rating
         assert result_one.stat_deltas == result_two.stat_deltas

@@ -5,8 +5,6 @@ from __future__ import annotations
 from textual.app import ComposeResult
 from textual.widgets import Button, DataTable, Static
 
-from wrestlegm import economy
-
 from ..formatting import build_name_cell, build_pop_cell, format_money, row_key_to_id
 from ..widgets.data_table import EdgeAwareDataTable
 from ..widgets.wrestler_view import build_wrestler_view_data
@@ -72,7 +70,7 @@ class RosterScreen(StandardScreen):
         for wrestler in self.app.state.roster.values():
             self.table.add_row(
                 build_name_cell(wrestler.name, wrestler.alignment),
-                f"${economy.wrestler_booking_price(wrestler.popularity):,}",
+                f"${self.app.state.wrestler_booking_price(wrestler.id):,}",
                 f"{wrestler.stamina:>3}",
                 f"{wrestler.mic_skill:>3}",
                 build_pop_cell(wrestler.popularity, wrestler.stamina),

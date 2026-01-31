@@ -90,8 +90,14 @@ class PromoBookingScreen(StandardScreen):
     def validate_draft(self) -> list[str]:
         if not self.draft.is_complete():
             return ["incomplete"]
-        promo = Promo(wrestler_id=self.draft.wrestler_id or "")
-        return self.app.state.validate_promo(promo, slot_index=self.slot_index)
+        wrestler_id = self.draft.wrestler_id or ""
+        wrestler = self.app.state.roster.get(wrestler_id)
+        if wrestler is None:
+            return ["unknown_wrestler"]
+        return self.app.state.validate_promo(
+            Promo(wrestler=wrestler),
+            slot_index=self.slot_index,
+        )
 
     def action_select_field(self) -> None:
         title = f"Select Wrestler ({slot_label(self.slot_index, 'promo')})"
@@ -171,7 +177,11 @@ class PromoBookingScreen(StandardScreen):
             self.commit_booking()
 
     def commit_booking(self) -> None:
-        promo = Promo(wrestler_id=self.draft.wrestler_id or "")
+        wrestler_id = self.draft.wrestler_id or ""
+        wrestler = self.app.state.roster.get(wrestler_id)
+        if wrestler is None:
+            return
+        promo = Promo(wrestler=wrestler)
         self.app.state.set_slot(self.slot_index, promo)
         self.app.pop_screen()
 

@@ -37,7 +37,7 @@ def build_roster() -> list[WrestlerDefinition]:
 def test_validate_match_size_mismatch() -> None:
     state = GameState(build_roster(), [build_match_type()])
     match = Match(
-        wrestler_ids=["a", "b", "c"],
+        wrestlers=[state.roster["a"], state.roster["b"], state.roster["c"]],
         match_category_id="singles",
         match_type_id="multi",
     )
@@ -47,7 +47,7 @@ def test_validate_match_size_mismatch() -> None:
 def test_validate_match_duplicate_wrestlers() -> None:
     state = GameState(build_roster(), [build_match_type()])
     match = Match(
-        wrestler_ids=["a", "a"],
+        wrestlers=[state.roster["a"], state.roster["a"]],
         match_category_id="singles",
         match_type_id="multi",
     )
@@ -66,7 +66,7 @@ def test_validate_match_low_stamina_blocked() -> None:
     )
     state = GameState(roster, [build_match_type()])
     match = Match(
-        wrestler_ids=["a", "b"],
+        wrestlers=[state.roster["a"], state.roster["b"]],
         match_category_id="singles",
         match_type_id="multi",
     )
@@ -76,7 +76,7 @@ def test_validate_match_low_stamina_blocked() -> None:
 def test_validate_match_type_category_restriction() -> None:
     state = GameState(build_roster(), [build_match_type(["singles"])])
     match = Match(
-        wrestler_ids=["a", "b", "c"],
+        wrestlers=[state.roster["a"], state.roster["b"], state.roster["c"]],
         match_category_id="triple-threat",
         match_type_id="multi",
     )

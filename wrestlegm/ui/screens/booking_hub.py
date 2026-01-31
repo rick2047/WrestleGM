@@ -6,7 +6,7 @@ from textual.app import ComposeResult
 from textual.containers import Vertical, VerticalScroll
 from textual.widgets import Button, Static
 
-from wrestlegm import constants, economy
+from wrestlegm import constants
 from wrestlegm.models import Match
 
 from ..formatting import (
@@ -109,8 +109,8 @@ class BookingHubScreen(StandardScreen):
             match_type_name = match_type.name if match_type else "Unknown"
             category_name = match_category_label(slot.match_category_id)
             emojis = self.app.state.rivalry_emojis_for_match(slot.wrestler_ids)
-            match_cost = (match_type.base_cost if match_type else 0) + sum(
-                economy.wrestler_booking_price(wrestler.popularity) for wrestler in wrestlers
+            match_cost = self.app.state.match_type_base_cost(slot.match_type_id) + sum(
+                self.app.state.wrestler_booking_price(wrestler.id) for wrestler in wrestlers
             )
             label_text = f"{label} · {category_name} · ${match_cost:,}"
             if emojis:
@@ -120,7 +120,7 @@ class BookingHubScreen(StandardScreen):
                 f"{category_name} · {match_type_name}"
             )
         wrestler = self.app.state.roster[slot.wrestler_id]
-        promo_cost = economy.wrestler_booking_price(wrestler.popularity)
+        promo_cost = self.app.state.wrestler_booking_price(wrestler.id)
         label_text = f"{label} · ${promo_cost:,}"
         return f"{label_text}\n{build_name_cell(wrestler.name, wrestler.alignment)}"
 

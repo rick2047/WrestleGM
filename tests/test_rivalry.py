@@ -51,19 +51,19 @@ def seed_show(state: GameState) -> None:
     match_type_id = next(iter(state.match_types))
     slots = [
         Match(
-            wrestler_ids=["a", "b"],
+            wrestlers=[state.roster["a"], state.roster["b"]],
             match_category_id="singles",
             match_type_id=match_type_id,
         ),
-        Promo(wrestler_id="c"),
+        Promo(wrestler=state.roster["c"]),
         Match(
-            wrestler_ids=["d", "e"],
+            wrestlers=[state.roster["d"], state.roster["e"]],
             match_category_id="singles",
             match_type_id=match_type_id,
         ),
-        Promo(wrestler_id="f"),
+        Promo(wrestler=state.roster["f"]),
         Match(
-            wrestler_ids=["g", "h"],
+            wrestlers=[state.roster["g"], state.roster["h"]],
             match_category_id="singles",
             match_type_id=match_type_id,
         ),

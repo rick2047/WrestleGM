@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Dict, List, Literal, Union
 
+from wrestlegm import constants
 Alignment = Literal["Face", "Heel"]
 PairKey = tuple[str, str]
 
@@ -30,6 +31,13 @@ class WrestlerState:
     stamina: int
     mic_skill: int
 
+    def booking_price(self) -> int:
+        """Return the booking price based on current popularity."""
+
+        base = constants.BOOKING_PRICE_BASE
+        a = constants.BOOKING_PRICE_A
+        return int(round(base + a * (self.popularity ** constants.BOOKING_PRICE_EXPONENT)))
+
 
 @dataclass(frozen=True)
 class WrestlerDefinition:
@@ -43,6 +51,8 @@ class WrestlerDefinition:
     mic_skill: int
     description: str = ""
     avatar_path: str = ""
+
+
 
 
 @dataclass(frozen=True)
@@ -83,16 +93,24 @@ class MatchCategoryDefinition:
 class Match:
     """Booked match within a show."""
 
-    wrestler_ids: List[str]
+    wrestlers: List[WrestlerState]
     match_category_id: str
     match_type_id: str
+
+    @property
+    def wrestler_ids(self) -> List[str]:
+        return [wrestler.id for wrestler in self.wrestlers]
 
 
 @dataclass(frozen=True)
 class Promo:
     """Booked promo within a show."""
 
-    wrestler_id: str
+    wrestler: WrestlerState
+
+    @property
+    def wrestler_id(self) -> str:
+        return self.wrestler.id
 
 
 @dataclass(frozen=True)
