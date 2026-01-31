@@ -87,13 +87,13 @@ WrestleGM currently has no economic system. Booking is costless and results only
 │   [ Match 1 · Singles · $450     Riv ⚡ x1 ]                   │
 │     😃 Okada vs 😈 Jay White                                   │
 │                                                              │
-│   [ Promo 1 ]                                                 │
+│   [ Promo 1 · $220 ]                                          │
 │     😃 Kazuchika Okada                                        │
 │                                                              │
 │   [ Match 2 · Triple Threat · $520  Riv 🔥 x1  Cool 🧊 x1 ]     │
 │     😃 Omega vs 😈 Switchblade vs 😃 Naito                    │
 │                                                              │
-│   [ Promo 2 ]                                                 │
+│   [ Promo 2 · $240 ]                                          │
 │     😈 Jay White                                              │
 │                                                              │
 │   [ Match 3 · Singles · $510     Riv ⚔️ x1 ]                   │
@@ -118,7 +118,6 @@ WrestleGM currently has no economic system. Booking is costless and results only
 │ Run this show now?                                            │
 │                                                              │
 │ Show Cost: $1,480                                             │
-│ After Show (est.): $—                                          │
 │                                                              │
 ├──────────────────────────────────────────────────────────────┤
 │ [ Confirm ]                         [ Cancel ]                │

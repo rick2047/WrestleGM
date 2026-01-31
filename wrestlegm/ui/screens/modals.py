@@ -59,6 +59,9 @@ class ConfirmBookingModal(ModalScreen):
         focused = self.app.focused
         if isinstance(focused, Button) and not focused.disabled:
             focused.press()
+            return
+        if self.confirm_button is not None:
+            self.confirm_button.press()
 
     def action_focus_next(self) -> None:
         """Move focus to the next modal action."""
@@ -104,6 +107,8 @@ class ConfirmRunShowModal(ModalScreen):
         with Vertical(classes="panel"):
             yield Static("Confirm Run Show")
             yield Static(f"Money: {format_money(self.money)}", markup=True)
+            yield Static("")
+            yield Static("Run this show now?")
             yield Static("")
             yield Static(f"Show Cost: ${self.show_cost:,}")
             if self.will_debt:

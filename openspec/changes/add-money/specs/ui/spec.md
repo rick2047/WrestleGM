@@ -14,7 +14,11 @@ The system SHALL display current money, total show cost, and rivalry/cooldown co
 
 #### Scenario: Match slot cost label
 - **WHEN** a match slot is rendered
-- **THEN** its title includes the match type cost (e.g., `Match 1 · Singles · $450`)
+- **THEN** its title includes the total cost for the slot (match type base cost + booked wrestler costs) (e.g., `Match 1 · Singles · $2,450`)
+
+#### Scenario: Promo slot cost label
+- **WHEN** a promo slot is rendered
+- **THEN** its title includes the booked wrestler cost (e.g., `Promo 1 · $220`)
 
 ### Requirement: Run show confirmation warning
 The system SHALL present a confirmation modal before running a show and warn if it will result in debt.
