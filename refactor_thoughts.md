@@ -25,7 +25,7 @@ Make match categories a first-class object similar to MatchType, while keeping t
    - `booking_hub.py` uses `match_category_order` for default category.
 4) Remove `MATCH_CATEGORIES` and `MATCH_CATEGORY_ORDER` from `constants.py`.
 
-5) Move match types out of JSON and into `wrestlegm/match_types.py`.
+5) Move match types out of JSON and into `wrestlegm/models.py` (colocated under the class).
    - Rename `MatchTypeDefinition` to `MatchType`.
    - `MatchType.allowed_categories` should reference `MatchCategory` objects directly.
 
@@ -38,7 +38,7 @@ Make match categories a first-class object similar to MatchType, while keeping t
 - `wrestlegm/constants.py` (remove category dicts)
 - `wrestlegm/models.py` (rename MatchCategoryDefinition → MatchCategory, MatchTypeDefinition → MatchType)
 - `wrestlegm/match_categories.py`
-- `wrestlegm/match_types.py`
+- `wrestlegm/models.py` (hardcoded match types colocated under class)
 - `wrestlegm/ui/app.py`
 - `wrestlegm/session.py`
 - `wrestlegm/state.py`
