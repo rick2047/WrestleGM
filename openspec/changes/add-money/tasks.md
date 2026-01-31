@@ -31,7 +31,7 @@
 ## 5. UI updates
 
 - [x] 5.1 Booking Hub: show current money (red if negative), total show cost, rivalry/cooldown counts, and per-match cost label
-- [x] 5.2 Run Show confirmation modal: add debt warning when cost exceeds money and keep After Show as `$—`
+- [x] 5.2 Run Show confirmation modal: add debt warning when cost exceeds money and do not show an After Show estimate
 - [x] 5.3 Results screen: display audience, gate income, merch income, total earned, and current money
 - [x] 5.4 Game Over: Bankruptcy screen with final money and Main Menu action
 - [x] 5.5 Tests: UI flow from booking → results → next booking triggers bankruptcy screen when funds insufficient

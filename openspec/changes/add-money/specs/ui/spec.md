@@ -33,7 +33,7 @@ The system SHALL present a confirmation modal before running a show and warn if 
 
 #### Scenario: No after-show estimate
 - **WHEN** the confirm modal is shown
-- **THEN** the After Show field displays `$—` and no estimate is provided
+- **THEN** no After Show estimate is displayed
 
 ### Requirement: Results economy breakdown
 The system SHALL display audience, gate income, merch income, total earned, and current money on the Results screen.
@@ -41,6 +41,14 @@ The system SHALL display audience, gate income, merch income, total earned, and 
 #### Scenario: Results economy fields
 - **WHEN** the Results screen is shown
 - **THEN** it displays audience, gate income, merch income, total earned, and current money
+
+### Requirement: Money header on gameplay screens
+The system SHALL display current money in the header on gameplay screens where it is actionable.
+
+#### Scenario: Gameplay header money display
+- **WHEN** the player is on gameplay screens (Game Hub, Booking Hub, Match Booking, Promo Booking, Wrestler Selection, Results, Simulating, Roster, Bankruptcy)
+- **THEN** the header shows the current money value
+- **AND THEN** Main Menu, Guard, and Save/Load screens do not display the money header
 
 ### Requirement: Bankruptcy game over screen
 The system SHALL present a Game Over: Bankruptcy screen when the player cannot afford any valid next show.

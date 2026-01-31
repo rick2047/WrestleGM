@@ -73,12 +73,15 @@ WrestleGM currently has no economic system. Booking is costless and results only
   - No hard debt limit; the only constraint is whether any valid show can be afforded at next show time.
 
 - **UI updates (authoritative mockups embedded for implementation fidelity):**
+  - Money appears in the header on gameplay screens (Game Hub, Booking Hub, Match Booking, Promo Booking, Wrestler Selection, Results, Simulating, Roster, Bankruptcy).
+  - Main Menu, Guard, and Save/Load screens do not display the money header.
+  - Booking Hub header shows total cost on the left and current money on the right; Match Booking keeps rivalry/cooldown summary on the left with money on the right.
 
 ### Booking Hub
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│ Money: $1,250     Booking Hub (Show #12)        Cost: $1,480 │
+│ Cost: $1,480      Booking Hub (Show #12)       Money: $1,250 │
 │                 ⚡ x1  🔥 x1  ⚔️ x1   🧊 x1                    │
 ├──────────────────────────────────────────────────────────────┤
 │                                                              │
