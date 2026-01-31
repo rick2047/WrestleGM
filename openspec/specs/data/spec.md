@@ -19,12 +19,13 @@ The system SHALL ignore optional wrestler fields beyond the defined schema (such
 - **THEN** the app loads the required fields and ignores the extras
 
 ### Requirement: Data-driven match type definitions
-The system SHALL load match type definitions from `data/match_types.json` with fields `id`, `name`, `description`, `modifiers`, and optional `allowed_categories`. If `allowed_categories` is omitted, the system SHALL treat the match type as available for all categories.
+The system SHALL load match type definitions from `data/match_types.json` with fields `id`, `name`, `description`, `modifiers`, `base_cost`, and optional `allowed_categories`. If `allowed_categories` is omitted, the system SHALL treat the match type as available for all categories. If `base_cost` is omitted, the system SHALL default it to 0.
 
 #### Scenario: Load match types on startup
 - **WHEN** the app starts
-- **THEN** it loads match type definitions including `allowed_categories`
+- **THEN** it loads match type definitions including `allowed_categories` and `base_cost`
 - **AND THEN** match types missing `allowed_categories` are treated as available for all categories
+- **AND THEN** match types missing `base_cost` default to 0
 - **AND THEN** the match types include Standard plus Ambulance, and Ambulance is restricted to Singles
 
 #### Scenario: Match type modifier fields
@@ -37,4 +38,3 @@ The system SHALL define a static match category registry with `id`, `name`, and 
 #### Scenario: Load match categories
 - **WHEN** the app starts
 - **THEN** the match category registry includes Singles, Triple Threat, and Fatal 4-Way with the correct sizes
-
