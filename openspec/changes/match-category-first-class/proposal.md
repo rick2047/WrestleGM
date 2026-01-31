@@ -15,7 +15,7 @@ Match categories are core game data but are split between `wrestlegm/models.py` 
 ## Capabilities
 
 ### New Capabilities
-- None.
+- `match-category-model`: First-class match category and match type modeling with hardcoded registries and object references.
 
 ### Modified Capabilities
 - None.
