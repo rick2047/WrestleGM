@@ -40,7 +40,7 @@ Match categories are currently defined as dictionaries and a separate order tupl
 ## Migration Plan
 
 - Introduce `MatchCategory` rename in `wrestlegm/models.py` and define the hardcoded list under the class.
-- Update `WrestleGMApp`, `SessionManager`, and `GameState` to use the hardcoded list instead of constants.
+- Update `WrestleGMApp` and `GameState` to use the hardcoded list instead of constants.
 - Update all call sites that referenced `constants.MATCH_CATEGORIES` / `MATCH_CATEGORY_ORDER` to use the new registries.
 - Update persistence serialization/deserialization to store full category object data derived from `MatchCategory` objects.
 - Remove `MATCH_CATEGORIES` and `MATCH_CATEGORY_ORDER` from `wrestlegm/constants.py`.

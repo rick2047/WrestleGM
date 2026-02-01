@@ -22,3 +22,4 @@
 ## 5. Match Type Availability Simplification
 
 - [x] 5.1 Remove `allowed_categories` from match type data/fixtures and treat all match types as available for all categories.
+- [x] 5.2 Update the data delta spec to remove `allowed_categories` from match type definitions.
