@@ -1,82 +1,52 @@
 # WrestleGM
 
-WrestleGM is a terminal-first wrestling management game where you run a promotion
-one show at a time. The game focuses on booking match cards, simulating outcomes,
-and watching roster stats evolve across shows.
+WrestleGM is a single-player, text-based wrestling booking simulation game built with Python and the [Textual](https://textual.textualize.io/) framework.
 
-## Product Vision
+## Getting Started
 
-- Show-by-show progression is the core loop, not single-match outcomes.
-- Systemic, deterministic simulation with data-driven wrestlers and match types.
-- Keyboard-only Textual UI designed for narrow terminals.
-- Long-term booking decisions matter through stamina, popularity, and match types.
+### Requirements
 
-For the full MVP vision and UX details, see `prd.md`.
+-   Python 3.11+
+-   [uv](https://github.com/astral-sh/uv) (for environment and dependency management)
 
-## Current State
+### Setup
 
-- Textual UI with main menu, booking hub, match booking, selection screens, and
-  show results.
-- Fixed 3-match show card with validation (no duplicate wrestlers, stamina limits).
-- Deterministic simulation pipeline: outcome, rating, and stat deltas.
-- Show ratings aggregate match ratings; stats update at show end.
-- Between-show stamina recovery for wrestlers who did not appear.
-- Data-driven roster and match types from JSON in `data/`.
+1.  **Create the virtual environment and install dependencies:**
 
-Not yet included:
-- Save/load persistence.
-- Multiple promotions, titles, storylines, or injuries.
-- Dynamic show sizes or match weighting.
+    ```bash
+    uv sync
+    ```
 
-## Requirements
+### Running the Application
 
-- Python 3.11+
-- `uv` installed (dependency management and task runner)
-
-## Dependency Management
+To start the game, run:
 
 ```bash
-uv sync
+uv run python main.py
 ```
 
-## Run
+### Running Tests
 
-```bash
-uv run main.py
-```
-
-## Tests
+To run the full test suite, use pytest:
 
 ```bash
 uv run pytest
 ```
 
-## Tooling
+To update the UI snapshot tests after making intentional changes, run:
 
 ```bash
-uv run ruff check .
+uv run pytest tests/test_ui_snapshots.py --snapshot-update
+```
+
+## Documentation
+
+The project documentation is built with [MkDocs](https://www.mkdocs.org/). To view it locally, run:
+
+```bash
 uv run mkdocs serve
 ```
 
-## Project Structure
+Then, open your browser to `http://127.0.0.1:8000`.
 
-- `main.py`: App entry point.
-- `wrestlegm/`: Game logic, UI, and simulation code.
-- `data/`: Wrestler and match type definitions.
-- `openspec/`: Specifications and archived change history.
-
-## OpenSpec Workflow
-
-OpenSpec artifacts live in `openspec/changes/<change-name>/` while a change is active and in `openspec/archive/` once completed.
-
-Core commands:
-
-```bash
-openspec new change <name>
-openspec continue <name>
-openspec apply <name>
-openspec verify <name>
-openspec archive <name>
-openspec status --change <name>
-openspec list
-```
+The documentation is written for a Product Owner audience and explains the application's features, user flow, simulation rules, and architecture.
