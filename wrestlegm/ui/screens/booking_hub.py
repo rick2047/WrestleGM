@@ -7,7 +7,7 @@ from textual.containers import Vertical, VerticalScroll
 from textual.widgets import Button, Static
 
 from wrestlegm import constants
-from wrestlegm.models import Match
+from wrestlegm.models import Match, MATCH_CATEGORIES
 
 from ..formatting import (
     build_match_participants,
@@ -107,7 +107,7 @@ class BookingHubScreen(StandardScreen):
             wrestlers = [self.app.state.roster[w_id] for w_id in slot.wrestler_ids]
             match_type = self.app.state.match_types.get(slot.match_type_id)
             match_type_name = match_type.name if match_type else "Unknown"
-            category_name = match_category_label(slot.match_category_id)
+            category_name = match_category_label(slot.match_category)
             emojis = self.app.state.rivalry_emojis_for_match(slot.wrestler_ids)
             match_cost = self.app.state.match_type_base_cost(slot.match_type_id) + sum(
                 self.app.state.wrestler_booking_price(wrestler.id) for wrestler in wrestlers
@@ -139,13 +139,13 @@ class BookingHubScreen(StandardScreen):
 
         existing = self.app.state.show_card[slot_index]
         if isinstance(existing, Match):
-            match_category_id = existing.match_category_id
+            match_category = existing.match_category
         else:
-            match_category_id = constants.MATCH_CATEGORY_ORDER[0]
+            match_category = sorted(MATCH_CATEGORIES, key=lambda item: item.id)[0]
         self.app.navigate(
             MATCH_BOOKING,
             slot_index=slot_index,
-            match_category_id=match_category_id,
+            match_category=match_category,
         )
 
     def action_run_show(self) -> None:

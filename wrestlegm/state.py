@@ -8,6 +8,7 @@ from wrestlegm import constants
 from wrestlegm.economy import EconomySimulator
 from wrestlegm.models import (
     Match,
+    MATCH_CATEGORIES,
     MatchTypeDefinition,
     Promo,
     PromoResult,
@@ -90,8 +91,8 @@ class GameState:
         """Return validation errors for a match in a slot."""
 
         errors: List[str] = []
-        category = constants.MATCH_CATEGORIES.get(match.match_category_id)
-        if category is None:
+        category = match.match_category
+        if category not in MATCH_CATEGORIES:
             errors.append("unknown_match_category")
         if match.match_type_id not in self.match_types:
             errors.append("unknown_match_type")
@@ -102,13 +103,8 @@ class GameState:
                 errors.append("unknown_wrestler")
                 break
 
-        if category is not None and len(match.wrestler_ids) != category["size"]:
+        if category is not None and len(match.wrestler_ids) != category.size:
             errors.append("invalid_wrestler_count")
-
-        match_type = self.match_types.get(match.match_type_id)
-        if match_type is not None and match_type.allowed_categories is not None:
-            if match.match_category_id not in match_type.allowed_categories:
-                errors.append("invalid_match_type_category")
 
         for wrestler_id in match.wrestler_ids:
             if wrestler_id not in self.roster:

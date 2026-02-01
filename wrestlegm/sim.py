@@ -312,7 +312,7 @@ class SimulationEngine:
             winner_id=winner_id,
             non_winner_ids=non_winner_ids,
             rating=rating,
-            match_category_id=match.match_category_id,
+            match_category=match.match_category,
             match_type_id=match.match_type_id,
             applied_modifiers=match_type.modifiers,
             stat_deltas=deltas,

@@ -5,6 +5,7 @@ from __future__ import annotations
 from wrestlegm import constants
 from wrestlegm.models import (
     Match,
+    MATCH_CATEGORIES,
     MatchTypeDefinition,
     MatchTypeModifiers,
     Promo,
@@ -14,6 +15,8 @@ from wrestlegm.models import (
 )
 from wrestlegm.models import normalize_pair
 from wrestlegm.state import GameState
+
+SINGLES = sorted(MATCH_CATEGORIES, key=lambda item: item.id)[0]
 
 
 def build_match_type() -> MatchTypeDefinition:
@@ -52,19 +55,19 @@ def seed_show(state: GameState) -> None:
     slots = [
         Match(
             wrestlers=[state.roster["a"], state.roster["b"]],
-            match_category_id="singles",
+            match_category=SINGLES,
             match_type_id=match_type_id,
         ),
         Promo(wrestler=state.roster["c"]),
         Match(
             wrestlers=[state.roster["d"], state.roster["e"]],
-            match_category_id="singles",
+            match_category=SINGLES,
             match_type_id=match_type_id,
         ),
         Promo(wrestler=state.roster["f"]),
         Match(
             wrestlers=[state.roster["g"], state.roster["h"]],
-            match_category_id="singles",
+            match_category=SINGLES,
             match_type_id=match_type_id,
         ),
     ]

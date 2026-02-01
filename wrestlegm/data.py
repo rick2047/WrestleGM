@@ -40,7 +40,6 @@ def load_match_types(path: Path | None = None) -> List[MatchTypeDefinition]:
                 description=entry["description"],
                 modifiers=modifiers,
                 base_cost=entry.get("base_cost", 0),
-                allowed_categories=entry.get("allowed_categories"),
             )
         )
     return match_types

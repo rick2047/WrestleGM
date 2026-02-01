@@ -8,6 +8,7 @@ from wrestlegm import constants, economy
 from wrestlegm.models import (
     CooldownState,
     Match,
+    MATCH_CATEGORIES,
     MatchTypeDefinition,
     MatchTypeModifiers,
     Promo,
@@ -17,6 +18,10 @@ from wrestlegm.models import (
 )
 from wrestlegm.rivalries import RivalryManager
 from wrestlegm.state import GameState
+
+ORDERED_CATEGORIES = sorted(MATCH_CATEGORIES, key=lambda item: item.id)
+SINGLES = ORDERED_CATEGORIES[0]
+TRIPLE_THREAT = ORDERED_CATEGORIES[1]
 
 
 def build_match_type(base_cost: int = 100) -> MatchTypeDefinition:
@@ -62,11 +67,11 @@ def build_definitions() -> tuple[list[WrestlerDefinition], list[MatchTypeDefinit
 
 def build_state_slots(state: GameState) -> list[Match | Promo]:
     return [
-        Match([state.roster["a"], state.roster["b"]], "singles", "standard"),
+        Match([state.roster["a"], state.roster["b"]], SINGLES, "standard"),
         Promo(state.roster["c"]),
-        Match([state.roster["d"], state.roster["e"]], "singles", "standard"),
+        Match([state.roster["d"], state.roster["e"]], SINGLES, "standard"),
         Promo(state.roster["f"]),
-        Match([state.roster["g"], state.roster["h"]], "singles", "standard"),
+        Match([state.roster["g"], state.roster["h"]], SINGLES, "standard"),
     ]
 
 
@@ -75,7 +80,7 @@ def test_show_cost_unique_wrestler_billing() -> None:
     roster = build_roster()
     match_types = {"standard": build_match_type(base_cost=200)}
     slots = [
-        Match([roster["a"], roster["b"]], "singles", "standard"),
+        Match([roster["a"], roster["b"]], SINGLES, "standard"),
         Promo(roster["a"]),
     ]
     cost = simulator.show_cost(slots, match_types)
@@ -92,7 +97,7 @@ def test_economy_inputs_alignment_and_pop_sum() -> None:
     roster = build_roster()
     rivalry = RivalryManager()
     slots = [
-        Match([roster["a"], roster["b"]], "singles", "standard"),
+        Match([roster["a"], roster["b"]], SINGLES, "standard"),
         Promo(roster["c"]),
     ]
     inputs = simulator.audience_inputs_for_slots(slots, rivalry)
@@ -107,7 +112,7 @@ def test_economy_inputs_rivalry_and_cooldown_counts() -> None:
     rivalry.rivalry_states[("a", "b")] = RivalryState("a", "b", rivalry_value=1)
     rivalry.rivalry_states[("b", "c")] = RivalryState("b", "c", rivalry_value=2)
     rivalry.cooldown_states[("a", "c")] = CooldownState("a", "c", remaining_shows=4)
-    slots = [Match([roster["a"], roster["b"], roster["c"]], "triple-threat", "standard")]
+    slots = [Match([roster["a"], roster["b"], roster["c"]], TRIPLE_THREAT, "standard")]
 
     inputs = simulator.audience_inputs_for_slots(slots, rivalry)
 
@@ -146,7 +151,7 @@ def test_rng_swing_bounds_applied() -> None:
     simulator = economy.EconomySimulator()
     roster = build_roster()
     match_types = {"standard": build_match_type(base_cost=0)}
-    slots = [Match([roster["a"], roster["b"]], "singles", "standard"), Promo(roster["c"])]
+    slots = [Match([roster["a"], roster["b"]], SINGLES, "standard"), Promo(roster["c"])]
     rivalry = RivalryManager()
     rng = FixedRNG([constants.ECONOMY_RNG_MIN, constants.ECONOMY_RNG_MAX])
     result = simulator.compute_show(slots, match_types, rivalry, rng, 3.0)
@@ -158,7 +163,7 @@ def test_economy_determinism_with_seed() -> None:
     simulator = economy.EconomySimulator()
     roster = build_roster()
     match_types = {"standard": build_match_type(base_cost=100)}
-    slots = [Match([roster["a"], roster["b"]], "singles", "standard"), Promo(roster["c"])]
+    slots = [Match([roster["a"], roster["b"]], SINGLES, "standard"), Promo(roster["c"])]
     rivalry = RivalryManager()
     rng_one = random.Random(42)
     rng_two = random.Random(42)

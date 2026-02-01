@@ -13,7 +13,13 @@ from textual.pilot import Pilot
 
 from wrestlegm import constants
 from wrestlegm.data import load_match_types, load_wrestlers
-from wrestlegm.models import Match, Promo, RivalryState, normalize_pair
+from wrestlegm.models import (
+    Match,
+    MATCH_CATEGORIES,
+    Promo,
+    RivalryState,
+    normalize_pair,
+)
 from wrestlegm.state import GameState
 from wrestlegm.session import SessionManager
 from wrestlegm.ui import (
@@ -96,19 +102,19 @@ def build_test_slots(state: GameState) -> list[Match | Promo]:
 
     wrestler_ids = list(state.roster.keys())
     match_type_id = next(iter(state.match_types))
-    match_category_id = "singles"
+    match_category = sorted(MATCH_CATEGORIES, key=lambda item: item.id)[0]
     slots: list[Match | Promo] = []
     cursor = 0
     for slot_type in constants.SHOW_SLOT_TYPES:
         if slot_type == "match":
-            wrestler_count = constants.MATCH_CATEGORIES[match_category_id]["size"]
+            wrestler_count = match_category.size
             slots.append(
                 Match(
                     wrestlers=[
                         state.roster[wrestler_id]
                         for wrestler_id in wrestler_ids[cursor : cursor + wrestler_count]
                     ],
-                    match_category_id=match_category_id,
+                    match_category=match_category,
                     match_type_id=match_type_id,
                 )
             )
@@ -247,10 +253,11 @@ async def select_match_category(pilot: Pilot, category_index: int = 0) -> None:
     await wait_for_screen(pilot, MatchBookingScreen)
     screen = pilot.app.screen
     if isinstance(screen, MatchBookingScreen):
-        if category_index < len(constants.MATCH_CATEGORY_ORDER):
-            category_id = constants.MATCH_CATEGORY_ORDER[category_index]
-            screen.draft.match_category_id = category_id
-            screen.match_category_select.value = category_id
+        categories = sorted(MATCH_CATEGORIES, key=lambda item: item.id)
+        if category_index < len(categories):
+            category = categories[category_index]
+            screen.draft.match_category = category
+            screen.match_category_select.value = category
             screen._apply_match_category_change()
             screen._refresh_match_type_options()
             screen.refresh_view()

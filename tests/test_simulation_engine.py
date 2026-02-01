@@ -6,6 +6,7 @@ from wrestlegm import constants
 from wrestlegm.models import (
     Match,
     MatchResult,
+    MATCH_CATEGORIES,
     MatchTypeDefinition,
     MatchTypeModifiers,
     Promo,
@@ -23,6 +24,10 @@ from wrestlegm.sim import (
     SimulationEngine,
 )
 from wrestlegm.state import ShowApplier
+
+ORDERED_CATEGORIES = sorted(MATCH_CATEGORIES, key=lambda item: item.id)
+SINGLES = ORDERED_CATEGORIES[0]
+TRIPLE_THREAT = ORDERED_CATEGORIES[1]
 
 
 def build_roster() -> list[WrestlerDefinition]:
@@ -96,7 +101,7 @@ class TestDeterminism:
         matches = [
             Match(
                 wrestlers=[roster_state["a"], roster_state["b"]],
-                match_category_id="singles",
+                match_category=SINGLES,
                 match_type_id="singles",
             )
         ]
@@ -117,7 +122,7 @@ class TestDeterminism:
         match_type_map = {m.id: m for m in match_types}
         match = Match(
             wrestlers=[roster_state["a"], roster_state["b"]],
-            match_category_id="singles",
+            match_category=SINGLES,
             match_type_id="singles",
         )
 
@@ -145,7 +150,7 @@ class TestDeterminism:
         match_type_map = {match_type.id: match_type}
         match = Match(
             wrestlers=[roster_state["a"], roster_state["b"], roster_state["c"]],
-            match_category_id="triple-threat",
+            match_category=TRIPLE_THREAT,
             match_type_id="triple",
         )
 
@@ -287,7 +292,7 @@ class TestMatchSimulation:
         match_type_map = {m.id: m for m in match_types}
         match = Match(
             wrestlers=[roster_state["a"], roster_state["b"]],
-            match_category_id="singles",
+            match_category=SINGLES,
             match_type_id="singles",
         )
 
@@ -358,7 +363,7 @@ class TestShowSimulation:
                 winner_id="a",
                 non_winner_ids=["b"],
                 rating=4.0,
-                match_category_id="singles",
+                match_category=SINGLES,
                 match_type_id="singles",
                 applied_modifiers=build_match_types()[0].modifiers,
                 stat_deltas={},
@@ -372,7 +377,7 @@ class TestShowSimulation:
                 winner_id="b",
                 non_winner_ids=["a"],
                 rating=2.0,
-                match_category_id="singles",
+                match_category=SINGLES,
                 match_type_id="singles",
                 applied_modifiers=build_match_types()[0].modifiers,
                 stat_deltas={},
@@ -431,7 +436,7 @@ class TestMutation:
             winner_id="a",
             non_winner_ids=["b"],
             rating=3.0,
-            match_category_id="singles",
+            match_category=SINGLES,
             match_type_id="singles",
             applied_modifiers=match_types[0].modifiers,
             stat_deltas={

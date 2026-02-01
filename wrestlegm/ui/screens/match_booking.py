@@ -8,8 +8,7 @@ from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.widgets import Button, ListItem, ListView, Select, Static
 
-from wrestlegm import constants
-from wrestlegm.models import Match, MatchTypeDefinition
+from wrestlegm.models import Match, MatchCategory, MatchTypeDefinition, MATCH_CATEGORIES
 
 from ..drafts import BookingDraft
 from ..formatting import format_money, match_category_size, slot_label
@@ -41,15 +40,15 @@ class MatchBookingScreen(StandardScreen):
         ("escape", "cancel", "Cancel"),
     ]
 
-    def __init__(self, slot_index: int, match_category_id: str) -> None:
+    def __init__(self, slot_index: int, match_category: MatchCategory) -> None:
         """Create a booking screen for a specific slot."""
 
         super().__init__()
         self.slot_index = slot_index
         self.draft = BookingDraft()
-        self.initial_category_id = match_category_id
-        self.draft.match_category_id = match_category_id
-        self.draft.ensure_size(match_category_size(match_category_id))
+        self.initial_category = match_category
+        self.draft.match_category = match_category
+        self.draft.ensure_size(match_category_size(match_category))
 
     def header_title(self) -> str:
         return slot_label(self.slot_index, "match")
@@ -71,7 +70,7 @@ class MatchBookingScreen(StandardScreen):
                         with Horizontal(classes="match-booking-control-group"):
                             category_options = self._match_category_options()
                             initial_category = (
-                                self.draft.match_category_id
+                                self.draft.match_category
                                 or (category_options[0][1] if category_options else None)
                             )
                             self.match_category_select = SafeSelect(
@@ -84,7 +83,7 @@ class MatchBookingScreen(StandardScreen):
                             yield self.match_category_select
                         with Horizontal(classes="match-booking-control-group"):
                             match_type_options = self._match_type_options_for_category(
-                                self.initial_category_id
+                                self.initial_category
                             )
                             initial_match_type = (
                                 match_type_options[0][1] if match_type_options else None
@@ -101,7 +100,7 @@ class MatchBookingScreen(StandardScreen):
                 yield Static("Wrestlers", classes="booking-section-title")
 
                 max_wrestlers = max(
-                    (category["size"] for category in constants.MATCH_CATEGORIES.values()),
+                    (category.size for category in MATCH_CATEGORIES),
                     default=2,
                 )
                 self.wrestler_views: list[WrestlerView] = []
@@ -145,9 +144,9 @@ class MatchBookingScreen(StandardScreen):
         if isinstance(existing, Match):
             self.draft.wrestler_ids = list(existing.wrestler_ids)
             self.draft.match_type_id = existing.match_type_id
-            self.draft.match_category_id = existing.match_category_id
-        if self.initial_category_id is not None:
-            self.draft.match_category_id = self.initial_category_id
+            self.draft.match_category = existing.match_category
+        if self.initial_category is not None:
+            self.draft.match_category = self.initial_category
         self._apply_match_category_change()
         self._refresh_match_category_options()
         self._refresh_match_type_options()
@@ -187,9 +186,9 @@ class MatchBookingScreen(StandardScreen):
     def required_wrestler_count(self) -> int:
         """Return the required wrestler count for the selected category."""
 
-        if self.draft.match_category_id is None:
+        if self.draft.match_category is None:
             return 0
-        return match_category_size(self.draft.match_category_id)
+        return match_category_size(self.draft.match_category)
 
     def _apply_match_category_change(self) -> None:
         """Ensure draft wrestler slots match the selected category."""
@@ -197,36 +196,28 @@ class MatchBookingScreen(StandardScreen):
         self.draft.ensure_size(self.required_wrestler_count())
 
     def _available_match_types_for_category(
-        self, match_category_id: str | None
+        self, _match_category: MatchCategory | None
     ) -> list[MatchTypeDefinition]:
         """Return match types allowed for a specific category."""
 
-        if match_category_id is None:
-            return list(self.app.state.match_types.values())
-        allowed = []
-        for match_type in self.app.state.match_types.values():
-            if match_type.allowed_categories is None:
-                allowed.append(match_type)
-            elif match_category_id in match_type.allowed_categories:
-                allowed.append(match_type)
-        return allowed
+        return list(self.app.state.match_types.values())
 
     def _match_type_options_for_category(
-        self, match_category_id: str | None
+        self, match_category: MatchCategory | None
     ) -> list[tuple[str, str]]:
         """Build select options for a category-filtered match type list."""
 
         return [
             (match_type.name, match_type.id)
-            for match_type in self._available_match_types_for_category(match_category_id)
+            for match_type in self._available_match_types_for_category(match_category)
         ]
 
-    def _match_category_options(self) -> list[tuple[str, str]]:
+    def _match_category_options(self) -> list[tuple[str, MatchCategory]]:
         """Return the match category options as wrestler counts."""
 
         return [
-            (str(constants.MATCH_CATEGORIES[category_id]["size"]), category_id)
-            for category_id in constants.MATCH_CATEGORY_ORDER
+            (str(category.size), category)
+            for category in sorted(MATCH_CATEGORIES, key=lambda item: item.id)
         ]
 
     def _refresh_match_category_options(self) -> None:
@@ -235,16 +226,16 @@ class MatchBookingScreen(StandardScreen):
         options = self._match_category_options()
         self.match_category_select.set_options(options)
         self.match_category_select.disabled = not options
-        valid_ids = {value for _, value in options}
-        if self.draft.match_category_id not in valid_ids:
-            self.draft.match_category_id = options[0][1] if options else None
-        if self.draft.match_category_id is not None:
-            self.match_category_select.value = self.draft.match_category_id
+        valid_categories = {value for _, value in options}
+        if self.draft.match_category not in valid_categories:
+            self.draft.match_category = options[0][1] if options else None
+        if self.draft.match_category is not None:
+            self.match_category_select.value = self.draft.match_category
 
     def _refresh_match_type_options(self) -> None:
         """Update match type dropdown options based on the category."""
 
-        options = self._match_type_options_for_category(self.draft.match_category_id)
+        options = self._match_type_options_for_category(self.draft.match_category)
         self.match_type_select.set_options(options)
         self.match_type_select.disabled = not options
         valid_ids = {value for _, value in options}
@@ -259,6 +250,9 @@ class MatchBookingScreen(StandardScreen):
         required_count = self.required_wrestler_count()
         if not self.draft.is_complete(required_count):
             return ["incomplete"]
+        category = self.draft.match_category
+        if category is None:
+            return ["unknown_match_category"]
         wrestler_ids = [wrestler_id for wrestler_id in self.draft.wrestler_ids if wrestler_id]
         missing = [
             wrestler_id
@@ -273,7 +267,7 @@ class MatchBookingScreen(StandardScreen):
         ]
         match = Match(
             wrestlers=wrestlers,
-            match_category_id=self.draft.match_category_id or "",
+            match_category=category,
             match_type_id=self.draft.match_type_id or "",
         )
         return self.app.state.validate_match(match, slot_index=self.slot_index)
@@ -328,7 +322,7 @@ class MatchBookingScreen(StandardScreen):
         if event.value is None:
             return
         if event.select is self.match_category_select:
-            self.draft.match_category_id = event.value
+            self.draft.match_category = event.value
             self._apply_match_category_change()
             self._refresh_match_type_options()
             self.refresh_view()
@@ -408,13 +402,16 @@ class MatchBookingScreen(StandardScreen):
     def commit_booking(self) -> None:
         """Commit the draft match to the show card."""
 
+        category = self.draft.match_category
+        if category is None:
+            return
         match = Match(
             wrestlers=[
                 self.app.state.roster[wrestler_id]
                 for wrestler_id in self.draft.wrestler_ids
                 if wrestler_id and wrestler_id in self.app.state.roster
             ],
-            match_category_id=self.draft.match_category_id or "",
+            match_category=category,
             match_type_id=self.draft.match_type_id or "",
         )
         self.app.state.set_slot(self.slot_index, match)

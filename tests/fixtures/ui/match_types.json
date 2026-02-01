@@ -64,7 +64,6 @@
     "name": "Ambulance",
     "description": "Win by leaving your opponent unable to continue.",
     "base_cost": 600,
-    "allowed_categories": ["singles"],
     "modifiers": {
       "outcome_chaos": 0.35,
       "rating_bonus": 7,
