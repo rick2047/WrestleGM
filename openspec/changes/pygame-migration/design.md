@@ -426,8 +426,11 @@ pytest tests/ui_pygame/
 pytest tests/ui_pygame/ --snapshot-update
 ```
 
-## Open Questions
+## Technical Decisions
 
 1. **Font**: Bundle a pixel font (e.g., [Press Start 2P](https://fonts.google.com/specimen/Press+Start+2P) or similar open source pixel font)
 2. **Image formats**: PNG for pixel art with transparency
-3. **Mobile packaging**: buildozer for Android APK?
+
+## Open Questions
+
+1. **Mobile packaging**: buildozer for Android APK?
