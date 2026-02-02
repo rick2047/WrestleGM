@@ -46,6 +46,9 @@ class WrestleGMApp:
         # Register screens (will be added as they're implemented)
         self._register_screens()
 
+        # Set up automatic screen rebuilding after navigation
+        self._router.set_on_navigate_callback(self._rebuild_current_screen)
+
         # Clock for frame rate
         self._clock = pygame.time.Clock()
         self._running = False
@@ -110,14 +113,16 @@ class WrestleGMApp:
         """Quit the application."""
         self._running = False
 
-    def run(self) -> None:
-        """Main game loop with transition support."""
-        self._running = True
+    def _rebuild_current_screen(self) -> None:
+        """Rebuild the current screen's UI elements.
 
-        # Navigate to main menu
-        self._router.navigate("main_menu")
+        Clears the UI manager and calls build() on the current screen.
+        This is called automatically after navigation to ensure UI elements exist.
+        """
+        # Clear all existing UI elements
+        self._ui_manager.clear_and_reset()
 
-        # Build the initial screen
+        # Get current screen and build it
         current = self._router.current
         if current:
             from pygame import Rect
@@ -125,6 +130,13 @@ class WrestleGMApp:
             from .constants import DESIGN_HEIGHT, DESIGN_WIDTH
 
             current.build(self._ui_manager, Rect(0, 0, DESIGN_WIDTH, DESIGN_HEIGHT))
+
+    def run(self) -> None:
+        """Main game loop with transition support."""
+        self._running = True
+
+        # Navigate to main menu (rebuild happens automatically via callback)
+        self._router.navigate("main_menu")
 
         while self._running:
             time_delta = self._clock.tick(60) / 1000.0
@@ -150,6 +162,7 @@ class WrestleGMApp:
                 transition_complete = self._transition_manager.update(time_delta)
                 if transition_complete:
                     self._router.complete_transition()
+                    self._rebuild_current_screen()
             else:
                 current = self._router.current
                 if current:

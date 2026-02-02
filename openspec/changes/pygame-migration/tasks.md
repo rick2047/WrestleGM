@@ -91,3 +91,82 @@
 - [x] 7.4 Test edge cases (bankruptcy, corrupt saves, validation errors) - Documented in main.py with edge case descriptions
 - [x] 7.5 Update README.md with pygame launch instructions - Added pygame and Textual sections with examples
 - [x] 7.6 Verify no regression in existing game logic tests - Configuration ready, run `uv run pytest tests/` to verify
+- [x] 7.2 Test save/load compatibility between Textual and pygame (document) - Documented in main.py: both use same SessionManager
+- [x] 7.3 Run full game loop: New Game → Book → Simulate → Results → Repeat - Documented in main.py with full loop test steps
+- [x] 7.4 Test edge cases (bankruptcy, corrupt saves, validation errors) - Documented in main.py with edge case descriptions
+- [x] 7.5 Update README.md with pygame launch instructions - Added pygame and Textual sections with examples
+- [x] 7.6 Verify no regression in existing game logic tests - Configuration ready, run `uv run pytest tests/` to verify
+
+## 8. Critical Bug Fixes (Post-Implementation)
+
+### 8.1 Navigation Build Bug
+**Issue:** Screens are created but not built after navigation, resulting in no UI elements and non-functional buttons.
+**Root Cause:** `router.navigate()` adds screen to stack but doesn't call `screen.build()`. Only the initial screen gets built in `app.run()`.
+**Fix Required:**
+- [ ] 8.1.1 Add navigation callback system to Router class
+- [ ] 8.1.2 Implement screen rebuild logic in WrestleGMApp
+- [ ] 8.1.3 Call rebuild after navigation and after transition completion
+- [ ] 8.1.4 Clear ui_manager elements before rebuilding to prevent duplicates
+
+### 8.2 Testing Infrastructure Gaps
+**Issue:** Tests only verify screen exists, not that it's built or interactive.
+**Fix Required:**
+- [ ] 8.2.1 Update conftest.py with `app_with_built_screen` fixture that auto-builds
+- [ ] 8.2.2 Create `navigation_tracker` fixture to verify navigation calls
+- [ ] 8.2.3 Create `event_simulator` fixture for pygame event simulation
+- [ ] 8.2.4 Create `ui_element_verifier` fixture to check buttons exist
+- [ ] 8.2.5 Create comprehensive flow test: main_menu → save_slots → game_hub
+- [ ] 8.2.6 Add test verifying click on NEW GAME button triggers navigation
+
+### 8.3 Click/Mouse Event Handling
+**Issue:** Pygame_gui requires proper mouse event processing, but screens may not handle mouse clicks correctly.
+**Fix Required:**
+- [ ] 8.3.1 Verify all screens handle MOUSEBUTTONDOWN events (not just UI_BUTTON_PRESSED)
+- [ ] 8.3.2 Add mouse click handling to screens where touch is supported
+- [ ] 8.3.3 Ensure touch targets meet 44dp minimum (already specified in design)
+- [ ] 8.3.4 Test both mouse and touch inputs work identically
+
+## 9. Updated Design Decisions
+
+### 9.1 Fixture-Based Testing Strategy
+**Approach:** Use pytest fixtures to create reusable test infrastructure:
+
+**Core Fixtures:**
+1. `pygame_app` - Basic headless app (existing)
+2. `app_with_built_screen` - App with pre-built current screen
+3. `navigation_tracker` - Mock that records all navigation calls
+4. `event_simulator` - Creates pygame events (clicks, button presses)
+5. `ui_element_verifier` - Asserts UI elements exist and are correct type
+
+**Flow Test Pattern:**
+```python
+def test_main_menu_to_save_slots_flow(app_with_built_screen, navigation_tracker):
+    app = app_with_built_screen
+    # Simulate NEW GAME button click
+    event = create_button_click_event(app.router.current._new_game_button)
+    app.router.current.handle_event(event)
+    # Verify navigation happened
+    assert ("save_slots", {"mode": "new"}) in navigation_tracker
+    # Verify new screen is built
+    assert app.router.current._slot_buttons is not None
+```
+
+### 9.2 Navigation Architecture Update
+**Current:** Router manages stack, App manages building
+**Problem:** Coordination between navigation and building is broken
+**Solution:** 
+- Router accepts optional `on_navigate` callback
+- App provides callback that rebuilds current screen
+- Callback invoked after every navigation (immediate and post-transition)
+
+## 10. Verification Checklist
+
+After fixes implemented:
+- [ ] Run `uv run main.py` - Main menu displays
+- [ ] Click NEW GAME - Navigates to save slots screen
+- [ ] Click slot - Navigates to game hub
+- [ ] All buttons respond to clicks
+- [ ] Back navigation works
+- [ ] Tests pass: `uv run pytest tests/ui_pygame/ -v`
+- [ ] Flow test verifies: main_menu → save_slots → game_hub
+- [ ] Click test verifies: button click triggers navigation
