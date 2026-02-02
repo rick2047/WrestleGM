@@ -291,10 +291,12 @@ class TransitionManager:
         self._to_screen = to_screen
         self._alpha = 0
         
+    FADE_DURATION_SECONDS = 0.3
+    
     def update(self, time_delta: float) -> bool:
         if not self._active:
             return True
-        self._alpha += int(255 * time_delta / 0.3)  # 300ms fade
+        self._alpha += int(255 * time_delta / self.FADE_DURATION_SECONDS)
         if self._alpha >= 255:
             self._active = False
             return True
