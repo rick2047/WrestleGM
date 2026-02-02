@@ -51,7 +51,8 @@ Moving to pygame + pygame_gui enables:
 3. **Mobile-ready**: UI elements meet mobile usability standards (min 44×44dp touch targets, readable text)
 4. **Entry point**: `main.py` launches pygame version instead of Textual
 5. **Tests pass**: Existing tests continue to work (they test game logic, not UI)
-6. **No regression**: Game data (saves) remain compatible
+6. **Visual snapshot testing**: New pygame UI has Syrupy-based PNG snapshot tests matching Textual coverage
+7. **No regression**: Game data (saves) remain compatible
 
 ## Impact
 

@@ -333,10 +333,98 @@ if __name__ == "__main__":
 
 ## Testing Strategy
 
-- **Unit tests**: Router, ScalingManager logic
-- **Integration**: Screen navigation flows
-- **Visual**: Manual testing for layout on different resolutions
-- **Existing tests**: Game logic tests remain unchanged (no core changes)
+### Visual Snapshot Testing with Syrupy
+
+We use **Syrupy** with **PNGImageSnapshotExtension** for deterministic visual regression testing, similar to the existing Textual SVG snapshot approach.
+
+```python
+# conftest.py
+import pytest
+import os
+import pygame
+from syrupy.extensions.single_file import PNGImageSnapshotExtension
+
+@pytest.fixture
+def snapshot_image(snapshot):
+    """Snapshot fixture for pygame surface images."""
+    return snapshot.use_extension(PNGImageSnapshotExtension)
+
+@pytest.fixture
+def pygame_app():
+    """Headless pygame app with fixed clock for deterministic testing."""
+    os.environ['SDL_VIDEODRIVER'] = 'dummy'
+    pygame.init()
+    
+    app = WrestleGMApp()
+    app._clock = MockClock(fixed_delta=1/60)  # Fixed timestep
+    app._scale = 1.0  # No scaling variation
+    
+    yield app
+    pygame.quit()
+
+# test_screens.py
+def test_main_menu_render(pygame_app, snapshot_image):
+    """Snapshot test for main menu visual appearance."""
+    app = pygame_app
+    app.show_screen("main_menu")
+    app.process_frame()
+    
+    # Capture and compare
+    import io
+    buffer = io.BytesIO()
+    pygame.image.save(app.get_screen_surface(), buffer, ".png")
+    assert buffer.getvalue() == snapshot_image
+```
+
+### Test Organization
+
+```
+tests/ui_pygame/
+├── conftest.py                # Shared fixtures (pygame_app, snapshot_image)
+├── test_router.py             # Unit tests for navigation logic
+├── test_scaling.py            # Unit tests for scaling manager
+└── screens/                   # Visual snapshot tests per screen
+    ├── test_main_menu.py
+    ├── test_save_slots.py
+    ├── test_game_hub.py
+    └── __snapshots__/         # Generated PNG baseline files
+        ├── test_main_menu/
+        │   └── test_render.png
+        └── test_game_hub/
+            └── test_render.png
+```
+
+### Testing Levels
+
+| Level | Approach | Deterministic? |
+|-------|----------|----------------|
+| **Unit tests** | Test Router, ScalingManager logic directly | ✅ Yes |
+| **Integration tests** | Screen navigation with mock pygame | ✅ Yes |
+| **Visual snapshots** | PNG comparison via Syrupy | ✅ Yes (with mock clock) |
+| **Game logic** | Existing tests unchanged | ✅ Yes |
+
+### Dependencies
+
+```toml
+[project.optional-dependencies]
+test = [
+    "pytest>=7.0",
+    "syrupy>=5.0",
+]
+```
+
+### Workflow
+
+```bash
+# Create initial baselines
+pytest tests/ui_pygame/ --snapshot-update
+
+# Verify no regressions (CI)
+pytest tests/ui_pygame/
+
+# Update after intentional UI changes
+pytest tests/ui_pygame/ --snapshot-update
+```
 
 ## Open Questions
 
