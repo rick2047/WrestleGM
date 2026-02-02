@@ -11,10 +11,11 @@ The current Textual-based terminal UI has served well for early development but 
 
 Moving to pygame + pygame_gui enables:
 - Custom graphics, wrestler portraits, visual effects
-- Sound effects for match outcomes, crowd reactions
 - Smooth animations for transitions and results
 - Touch-first mobile interface
 - Flexible theming and visual polish
+- **Future**: Sound effects, music (infrastructure-ready but not implemented)
+- **Future**: Mobile packaging for Android/iOS (architecture supports it)
 
 ## Scope
 
@@ -43,6 +44,8 @@ Moving to pygame + pygame_gui enables:
 - Keyboard navigation (may be added in future)
 - Desktop-specific optimizations (focus is mobile-first)
 - Online features or multiplayer
+- **Sound/audio**: Infrastructure ready but no audio assets or playback
+- **Mobile packaging**: APK/IPA builds (architected for it but not setting up now)
 
 ## Success Criteria
 
