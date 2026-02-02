@@ -428,7 +428,6 @@ pytest tests/ui_pygame/ --snapshot-update
 
 ## Open Questions
 
-1. Font selection - use system fonts or bundle pixel font?
-2. Audio file formats - prefer OGG for small size?
-3. Image formats - PNG for pixel art with transparency?
-4. Mobile packaging - buildozer for Android APK?
+1. **Font**: Bundle a pixel font (e.g., [Press Start 2P](https://fonts.google.com/specimen/Press+Start+2P) or similar open source pixel font)
+2. **Image formats**: PNG for pixel art with transparency
+3. **Mobile packaging**: buildozer for Android APK?
