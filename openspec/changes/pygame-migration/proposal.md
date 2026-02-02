@@ -76,6 +76,87 @@ Moving to pygame + pygame_gui enables:
 5. **Testing**: UI snapshot tests use Textual's SVG output; will need new approach for pygame
 6. **Learning curve**: pygame_gui theming and layout system has its own complexity
 
+## UI Architecture
+
+All screens follow the proven **Header → Body → Actions → Footer** layout from Textual:
+
+```
+┌─────────────────────────────────────────────┐
+│  Header (Title · Left Info · Right Info)    │  ~40-60px
+├─────────────────────────────────────────────┤
+│                                             │
+│                  Body                       │  Flexible
+│              (Scrollable                    │
+│               Content)                      │
+│                                             │
+├─────────────────────────────────────────────┤
+│  [ Action 1 ] [ Action 2 ] [ Action 3 ]     │  ~60-80px
+├─────────────────────────────────────────────┤
+│  Footer (Hints/Status)                      │  ~30-40px
+└─────────────────────────────────────────────┘
+```
+
+- **Header**: Dynamic title, contextual info (money, show number), status indicators
+- **Body**: Primary content, scrollable when needed, touch-friendly spacing
+- **Actions**: Primary action buttons (Confirm, Cancel, Back), disabled state support
+- **Footer**: Contextual hints or status messages
+
+This consistency reduces cognitive load and mirrors the terminal UI users already know.
+
+## Display Resolution & Scaling Strategy
+
+**Target Design Resolution**: 480×800 (portrait)
+- Fits most phones (lowest common denominator)
+- Aspect ratio 9:16 matches modern smartphones
+- Desktop windowed mode scales proportionally
+
+**Visual Assets**: 32×32 pixel images
+- Wrestler avatars, icons, match type graphics
+- Crisp at 1× scale, acceptable at 2× (64×64)
+- Integer scaling only (no blurry interpolation)
+
+**Text Strategy**:
+| Element | Size | Notes |
+|---------|------|-------|
+| Header Title | 24-28px | Bold, primary |
+| Body Text | 16-18px | Readable at arm's length |
+| Stats/Numbers | 20-24px | Important values stand out |
+| Buttons | 18-20px | Clear call-to-action |
+| Footer | 14-16px | Secondary information |
+
+**Touch Target Minimum**: 44×44dp (density-independent pixels)
+- Buttons: 48dp height minimum
+- List items: 56-64dp for easy selection
+- Spacing: 8dp grid system (margins, padding)
+
+**Scaling Approach**:
+- Design at 1× (480×800)
+- Runtime scale to device: `scale = min(width/480, height/800)`
+- UI elements scale linearly, pixel art stays crisp at integer multiples
+- Letterbox if aspect ratio differs (maintain game area aspect)
+
+**Implications of 32×32 Pixel Art**:
+- **Pro**: Small download size, retro aesthetic, fast to create
+- **Con**: Limited detail for wrestler expressions, scales poorly to tablets
+- **Mitigation**: Focus on readable text and color coding; pixel art supplements rather than communicates primary info
+
+## Visual Style Guide
+
+**Color Palette** (retro-inspired but readable):
+- Background: Deep grays (#1a1a1a, #2d2d2d)
+- Primary: Wrestling gold (#d4af37) for headers, important actions
+- Secondary: Steel blue (#4682b4) for secondary info
+- Success: Green (#228b22) for positive outcomes
+- Warning: Orange (#ff8c00) for stamina warnings
+- Danger: Red (#dc143c) for errors, bankruptcy
+- Text: Off-white (#e8e8e8) for readability
+
+**Typography**:
+- Use system fonts or bundled pixel font
+- All caps for headers (terminates better at low res)
+- Monospace for stats/tables (alignment)
+- Emoji support for alignment icons, rivalry indicators
+
 ## Implementation Approach
 
 Phased rollout to manage complexity:
