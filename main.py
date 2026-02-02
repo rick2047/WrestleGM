@@ -34,7 +34,6 @@ Backward Compatibility Notes:
 """
 
 import argparse
-import sys
 
 
 def main() -> None:

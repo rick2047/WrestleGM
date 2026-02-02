@@ -50,6 +50,7 @@ class BankruptcyScreen(BaseScreen):
             text="BANKRUPT!",
             manager=manager,
             container=content_panel,
+            object_id="#danger_text",
         )
 
         # Subtitle message

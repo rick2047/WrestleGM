@@ -2,40 +2,8 @@
 
 import pytest
 
-
-# Design resolution constants (copied from constants.py to avoid pygame import)
-DESIGN_WIDTH = 480
-DESIGN_HEIGHT = 800
-
-
-class ScalingManager:
-    """Minimal scaling manager for testing without pygame dependencies."""
-
-    def __init__(self, design_size, window_size):
-        self._design = design_size
-        self._window = window_size
-        # Calculate scale (fit to smallest dimension)
-        self._scale = min(
-            window_size[0] / design_size[0], window_size[1] / design_size[1]
-        )
-        # Keep integer scale for pixel art
-        self._ui_scale = max(1, int(self._scale))
-
-    def scale(self, value):
-        """Scale a design value to device pixels."""
-        return int(value * self._scale)
-
-    def ui_scale(self, value):
-        """Scale for UI elements (integer only)."""
-        return value * self._ui_scale
-
-    def letterbox_rect(self):
-        """Centered rect maintaining aspect ratio."""
-        width = self.scale(DESIGN_WIDTH)
-        height = self.scale(DESIGN_HEIGHT)
-        x = (self._window[0] - width) // 2
-        y = (self._window[1] - height) // 2
-        return (x, y, width, height)  # Return tuple instead of Rect
+from wrestlegm.ui_pygame.constants import DESIGN_HEIGHT, DESIGN_WIDTH
+from wrestlegm.ui_pygame.scaling import ScalingManager
 
 
 class TestScalingManager:
@@ -108,10 +76,10 @@ class TestScalingManager:
             (960, 1600),  # 2x scale
         )
         rect = scaler.letterbox_rect()
-        assert rect[2] == 960  # width
-        assert rect[3] == 1600  # height
-        assert rect[0] == 0  # Centered horizontally
-        assert rect[1] == 0  # Centered vertically
+        assert rect.width == 960
+        assert rect.height == 1600
+        assert rect.x == 0  # Centered horizontally
+        assert rect.y == 0  # Centered vertically
 
     def test_letterbox_rect_with_margins(self):
         """Test letterbox rect with margins on larger window."""
@@ -120,10 +88,10 @@ class TestScalingManager:
             (1000, 1600),  # Wider than 2x
         )
         rect = scaler.letterbox_rect()
-        assert rect[2] == 960  # Scaled width
-        assert rect[3] == 1600  # Scaled height
-        assert rect[0] == 20  # Centered: (1000 - 960) / 2
-        assert rect[1] == 0  # No vertical margin
+        assert rect.width == 960  # Scaled width
+        assert rect.height == 1600  # Scaled height
+        assert rect.x == 20  # Centered: (1000 - 960) / 2
+        assert rect.y == 0  # No vertical margin
 
     def test_zero_values(self):
         """Test scaling with zero values raises appropriate error."""

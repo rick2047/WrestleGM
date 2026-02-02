@@ -11,6 +11,7 @@ from pygame.rect import Rect
 from pygame_gui.elements import UIButton, UIDropDownMenu, UILabel, UIPanel
 
 from wrestlegm.models import MATCH_CATEGORIES, Match, MatchCategory
+from wrestlegm.ui_pygame.constants import DESIGN_HEIGHT, DESIGN_WIDTH
 
 from .base import BaseScreen
 
@@ -389,8 +390,9 @@ class MatchBookingScreen(BaseScreen):
         self._rivalry_labels.clear()
         self._slot_panels.clear()
 
-        # Recalculate Y offset (same as _build_body: category + type + cost = 120)
-        y_offset = body_rect.y + 128
+        # Recalculate Y offset: 8px padding + 40px category + 40px type + 40px cost = 128
+        BODY_CONTENT_OFFSET = 128
+        y_offset = body_rect.y + BODY_CONTENT_OFFSET
         slot_height = 70
         slot_spacing = 8
 
@@ -549,7 +551,7 @@ class MatchBookingScreen(BaseScreen):
         self._confirm_modal = ConfirmModal(
             self._app,
             self._app.ui_manager,
-            Rect(0, 0, 480, 800),
+            Rect(0, 0, DESIGN_WIDTH, DESIGN_HEIGHT),
             title="Clear Slot?",
             message="Are you sure you want to clear this match slot?",
             on_confirm=self._clear_slot_confirmed,

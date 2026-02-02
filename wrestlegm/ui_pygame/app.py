@@ -122,7 +122,9 @@ class WrestleGMApp:
         if current:
             from pygame import Rect
 
-            current.build(self._ui_manager, Rect(0, 0, 480, 800))
+            from .constants import DESIGN_HEIGHT, DESIGN_WIDTH
+
+            current.build(self._ui_manager, Rect(0, 0, DESIGN_WIDTH, DESIGN_HEIGHT))
 
         while self._running:
             time_delta = self._clock.tick(60) / 1000.0

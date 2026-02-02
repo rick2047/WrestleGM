@@ -1,6 +1,9 @@
 """Visual snapshot tests for MainMenuScreen."""
 
+import io
+
 import pytest
+import pygame
 from pygame import Rect
 
 
@@ -15,14 +18,19 @@ def test_main_menu_render(pygame_app, snapshot_image):
         current.build(app.ui_manager, Rect(0, 0, 480, 800))
 
     # Process a frame to render
-    app.ui_manager.update(0.016)  # ~60fps
+    app.ui_manager.update(0.016)
 
-    # For now, verify the screen builds without errors
-    # Full snapshot comparison requires baseline PNG generation with --snapshot-update
-    assert current is not None
+    # Render to surface and capture
+    surface = pygame.Surface((480, 800))
+    app.ui_manager.draw_ui(surface)
+
+    # Capture and compare
+    buffer = io.BytesIO()
+    pygame.image.save(surface, buffer, ".png")
+    assert buffer.getvalue() == snapshot_image
 
 
-def test_main_menu_buttons_visible(pygame_app):
+def test_main_menu_buttons_visible(pygame_app, snapshot_image):
     """Test all main menu buttons are visible and accessible."""
     app = pygame_app
     app.router.navigate("main_menu")
@@ -32,5 +40,11 @@ def test_main_menu_buttons_visible(pygame_app):
         current.build(app.ui_manager, Rect(0, 0, 480, 800))
         app.ui_manager.update(0.016)
 
-    # Verify screen has buttons (screen is accessible)
-    assert current is not None
+    # Render to surface and capture
+    surface = pygame.Surface((480, 800))
+    app.ui_manager.draw_ui(surface)
+
+    # Capture and compare
+    buffer = io.BytesIO()
+    pygame.image.save(surface, buffer, ".png")
+    assert buffer.getvalue() == snapshot_image

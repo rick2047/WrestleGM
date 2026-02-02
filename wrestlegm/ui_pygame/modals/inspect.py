@@ -13,6 +13,10 @@ if TYPE_CHECKING:
     from wrestlegm.ui_pygame.app import WrestleGMApp
 
 
+MAX_DESCRIPTION_LENGTH = 50
+MAX_RIVALRIES_DISPLAY = 3
+
+
 class WrestlerInspectModal(BaseModal):
     """Detailed wrestler information modal."""
 
@@ -118,9 +122,8 @@ class WrestlerInspectModal(BaseModal):
         if description:
             desc_rect = Rect(10, y_offset, modal_rect.width - 20, 40)
             # Truncate if too long
-            max_len = 50
-            if len(description) > max_len:
-                description = description[: max_len - 3] + "..."
+            if len(description) > MAX_DESCRIPTION_LENGTH:
+                description = description[: MAX_DESCRIPTION_LENGTH - 3] + "..."
             self._description_label = UILabel(
                 relative_rect=desc_rect,
                 text=description,
@@ -140,8 +143,8 @@ class WrestlerInspectModal(BaseModal):
             )
             y_offset += 30
 
-            # List rivalries (max 3 lines)
-            for i, rivalry in enumerate(self._rivalries[:3]):
+            # List rivalries (max lines)
+            for i, rivalry in enumerate(self._rivalries[:MAX_RIVALRIES_DISPLAY]):
                 rivalry_rect = Rect(20, y_offset, modal_rect.width - 40, 20)
                 UILabel(
                     relative_rect=rivalry_rect,

@@ -232,16 +232,42 @@ class PromoBookingScreen(BaseScreen):
         promo = Promo(wrestler=wrestler)
         return self._app.state.validate_promo(promo, slot_index=self._slot_index)
 
+    def _rebuild_body(self) -> None:
+        """Rebuild body section with updated wrestler selection.
+
+        Called when a wrestler is selected to refresh the UI without navigation.
+        Clears existing body elements and recreates them.
+        """
+        manager = getattr(self._app, "ui_manager", None)
+        if not manager:
+            return
+
+        # Get body zone rect
+        zones = self._compute_zones(pygame.display.get_surface().get_rect())
+        body_rect = zones["body"]
+
+        # Kill existing body UI elements
+        if self._wrestler_info_label:
+            self._wrestler_info_label.kill()
+            self._wrestler_info_label = None
+        if self._mic_skill_label:
+            self._mic_skill_label.kill()
+            self._mic_skill_label = None
+        if self._cost_label:
+            self._cost_label.kill()
+            self._cost_label = None
+        if self._select_button:
+            self._select_button.kill()
+            self._select_button = None
+
+        # Rebuild body
+        self._build_body(manager, body_rect)
+
     def _set_wrestler(self, wrestler_id: str) -> None:
         """Set the selected wrestler."""
         self._draft.wrestler_id = wrestler_id
         # Rebuild UI to show wrestler info
-        self._router.back()
-        self._router.navigate(
-            "promo_booking",
-            slot_index=self._slot_index,
-            existing_promo=self._get_promo_from_draft(),
-        )
+        self._rebuild_body()
 
     def _get_promo_from_draft(self) -> Optional[Promo]:
         """Get a Promo object from current draft if complete."""
