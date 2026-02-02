@@ -1,30 +1,33 @@
 # WrestleGM
 
-WrestleGM is a terminal-first wrestling management game where you run a promotion
-one show at a time. The game focuses on booking match cards, simulating outcomes,
-and watching roster stats evolve across shows.
+WrestleGM is a wrestling management game where you run a promotion one show at a
+time. The game focuses on booking match cards, simulating outcomes, and watching
+roster stats evolve across shows.
 
 ## Product Vision
 
 - Show-by-show progression is the core loop, not single-match outcomes.
 - Systemic, deterministic simulation with data-driven wrestlers and match types.
-- Keyboard-only Textual UI designed for narrow terminals.
+- Touch-first pygame UI designed for mobile and desktop.
 - Long-term booking decisions matter through stamina, popularity, and match types.
 
 For the full MVP vision and UX details, see `prd.md`.
 
 ## Current State
 
-- Textual UI with main menu, booking hub, match booking, selection screens, and
-  show results.
+- **pygame UI** (current default): Touch-friendly interface with main menu,
+  save slots, game hub, booking hub, match/promo booking, wrestler selection,
+  simulating progress, and show results.
+- **Textual UI** (backward compatibility): Terminal interface preserved in
+  `wrestlegm/ui/` for existing users.
 - Fixed 3-match show card with validation (no duplicate wrestlers, stamina limits).
 - Deterministic simulation pipeline: outcome, rating, and stat deltas.
 - Show ratings aggregate match ratings; stats update at show end.
 - Between-show stamina recovery for wrestlers who did not appear.
 - Data-driven roster and match types from JSON in `data/`.
+- Save/load persistence across both UI versions.
 
 Not yet included:
-- Save/load persistence.
 - Multiple promotions, titles, storylines, or injuries.
 - Dynamic show sizes or match weighting.
 
@@ -32,6 +35,7 @@ Not yet included:
 
 - Python 3.11+
 - `uv` installed (dependency management and task runner)
+- pygame dependencies (automatically installed via `uv sync`)
 
 ## Dependency Management
 
@@ -41,14 +45,35 @@ uv sync
 
 ## Run
 
+### pygame UI (Default - Mobile/Tablet/Desktop)
+
+The pygame UI provides a touch-friendly interface with smooth transitions,
+scrollable lists, and visual feedback. Default launch:
+
 ```bash
 uv run main.py
 ```
+
+### Textual UI (Legacy - Terminal)
+
+The Textual UI is available in `wrestlegm/ui/` for backward compatibility.
+To use it, modify `main.py` to import from `wrestlegm.ui` instead of
+`wrestlegm.ui_pygame`.
 
 ## Tests
 
 ```bash
 uv run pytest
+```
+
+For pygame UI visual snapshot tests:
+
+```bash
+# Run with headless display (CI/CD compatible)
+SDL_VIDEODRIVER=dummy uv run pytest tests/ui_pygame/ -v
+
+# Update snapshots after intentional UI changes
+uv run pytest tests/ui_pygame/ --snapshot-update
 ```
 
 ## Tooling
