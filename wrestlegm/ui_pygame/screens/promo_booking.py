@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Callable, Optional
 
 import pygame
 import pygame_gui
@@ -13,6 +13,14 @@ from wrestlegm.models import Promo
 from wrestlegm.ui.drafts import PromoDraft
 
 from .base import BaseScreen
+
+
+def format_money(amount: int) -> str:
+    """Format money amount as string (plain text for pygame)."""
+    if amount < 0:
+        return f"-${abs(amount):,}"
+    return f"${amount:,}"
+
 
 if TYPE_CHECKING:
     from wrestlegm.ui_pygame.app import WrestleGMApp
@@ -45,12 +53,11 @@ class PromoBookingScreen(BaseScreen):
         self._cancel_button: Optional[UIButton] = None
         self._clear_button: Optional[UIButton] = None
         self._confirm_button: Optional[UIButton] = None
-        self._on_select_callback: Optional[callable] = None
+        self._on_select_callback: Optional[Callable] = None
 
     def _build_header(self, manager, rect) -> None:
         """Build header with title and money info."""
         from ..constants import FONT_SIZE_HEADER
-        from wrestlegm.ui.formatting import slot_label, format_money
 
         # Title
         slot_num = sum(
@@ -110,8 +117,6 @@ class PromoBookingScreen(BaseScreen):
         wrestler = self._app.state.roster.get(wrestler_id)
         if not wrestler:
             return
-
-        from wrestlegm.ui.formatting import format_money
 
         # Wrestler name
         name_rect = Rect(rect.x + 10, rect.y + 10, rect.width - 20, 25)

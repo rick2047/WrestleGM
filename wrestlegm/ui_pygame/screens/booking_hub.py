@@ -306,10 +306,12 @@ class BookingHubScreen(BaseScreen):
             def _on_cancel():
                 pass  # Stay on booking hub
 
+            from ..constants import DESIGN_WIDTH, DESIGN_HEIGHT
+
             modal = ConfirmModal(
                 app=self._app,
                 manager=self._app.ui_manager,
-                parent_rect=Rect(0, 0, 480, 800),  # Full screen rect
+                parent_rect=Rect(0, 0, DESIGN_WIDTH, DESIGN_HEIGHT),  # Full screen rect
                 title="Confirm Run Show",
                 message=f"Show cost (${show_cost:,}) exceeds your money (${self._app.state.money:,}).\n\nYou will go into debt. Continue?",
                 on_confirm=_on_confirm,

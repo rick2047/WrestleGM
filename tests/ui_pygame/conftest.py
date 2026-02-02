@@ -4,13 +4,13 @@ import os
 
 import pygame
 import pytest
-from syrupy.extensions.single_file import SingleFileSnapshotExtension
+from syrupy.extensions.image import PNGImageSnapshotExtension
 
 
 @pytest.fixture
 def snapshot_image(snapshot):
     """Snapshot fixture for pygame surface images."""
-    return snapshot.use_extension(SingleFileSnapshotExtension)
+    return snapshot.use_extension(PNGImageSnapshotExtension)
 
 
 @pytest.fixture

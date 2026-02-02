@@ -1,6 +1,6 @@
 """Router for screen navigation state machine."""
 
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from .app import WrestleGMApp
@@ -15,7 +15,7 @@ class Router:
         self._screens: dict[str, type] = {}
         self._stack: list["BaseScreen"] = []
         self._transition_manager = None
-        self._pending_navigation: tuple[str, dict] | None = None
+        self._pending_navigation: "BaseScreen | None" = None
 
     def set_transition_manager(self, transition_manager) -> None:
         """Set the transition manager for animated navigation."""
@@ -51,7 +51,7 @@ class Router:
 
             if self._transition_manager:
                 self._transition_manager.start(from_screen, to_screen)
-                self._pending_navigation = (route, kwargs)
+                self._pending_navigation = to_screen  # Store the screen instance
                 return True
             else:
                 # No transition manager, navigate immediately
@@ -62,11 +62,8 @@ class Router:
     def complete_transition(self) -> None:
         """Complete the pending navigation after transition finishes."""
         if self._pending_navigation:
-            route, kwargs = self._pending_navigation
-            screen_class = self._screens.get(route)
-            if screen_class:
-                screen = screen_class(self._app, self, **kwargs)
-                self._stack.append(screen)
+            # Use the stored screen instance instead of creating a new one
+            self._stack.append(self._pending_navigation)
             self._pending_navigation = None
 
     def back(self) -> None:

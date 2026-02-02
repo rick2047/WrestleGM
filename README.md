@@ -57,8 +57,11 @@ uv run main.py
 ### Textual UI (Legacy - Terminal)
 
 The Textual UI is available in `wrestlegm/ui/` for backward compatibility.
-To use it, modify `main.py` to import from `wrestlegm.ui` instead of
-`wrestlegm.ui_pygame`.
+To launch with the terminal UI:
+
+```bash
+uv run main.py --ui textual
+```
 
 ## Tests
 

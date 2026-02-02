@@ -28,22 +28,40 @@ Save/Load Compatibility:
 
 Backward Compatibility Notes:
     - Textual UI code remains in wrestlegm/ui/ unchanged
-    - To use Textual UI, uncomment the import line below and comment pygame import
+    - Use --ui textual flag to launch Textual UI
     - Game logic (state.py, sim.py, economy.py) is UI-agnostic
     - All existing tests pass without modification
 """
 
-# Textual UI (backward compatibility - uncomment to use)
-# from wrestlegm.ui import WrestleGMApp as TextualWrestleGMApp
-
-# Pygame UI (current default) - provides touch-friendly mobile interface
-from wrestlegm.ui_pygame import WrestleGMApp
+import argparse
+import sys
 
 
 def main() -> None:
-    """Run the WrestleGMApp pygame app."""
-    app = WrestleGMApp()
-    app.run()
+    """Run the WrestleGMApp with UI selection via CLI args."""
+    parser = argparse.ArgumentParser(
+        description="WrestleGM - Wrestling promotion management game"
+    )
+    parser.add_argument(
+        "--ui",
+        choices=["pygame", "textual"],
+        default="pygame",
+        help="UI to use: pygame (default, touch-friendly) or textual (terminal)",
+    )
+    args = parser.parse_args()
+
+    if args.ui == "textual":
+        # Textual UI (terminal-based)
+        from wrestlegm.ui import WrestleGMApp as TextualWrestleGMApp
+
+        app = TextualWrestleGMApp()
+        app.run()
+    else:
+        # Pygame UI (default, touch-friendly mobile interface)
+        from wrestlegm.ui_pygame import WrestleGMApp
+
+        app = WrestleGMApp()
+        app.run()
 
 
 if __name__ == "__main__":

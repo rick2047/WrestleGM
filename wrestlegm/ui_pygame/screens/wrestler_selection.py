@@ -8,11 +8,13 @@ import pygame_gui
 from pygame.rect import Rect
 from pygame_gui.elements import UIButton, UILabel, UIPanel, UIScrollingContainer
 
+from .base import BaseScreen
+
 if TYPE_CHECKING:
     pass
 
 
-class WrestlerSelectionScreen:
+class WrestlerSelectionScreen(BaseScreen):
     """Scrollable list of available wrestlers."""
 
     def __init__(
@@ -23,12 +25,10 @@ class WrestlerSelectionScreen:
         exclude: list[str] | None = None,
         slot_index: int = 0,
     ):
-        self._app = app
-        self._router = router
+        super().__init__(app, router)
         self._on_select = on_select
         self._exclude = exclude or []
         self._slot_index = slot_index
-        self._container = None
         self._scroll_container = None
         self._wrestler_buttons: list[UIButton] = []
         self._wrestler_data: list[tuple] = []
@@ -41,34 +41,6 @@ class WrestlerSelectionScreen:
         self._build_body(manager, zones["body"])
         self._build_actions(manager, zones["actions"])
         self._build_footer(manager, zones["footer"])
-
-    def _compute_zones(self, rect):
-        """Calculate header, body, actions, footer rectangles."""
-        from pygame import Rect
-
-        HEADER_HEIGHT = 50
-        ACTIONS_HEIGHT = 70
-        FOOTER_HEIGHT = 40
-
-        x = rect.x
-        y = rect.y
-        width = rect.width
-
-        header_rect = Rect(x, y, width, HEADER_HEIGHT)
-        body_y = y + HEADER_HEIGHT
-        body_height = rect.height - HEADER_HEIGHT - ACTIONS_HEIGHT - FOOTER_HEIGHT
-        body_rect = Rect(x, body_y, width, body_height)
-        actions_y = body_y + body_height
-        actions_rect = Rect(x, actions_y, width, ACTIONS_HEIGHT)
-        footer_y = actions_y + ACTIONS_HEIGHT
-        footer_rect = Rect(x, footer_y, width, FOOTER_HEIGHT)
-
-        return {
-            "header": header_rect,
-            "body": body_rect,
-            "actions": actions_rect,
-            "footer": footer_rect,
-        }
 
     def _build_header(self, manager, rect) -> None:
         """Build header with title and back button."""

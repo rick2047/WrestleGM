@@ -6,6 +6,7 @@ import pygame_gui
 from pygame.rect import Rect
 from pygame_gui.elements import UIButton, UILabel, UIPanel
 
+from ..constants import COLOR_DANGER
 from .base import BaseScreen
 
 
@@ -29,7 +30,6 @@ class BankruptcyScreen(BaseScreen):
 
     def _build_body(self, manager, rect) -> None:
         """Build bankruptcy message and stats display."""
-        from ..constants import COLOR_DANGER
 
         # Center panel for content
         panel_width = rect.width - 32

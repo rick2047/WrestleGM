@@ -5,10 +5,13 @@ This package contains bundled assets for the pygame UI including:
 - Icons: UI icons and button graphics
 - Pixel art: Wrestler avatars and other game art
 
-To add fonts:
+Font Handling:
+The pygame UI currently uses system fonts via pygame_gui theming (see theme.py).
+To bundle custom fonts in the future:
 1. Place font files (e.g., .ttf) in this directory
-2. Reference them in constants.py with the appropriate path
-3. Use pygame.font.Font or pygame_gui theming to load them
+2. Add them to FONT_PATHS below
+3. Update theme.py to reference the bundled font
+4. Load via pygame.font.Font or pygame_gui theming
 
 Note: Font files should be open-source licensed (e.g., OFL, MIT).
 Recommended font: Press Start 2P (https://fonts.google.com/specimen/Press+Start+2P)
@@ -18,10 +21,12 @@ from pathlib import Path
 
 ASSETS_DIR = Path(__file__).parent
 
-# Font paths (update when font files are added)
-FONT_PATHS = {
-    # "pixel": ASSETS_DIR / "PressStart2P-Regular.ttf",
-}
+# Font paths - currently empty as we use system fonts via pygame_gui theming
+# To bundle a font, uncomment and add the .ttf file to this directory:
+# FONT_PATHS = {
+#     "pixel": ASSETS_DIR / "PressStart2P-Regular.ttf",
+# }
+FONT_PATHS: dict[str, Path] = {}
 
 
 def get_font_path(name: str) -> Path:
@@ -38,6 +43,8 @@ def get_font_path(name: str) -> Path:
     """
     if name not in FONT_PATHS:
         raise KeyError(
-            f"Font '{name}' not found in assets. Available: {list(FONT_PATHS.keys())}"
+            f"Font '{name}' not found in assets. "
+            f"Available: {list(FONT_PATHS.keys())}. "
+            f"Note: The UI currently uses system fonts via pygame_gui theming."
         )
     return FONT_PATHS[name]

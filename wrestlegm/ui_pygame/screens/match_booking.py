@@ -5,6 +5,7 @@ from __future__ import annotations
 from itertools import combinations
 from typing import TYPE_CHECKING
 
+import pygame
 import pygame_gui
 from pygame.rect import Rect
 from pygame_gui.elements import UIButton, UIDropDownMenu, UILabel, UIPanel
@@ -33,6 +34,7 @@ class MatchBookingScreen(BaseScreen):
         self._type_dropdown: UIDropDownMenu | None = None
         self._wrestler_slot_buttons: list[UIButton] = []
         self._rivalry_labels: list[UILabel] = []
+        self._slot_panels: list[UIPanel] = []
         self._cost_label: UILabel | None = None
         self._confirm_modal = None
 
@@ -155,6 +157,7 @@ class MatchBookingScreen(BaseScreen):
 
         self._wrestler_slot_buttons = []
         self._rivalry_labels = []
+        self._slot_panels = []
 
         for i in range(self._get_required_wrestler_count()):
             # Slot panel
@@ -199,6 +202,7 @@ class MatchBookingScreen(BaseScreen):
                 container=slot_panel,
             )
             self._rivalry_labels.append(rivalry_label)
+            self._slot_panels.append(slot_panel)
 
     def _build_actions(self, manager, rect) -> None:
         """Build action buttons."""
@@ -363,10 +367,78 @@ class MatchBookingScreen(BaseScreen):
             self._type_dropdown.selected_option = match_type_options[0][0]
 
     def _rebuild_body(self) -> None:
-        """Rebuild body section with updated wrestler slots."""
-        # This is called when category changes - in a full implementation,
-        # we'd clear and rebuild the body container. For now, this is a placeholder.
-        pass
+        """Rebuild body section with updated wrestler slots.
+
+        Called when category changes to update the number of wrestler slots.
+        Clears existing slot panels and recreates them for the new category size.
+        """
+        manager = getattr(self._app, "ui_manager", None)
+        if not manager:
+            return
+
+        # Get body zone rect
+        zones = self._compute_zones(pygame.display.get_surface().get_rect())
+        body_rect = zones["body"]
+
+        # Kill existing slot panels (this also kills their children: buttons and labels)
+        for panel in self._slot_panels:
+            panel.kill()
+
+        # Clear tracking lists
+        self._wrestler_slot_buttons.clear()
+        self._rivalry_labels.clear()
+        self._slot_panels.clear()
+
+        # Recalculate Y offset (same as _build_body: category + type + cost = 120)
+        y_offset = body_rect.y + 128
+        slot_height = 70
+        slot_spacing = 8
+
+        # Rebuild wrestler slots
+        for i in range(self._get_required_wrestler_count()):
+            # Slot panel
+            slot_rect = Rect(
+                body_rect.x + 8,
+                y_offset + i * (slot_height + slot_spacing),
+                body_rect.width - 16,
+                slot_height,
+            )
+            slot_panel = UIPanel(
+                relative_rect=slot_rect,
+                manager=manager,
+            )
+
+            # Wrestler button
+            wrestler_id = (
+                self._draft_wrestler_ids[i]
+                if i < len(self._draft_wrestler_ids)
+                else None
+            )
+            wrestler = self._app.state.roster.get(wrestler_id) if wrestler_id else None
+
+            button_text = wrestler.name if wrestler else "SELECT WRESTLER"
+            button_rect = Rect(8, 10, slot_rect.width - 16, 36)
+            button = UIButton(
+                relative_rect=button_rect,
+                text=button_text,
+                manager=manager,
+                container=slot_panel,
+                object_id=f"wrestler_slot_{i}",
+            )
+            self._wrestler_slot_buttons.append(button)
+
+            # Rivalry indicator
+            rivalries = self._get_rivalry_badges_for_wrestler(wrestler_id)
+            rivalry_text = " ".join(rivalries) if rivalries else ""
+            rivalry_rect = Rect(8, 48, slot_rect.width - 16, 20)
+            rivalry_label = UILabel(
+                relative_rect=rivalry_rect,
+                text=rivalry_text,
+                manager=manager,
+                container=slot_panel,
+            )
+            self._rivalry_labels.append(rivalry_label)
+            self._slot_panels.append(slot_panel)
 
     def _on_wrestler_slot_clicked(self, slot_num: int) -> None:
         """Navigate to wrestler selection screen."""

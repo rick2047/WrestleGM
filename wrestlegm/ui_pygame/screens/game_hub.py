@@ -191,8 +191,8 @@ class GameHubScreen(BaseScreen):
     def _on_save_quit(self) -> None:
         """Save game and return to main menu."""
         # Save using SessionManager
-        if hasattr(self._app, "session_manager") and self._app.session_manager:
-            self._app.session_manager.save_current_slot(self._app.state)
+        if hasattr(self._app, "session") and self._app.session:
+            self._app.session.save_current_slot(self._app.state)
 
         # Navigate back to main menu
         self._router.switch("main_menu")

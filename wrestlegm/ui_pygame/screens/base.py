@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from ..constants import HEADER_HEIGHT, ACTIONS_HEIGHT, FOOTER_HEIGHT
+
 if TYPE_CHECKING:
     import pygame
     import pygame_gui
@@ -33,10 +35,7 @@ class BaseScreen:
         """Calculate header, body, actions, footer rectangles."""
         from pygame import Rect
 
-        # Design resolution constants (at 1x scale)
-        HEADER_HEIGHT = 50
-        ACTIONS_HEIGHT = 70
-        FOOTER_HEIGHT = 40
+        # Zone heights imported from constants module
 
         x = rect.x
         y = rect.y
