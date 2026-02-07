@@ -70,299 +70,179 @@
 - [x] 5.8 Test integer scaling preserves pixel art - Verified ScalingManager uses integer ui_scale
 - [x] 5.9 Verify headless testing works (SDL_VIDEODRIVER=dummy) - Configured in conftest.py
 
-## 6. Phase 6 - Testing Infrastructure
+## 6. Parallel Apply Plan (Subagent Handoff Friendly)
 
-### 6.1 Screen Snapshot Testing Setup
+This phase replaces the old linear testing checklist with vertical slices. Each slice owns code + associated tests and should be mergeable on its own.
 
-- [ ] 6.1.1 Create app_with_built_screen fixture in conftest.py
-  - Initialize headless pygame app
-  - Navigate to screen under test
-  - Call screen.build() to create UI elements
-  - Yield app for test use
-  
-- [ ] 6.1.2 Create snapshot_image fixture with PNGImageSnapshotExtension
-  - Use syrupy.extensions.image.PNGImageSnapshotExtension
-  - Configure for deterministic PNG comparison
-  
-- [ ] 6.1.3 Create screen_to_png helper function
-  - Render UIManager to pygame.Surface
-  - Convert surface to PNG bytes
-  - Return bytes for comparison
+### 6.0 Working Rules for All Subagents
 
-### 6.2 Screen Snapshot Tests (11 tests)
+- [ ] 6.0.1 File ownership rule
+  - A subagent may edit only files listed in its slice unless explicitly assigned a cross-slice fix.
+  - If a change is needed outside owned files, create a handoff note instead of editing.
 
-- [ ] 6.2.1 test_main_menu_screen_renders_correctly
-  - Build MainMenuScreen
-  - Capture PNG
-  - Compare to baseline
-  
-- [ ] 6.2.2 test_save_slots_screen_renders_correctly
-  - Build SaveSlotSelectionScreen with mode=new
-  - Capture PNG
-  - Compare to baseline
-  
-- [ ] 6.2.3 test_game_hub_screen_renders_correctly
-  - Build GameHubScreen
-  - Capture PNG
-  - Compare to baseline
-  
-- [ ] 6.2.4 test_booking_hub_screen_renders_correctly
-  - Build BookingHubScreen with empty slots
-  - Capture PNG
-  - Compare to baseline
-  
-- [ ] 6.2.5 test_match_booking_screen_renders_correctly
-  - Build MatchBookingScreen with singles category
-  - Capture PNG
-  - Compare to baseline
-  
-- [ ] 6.2.6 test_promo_booking_screen_renders_correctly
-  - Build PromoBookingScreen
-  - Capture PNG
-  - Compare to baseline
-  
-- [ ] 6.2.7 test_wrestler_selection_screen_renders_correctly
-  - Build WrestlerSelectionScreen
-  - Capture PNG
-  - Compare to baseline
-  
-- [ ] 6.2.8 test_roster_screen_renders_correctly
-  - Build RosterScreen
-  - Capture PNG
-  - Compare to baseline
-  
-- [ ] 6.2.9 test_simulating_screen_renders_correctly
-  - Build SimulatingScreen
-  - Capture PNG
-  - Compare to baseline
-  
-- [ ] 6.2.10 test_results_screen_renders_correctly
-  - Build ResultsScreen with sample results
-  - Capture PNG
-  - Compare to baseline
-  
-- [ ] 6.2.11 test_bankruptcy_screen_renders_correctly
-  - Build BankruptcyScreen
-  - Capture PNG
-  - Compare to baseline
+- [ ] 6.0.2 Done definition rule
+  - A slice is done only when its acceptance tests pass with `uv run pytest ...`.
+  - Include updated tests in the same slice commit.
 
-### 6.3 Flow Testing Setup
+- [ ] 6.0.3 Modal architecture rule
+  - Use Router-managed modals (`show_confirm`, `show_error`, `show_fatal_error`).
+  - Do not add new custom modal classes under `wrestlegm/ui_pygame/modals/`.
 
-- [ ] 6.3.1 Create app_with_interaction fixture in conftest.py
-  - Initialize headless pygame app
-  - Navigate to starting screen
-  - Build screen
-  - Add app.click(target) method
-  - Add app.pump_events() method
-  - Track events_processed list
-  - Yield app for test use
-  
-- [ ] 6.3.2 Implement click() method
-  - Accept UI element or (x,y) tuple
-  - Post MOUSEBUTTONDOWN at position
-  - Post MOUSEBUTTONUP at position
-  - Call pump_events()
-  
-- [ ] 6.3.3 Implement pump_events() method
-  - Get all events from pygame.event.get()
-  - Append to events_processed list
-  - Call ui_manager.process_events(event)
-  - Call router.current.handle_event(event) if exists
+- [ ] 6.0.4 Theming prep rule
+  - New/updated UI elements must include `ObjectID` where practical.
+  - Do not hardcode theme styling in screens.
 
-### 6.4 Flow Tests (10 tests)
+### 6.1 Slice A - Router Modal Core (Foundation)
 
-- [ ] 6.4.1 test_new_game_flow
-  - Start at Main Menu
-  - Click _new_game_button
-  - Verify navigated to SaveSlotSelectionScreen, mode=new
-  - Verify _slot_buttons is not None (screen built)
-  - Click _slot_buttons[0]
-  - Verify navigated to GameHubScreen
-  - Verify state.show_number is 1 (fresh game)
-  - Verify _booking_hub_button is not None (screen built)
-  
-- [ ] 6.4.2 test_load_game_flow
-  - Setup: Create populated save in slot 2
-  - Start at Main Menu
-  - Click _load_game_button
-  - Verify navigated to SaveSlotSelectionScreen, mode=load
-  - Verify occupied slot 2 is clickable
-  - Click _slot_buttons[2]
-  - Verify navigated to GameHubScreen
-  - Verify state.show_number > 1 (not fresh game)
-  - Verify loaded data matches original save
-  
-- [ ] 6.4.3 test_book_match_flow
-  - Start at Game Hub
-  - Click _booking_hub_button
-  - Verify navigated to BookingHubScreen
-  - Verify 5 _slot_buttons visible
-  - Click _slot_buttons[0] (match slot)
-  - Verify navigated to MatchBookingScreen
-  - Verify category is singles, 2 wrestler slots
-  - Click _wrestler_slot_buttons[0]
-  - Verify navigated to WrestlerSelectionScreen
-  - Verify roster list displayed
-  - Click _wrestler_buttons[0] (available wrestler)
-  - Verify navigated back to MatchBookingScreen
-  - Verify wrestler slot 0 populated
-  - Select second wrestler
-  - Click _confirm_button
-  - Verify navigated to BookingHubScreen
-  - Verify slot 0 shows match summary
-  
-- [ ] 6.4.4 test_complete_show_flow
-  - Start at Game Hub with show N
-  - Navigate to Booking Hub
-  - Book all 5 slots (3 matches + 2 promos)
-  - Verify _run_show_button is enabled
-  - Click _run_show_button
-  - Verify navigated to SimulatingScreen
-  - Verify progress indicator visible
-  - Wait for auto-advance after simulation
-  - Verify navigated to ResultsScreen
-  - Verify show rating displayed
-  - Verify per-slot results shown
-  - Click _continue_button
-  - Verify navigated to GameHubScreen
-  - Verify state.show_number is N+1
-  - Verify state.money updated
-  
-- [ ] 6.4.5 test_roster_inspection_flow
-  - Start at Game Hub
-  - Click _roster_button
-  - Verify navigated to RosterScreen
-  - Verify scrollable wrestler list
-  - Click _wrestler_panels[0]
-  - Verify WrestlerInspectModal opens
-  - Verify modal shows wrestler details
-  - Click _close_button
-  - Verify modal closes
-  - Verify back at RosterScreen
-  
-- [ ] 6.4.6 test_save_and_quit_flow
-  - Start at Game Hub with show number N
-  - Click _save_quit_button
-  - Verify game state saved
-  - Verify navigated to MainMenuScreen
-  - Click _load_game_button
-  - Click _slot_buttons[0] (saved slot)
-  - Verify navigated to GameHubScreen
-  - Verify state.show_number is N (preserved)
-  - Verify all game data matches pre-save
-  
-- [ ] 6.4.7 test_bankruptcy_flow
-  - Setup: Set state.money to -1000
-  - Navigate to bankruptcy screen
-  - Verify BankruptcyScreen displays
-  - Verify _try_again_button visible
-  - Click _try_again_button
-  - Verify navigated to GameHubScreen
-  - Verify state.show_number is 1 (fresh)
-  - Verify state.money is positive (initial amount)
-  
-- [ ] 6.4.8 test_back_navigation_flow
-  - Start at Main Menu
-  - Click _new_game_button
-  - Verify navigated to SaveSlotSelectionScreen
-  - Click _back_button
-  - Verify navigated to MainMenuScreen
-  - Click _new_game_button
-  - Click _slot_buttons[0]
-  - Verify navigated to GameHubScreen
-  - Click _booking_hub_button
-  - Verify navigated to BookingHubScreen
-  - Click _back_button
-  - Verify navigated to GameHubScreen
-  
-- [ ] 6.4.9 test_error_recovery_flow
-  - Setup: Create corrupt save in slot 2
-  - Start at Main Menu
-  - Click _load_game_button
-  - Verify navigated to SaveSlotSelectionScreen
-  - Click _slot_buttons[2] (corrupt slot)
-  - Verify error modal displays with corrupt message via Router.show_error()
-  - Verify app remains on SaveSlotSelectionScreen
-  - Click OK button on modal
-  - Verify modal closes
-  - Verify still on SaveSlotSelectionScreen
-  
-- [ ] 6.4.10 test_cancel_navigation_flow
-  - Start at Main Menu
-  - Click _new_game_button
-  - Verify navigated to SaveSlotSelectionScreen
-  - Click _back_button (cancel)
-  - Verify navigated back to MainMenuScreen
-  - Verify no game was created
+- [ ] 6.1.1 Implement/finish Router modal API
+  - Owner: Subagent A
+  - Depends on: none
+  - Files:
+    - `wrestlegm/ui_pygame/router.py`
+    - `wrestlegm/ui_pygame/app.py`
+    - `tests/ui_pygame/test_router.py`
+  - Scope:
+    - Ensure `show_confirm()`, `show_error()`, `show_fatal_error()`, `handle_modal_event()`, `has_active_modal` are implemented and coherent.
+    - Enforce one-modal-at-a-time in Router.
+    - Ensure navigation is blocked while modal is active.
+  - Acceptance tests:
+    - `uv run pytest tests/ui_pygame/test_router.py -v`
 
-## 7. Phase 7 - Final Integration
+### 6.2 Slice B - Save/Load Error Flow Migration
 
-- [x] 7.1 Verify Textual UI still works (backward compatibility) - Textual UI preserved in wrestlegm/ui/, documented in main.py
-- [x] 7.2 Test save/load compatibility between Textual and pygame (document) - Documented in main.py: both use same SessionManager
-- [x] 7.3 Run full game loop: New Game → Book → Simulate → Results → Repeat - Documented in main.py with full loop test steps
-- [x] 7.4 Test edge cases (bankruptcy, corrupt saves, validation errors) - Documented in main.py with edge case descriptions
-- [x] 7.5 Update README.md with pygame launch instructions - Added pygame and Textual sections with examples
-- [x] 7.6 Verify no regression in existing game logic tests - Configuration ready, run uv run pytest tests/ to verify
+- [ ] 6.2.1 Migrate save/load screens to Router modals
+  - Owner: Subagent B
+  - Depends on: 6.1.1
+  - Files:
+    - `wrestlegm/ui_pygame/screens/save_slots.py`
+    - `tests/ui_pygame/screens/test_save_slots.py`
+    - `tests/ui_pygame/test_navigation_flow.py`
+  - Scope:
+    - Remove direct dependency on custom modal classes in save/load interactions.
+    - Route corrupt save errors through `router.show_error()`.
+    - Update assertions to Router modal state (not screen-local modal fields).
+  - Flow test ownership in `tests/ui_pygame/test_navigation_flow.py`:
+    - Own and update: `test_new_game_flow`, `test_load_game_flow`, `test_error_recovery_flow`, `test_cancel_navigation_flow`, `test_save_and_quit_flow`.
+    - If these function names do not yet exist, create/rename tests to match these canonical names.
+  - Acceptance tests:
+    - `uv run pytest tests/ui_pygame/screens/test_save_slots.py -v`
+    - `uv run pytest tests/ui_pygame/test_navigation_flow.py -k "new_game_flow or load_game_flow or error_recovery_flow or cancel_navigation_flow or save_and_quit_flow" -v`
 
-## 8. Critical Bug Fixes (Post-Implementation)
+### 6.3 Slice C - Booking and Confirmation Flows
 
-### 8.1 Navigation Build Bug
-**Issue:** Screens are created but not built after navigation, resulting in no UI elements and non-functional buttons.
-**Root Cause:** router.navigate() adds screen to stack but does not call screen.build(). Only the initial screen gets built in app.run().
-**Fix Required:**
-- [x] 8.1.1 Add navigation callback system to Router class
-- [x] 8.1.2 Implement screen rebuild logic in WrestleGMApp
-- [x] 8.1.3 Call rebuild after navigation and after transition completion
-- [x] 8.1.4 Clear ui_manager elements before rebuilding to prevent duplicates
+- [ ] 6.3.1 Migrate booking screens to Router confirmations
+  - Owner: Subagent C
+  - Depends on: 6.1.1
+  - Files:
+    - `wrestlegm/ui_pygame/screens/booking_hub.py`
+    - `wrestlegm/ui_pygame/screens/match_booking.py`
+    - `wrestlegm/ui_pygame/screens/promo_booking.py`
+    - `tests/ui_pygame/screens/test_booking_hub.py`
+    - `tests/ui_pygame/screens/test_match_booking.py`
+    - `tests/ui_pygame/screens/test_promo_booking.py`
+    - `tests/ui_pygame/test_navigation_flow.py`
+  - Scope:
+    - Replace confirm/clear/debt dialogs with `router.show_confirm()`.
+    - Remove duplicated per-screen modal handling where Router handles it.
+    - Keep interaction behavior unchanged from user perspective.
+  - Flow test ownership in `tests/ui_pygame/test_navigation_flow.py`:
+    - Own and update: `test_book_match_flow`, `test_complete_show_flow`.
+    - Include debt-warning confirm path and clear-slot confirm path in this slice.
+    - If these function names do not yet exist, create/rename tests to match these canonical names.
+  - Acceptance tests:
+    - `uv run pytest tests/ui_pygame/screens/test_booking_hub.py -v`
+    - `uv run pytest tests/ui_pygame/screens/test_match_booking.py -v`
+    - `uv run pytest tests/ui_pygame/screens/test_promo_booking.py -v`
+    - `uv run pytest tests/ui_pygame/test_navigation_flow.py -k "book_match_flow or complete_show_flow" -v`
 
-### 8.2 Testing Infrastructure Gaps
-**Issue:** Tests only verify screen exists, not that it is built or interactive.
-**Fix Required:**
-- [x] 8.2.1 Update conftest.py with app_with_built_screen fixture that auto-builds
-- [x] 8.2.2 Create navigation_tracker fixture to verify navigation calls
-- [x] 8.2.3 Create event_simulator fixture for pygame event simulation
-- [x] 8.2.4 Create ui_element_verifier fixture to check buttons exist
-- [x] 8.2.5 Create comprehensive flow test: main_menu → save_slots → game_hub
-- [x] 8.2.6 Add test verifying click on NEW GAME button triggers navigation
+### 6.4 Slice D - Roster/Simulation Modal Paths
 
-### 8.3 Click/Mouse Event Handling
-**Issue:** Pygame_gui requires proper mouse event processing, but screens may not handle mouse clicks correctly.
-**Fix Required:**
-- [ ] 8.3.1 Verify all screens handle MOUSEBUTTONDOWN events (not just UI_BUTTON_PRESSED)
-- [ ] 8.3.2 Add mouse click handling to screens where touch is supported
-- [ ] 8.3.3 Ensure touch targets meet 44dp minimum (already specified in design)
-- [ ] 8.3.4 Test both mouse and touch inputs work identically
+- [ ] 6.4.1 Align roster inspect and simulation error paths with Router rules
+  - Owner: Subagent D
+  - Depends on: 6.1.1
+  - Files:
+    - `wrestlegm/ui_pygame/screens/roster.py`
+    - `wrestlegm/ui_pygame/screens/simulating.py`
+    - `tests/ui_pygame/screens/test_results.py`
+    - `tests/ui_pygame/test_navigation_flow.py`
+  - Scope:
+    - Ensure modal lifecycle integrates with Router event priority and one-at-a-time behavior.
+    - Keep roster inspect behavior and simulation error UX intact.
+  - Flow test ownership in `tests/ui_pygame/test_navigation_flow.py`:
+    - Own and update: `test_roster_inspection_flow`, `test_bankruptcy_flow`.
+    - Include simulation error handling assertions where covered by flow.
+    - If these function names do not yet exist, create/rename tests to match these canonical names.
+  - Acceptance tests:
+    - `uv run pytest tests/ui_pygame/test_navigation_flow.py -k "roster_inspection_flow or bankruptcy_flow" -v`
 
-## 9. Updated Design Decisions
+### 6.4.2 Shared flow file conflict policy
 
-### 9.1 Fixture-Based Testing Strategy
-**Approach:** Use pytest fixtures to create reusable test infrastructure:
+- [ ] 6.4.2a Prevent `test_navigation_flow.py` merge conflicts
+  - Owner: Integration lead (or Subagent A if no separate integrator)
+  - Depends on: 6.2.1, 6.3.1, 6.4.1
+  - Rules:
+    - Keep one test class per slice (e.g., `TestSaveLoadFlows`, `TestBookingFlows`, `TestRosterSimulationFlows`).
+    - Keep helper fixtures in `tests/ui_pygame/conftest.py` and avoid duplicate local helpers in test classes.
+    - Each slice edits only its owned test class block in `test_navigation_flow.py`.
+  - Acceptance tests:
+    - `uv run pytest tests/ui_pygame/test_navigation_flow.py -v`
 
-**Core Fixtures:**
-1. pygame_app - Basic headless app (existing)
-2. app_with_built_screen - App with pre-built current screen
-3. app_with_interaction - App with click() and pump_events() methods
-4. snapshot_image - Syrupy PNG snapshot fixture
+### 6.5 Slice E - ObjectID and Snapshot Readiness
 
-### 9.2 Navigation Architecture Update
-**Current:** Router manages stack, App manages building
-**Problem:** Coordination between navigation and building is broken
-**Solution:**
-- Router accepts optional on_navigate callback
-- App provides callback that rebuilds current screen
-- Callback invoked after every navigation (immediate and post-transition)
+- [ ] 6.5.1 Apply ObjectID consistently and refresh snapshots for touched screens
+  - Owner: Subagent E
+  - Depends on: 6.2.1, 6.3.1, 6.4.1
+  - Files:
+    - `wrestlegm/ui_pygame/screens/*.py` (only screens modified by prior slices)
+    - `wrestlegm/ui_pygame/theme.py`
+    - `tests/ui_pygame/screens/test_*.py`
+    - `tests/ui_pygame/screens/__snapshots__/`
+  - Scope:
+    - Add/normalize `ObjectID` usage for theme hooks.
+    - Remove hardcoded styling choices in touched screens.
+    - Update syrupy PNG baselines for affected tests only.
+  - Acceptance tests:
+    - `uv run pytest tests/ui_pygame/screens -v`
 
-## 10. Verification Checklist
+### 6.6 Slice F - Legacy Folder Cleanup
 
-After fixes implemented:
+- [ ] 6.6.1 Remove legacy modal/widget modules once references are gone
+  - Owner: Subagent F
+  - Depends on: 6.2.1, 6.3.1, 6.4.1
+  - Files:
+    - `wrestlegm/ui_pygame/modals/`
+    - `wrestlegm/ui_pygame/widgets/`
+    - Any import sites still referencing these folders
+  - Scope:
+    - Delete unused legacy modules.
+    - Remove dead imports and pass tests.
+  - Acceptance tests:
+    - `uv run pytest tests/ui_pygame -v`
+
+## 7. Integration and Verification
+
+- [ ] 7.1 Integration pass after all slices
+  - Rebase/merge slices in this order: A -> (B,C,D) -> E -> F.
+  - Resolve conflicts centrally in Router and `test_navigation_flow.py`.
+
+- [ ] 7.2 Full pygame UI test run
+  - `uv run pytest tests/ui_pygame -v`
+
+- [ ] 7.3 Snapshot update (only if required)
+  - `uv run pytest tests/ui_pygame/screens --snapshot-update`
+  - Update only affected baselines.
+
+- [ ] 7.4 Manual smoke run
+  - `uv run python main.py`
+  - Verify Main Menu -> Save Slots -> Game Hub -> Booking Hub basic flow.
+
+## 8. Current Verification Checklist
+
 - [x] Run uv run main.py - Main menu displays
 - [x] Click NEW GAME - Navigates to save slots screen
 - [x] Click slot - Navigates to game hub
 - [x] All buttons respond to clicks
 - [x] Back navigation works
-- [ ] Tests pass: uv run pytest tests/ui_pygame/ -v
-- [ ] Screen snapshot tests generate PNG baselines
-- [ ] Flow tests verify: main_menu → save_slots → game_hub
-- [ ] Flow tests verify: button click triggers navigation
-- [ ] 11 screen snapshot tests passing
-- [ ] 10 flow interaction tests passing
+- [ ] Tests pass: uv run pytest tests/ui_pygame -v
+- [ ] Screen snapshot tests pass for touched screens
+- [ ] Flow tests pass for updated booking/save/roster paths
