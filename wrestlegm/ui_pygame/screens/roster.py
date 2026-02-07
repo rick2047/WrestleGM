@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pygame
 import pygame_gui
 from pygame.rect import Rect
 from pygame_gui.elements import UIButton, UILabel, UIPanel, UIScrollingContainer
@@ -64,13 +65,26 @@ class RosterScreen(BaseScreen):
         row_spacing = 4
 
         for i, wrestler in enumerate(roster):
-            # Row panel (clickable)
+            # Row panel with clickable button overlay
             row_y = i * (row_height + row_spacing)
             row_rect = Rect(0, row_y, scroll_rect.width - 24, row_height)
+
+            # Panel for layout
             row_panel = UIPanel(
                 relative_rect=row_rect,
                 manager=manager,
                 container=self._scroll_container,
+            )
+
+            # Invisible button overlay for click detection
+            # Position at 0,0 within the panel
+            button_rect = Rect(0, 0, row_rect.width, row_rect.height)
+            row_button = UIButton(
+                relative_rect=button_rect,
+                text="",
+                manager=manager,
+                container=row_panel,
+                object_id="#wrestler_row_button",
             )
 
             # Avatar placeholder (32x32)
@@ -124,8 +138,8 @@ class RosterScreen(BaseScreen):
                 container=row_panel,
             )
 
-            # Store panel for click detection
-            self._wrestler_panels.append((row_panel, wrestler))
+            # Store button for click detection (panel is just for layout)
+            self._wrestler_panels.append((row_button, wrestler))
 
         # Set scrollable area height
         total_height = len(roster) * (row_height + row_spacing)
@@ -147,20 +161,21 @@ class RosterScreen(BaseScreen):
         )
 
     def _on_wrestler_clicked(self, wrestler) -> None:
-        """Open the inspect modal for the selected wrestler."""
+        """Open the inspect modal for the selected wrestler via Router."""
         from ..modals.inspect import WrestlerInspectModal
 
         # Build rivalry list for this wrestler
         rivalries = self._build_rivalry_list(wrestler.id)
 
+        # Create and show modal through Router for one-at-a-time enforcement
         modal = WrestlerInspectModal(
             self._app,
-            self._app._ui_manager,
-            self._container.get_rect(),
+            self._app.ui_manager,
+            Rect(0, 0, 480, 800),  # Use full screen rect for centering
             wrestler,
             rivalries,
         )
-        modal.show()
+        self._router.show_custom_modal(modal)
 
     def _build_rivalry_list(self, wrestler_id: str) -> list[str]:
         """Build rivalry list entries for the inspected wrestler."""
@@ -185,14 +200,9 @@ class RosterScreen(BaseScreen):
                 self._on_back_clicked()
                 return True
 
-        # Check for clicks on wrestler rows
-        if event.type == pygame_gui.UI_BUTTON_PRESSED:
-            for panel, wrestler in self._wrestler_panels:
-                # Check if the click came from this panel or its children
-                if event.ui_element == panel or (
-                    hasattr(event.ui_element, "get_container")
-                    and event.ui_element.get_container() == panel
-                ):
+            # Check for clicks on wrestler row buttons
+            for button, wrestler in self._wrestler_panels:
+                if event.ui_element == button:
                     self._on_wrestler_clicked(wrestler)
                     return True
 

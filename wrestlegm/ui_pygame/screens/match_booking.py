@@ -37,7 +37,6 @@ class MatchBookingScreen(BaseScreen):
         self._rivalry_labels: list[UILabel] = []
         self._slot_panels: list[UIPanel] = []
         self._cost_label: UILabel | None = None
-        self._confirm_modal = None
 
     def build(self, manager, rect) -> None:
         """Build UI elements in the 4 zones."""
@@ -545,13 +544,8 @@ class MatchBookingScreen(BaseScreen):
         self._router.back()
 
     def _on_clear_slot_clicked(self) -> None:
-        """Show confirmation modal and clear slot."""
-        from ..modals.confirm import ConfirmModal
-
-        self._confirm_modal = ConfirmModal(
-            self._app,
-            self._app.ui_manager,
-            Rect(0, 0, DESIGN_WIDTH, DESIGN_HEIGHT),
+        """Show confirmation modal and clear slot via router."""
+        self._router.show_confirm(
             title="Clear Slot?",
             message="Are you sure you want to clear this match slot?",
             on_confirm=self._clear_slot_confirmed,
@@ -559,7 +553,6 @@ class MatchBookingScreen(BaseScreen):
             confirm_text="Yes",
             cancel_text="No",
         )
-        self._confirm_modal.show()
 
     def _clear_slot_confirmed(self) -> None:
         """Clear the slot and return to booking hub."""
@@ -607,13 +600,8 @@ class MatchBookingScreen(BaseScreen):
                 self._cost_label.set_text(self._get_cost_text())
                 return True
 
-        # Pass to confirm modal if active
-        if self._confirm_modal:
-            return self._confirm_modal.handle_event(event)
-
         return False
 
     def update(self, time_delta: float) -> None:
         """Update screen state."""
-        if self._confirm_modal:
-            self._confirm_modal.update(time_delta)
+        pass

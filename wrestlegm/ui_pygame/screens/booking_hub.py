@@ -297,29 +297,15 @@ class BookingHubScreen(BaseScreen):
         will_debt = show_cost > self._app.state.money
 
         if will_debt:
-            # Show debt warning modal
-            from wrestlegm.ui_pygame.modals.confirm import ConfirmModal
-
-            def _on_confirm():
-                self._router.navigate("simulating")
-
-            def _on_cancel():
-                pass  # Stay on booking hub
-
-            from ..constants import DESIGN_WIDTH, DESIGN_HEIGHT
-
-            modal = ConfirmModal(
-                app=self._app,
-                manager=self._app.ui_manager,
-                parent_rect=Rect(0, 0, DESIGN_WIDTH, DESIGN_HEIGHT),  # Full screen rect
+            # Show debt warning modal via router
+            self._router.show_confirm(
                 title="Confirm Run Show",
                 message=f"Show cost (${show_cost:,}) exceeds your money (${self._app.state.money:,}).\n\nYou will go into debt. Continue?",
-                on_confirm=_on_confirm,
-                on_cancel=_on_cancel,
+                on_confirm=lambda: self._router.navigate("simulating"),
+                on_cancel=None,  # Stay on booking hub
                 confirm_text="Yes",
                 cancel_text="No",
             )
-            modal.show()
         else:
             # No debt, proceed directly
             self._router.navigate("simulating")

@@ -125,7 +125,9 @@ class BankruptcyScreen(BaseScreen):
 
     def _on_try_again(self) -> None:
         """Reset game state and navigate to booking hub."""
-        self._app.state.reset_to_initial()
+        # Reset game state by creating a new game in the current slot
+        # Since we can't easily access the slot from here, we'll reset the state directly
+        self._app._state = self._app.session.new_game(1, "New Game")
         self._router.navigate("booking_hub")
 
     def _on_main_menu(self) -> None:

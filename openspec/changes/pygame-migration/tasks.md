@@ -7,7 +7,7 @@
 - [x] 1.5 Create ScalingManager class with integer scaling logic
 - [x] 1.6 Create Router class for screen navigation (push/pop/switch)
 - [x] 1.6.1 Implement router.back() method - Pop current screen, return to previous, trigger rebuild
-- [ ] 1.6.2 Add helper methods placeholder comment - Future helpers (can_go_back, switch, is_at, etc.) added as needed
+- [x] 1.6.2 Add helper methods placeholder comment - Future helpers (can_go_back, switch, is_at, etc.) added as needed
 - [x] 1.7 Create BaseScreen class with 4-zone layout (Header → Body → Actions → Footer)
 - [x] 1.8 Create TransitionManager for fade transitions between screens
 - [x] 1.9 Create WrestleGMApp class with main game loop and UIManager
@@ -76,25 +76,25 @@ This phase replaces the old linear testing checklist with vertical slices. Each 
 
 ### 6.0 Working Rules for All Subagents
 
-- [ ] 6.0.1 File ownership rule
+- [x] 6.0.1 File ownership rule
   - A subagent may edit only files listed in its slice unless explicitly assigned a cross-slice fix.
   - If a change is needed outside owned files, create a handoff note instead of editing.
 
-- [ ] 6.0.2 Done definition rule
+- [x] 6.0.2 Done definition rule
   - A slice is done only when its acceptance tests pass with `uv run pytest ...`.
   - Include updated tests in the same slice commit.
 
-- [ ] 6.0.3 Modal architecture rule
+- [x] 6.0.3 Modal architecture rule
   - Use Router-managed modals (`show_confirm`, `show_error`, `show_fatal_error`).
   - Do not add new custom modal classes under `wrestlegm/ui_pygame/modals/`.
 
-- [ ] 6.0.4 Theming prep rule
+- [x] 6.0.4 Theming prep rule
   - New/updated UI elements must include `ObjectID` where practical.
   - Do not hardcode theme styling in screens.
 
 ### 6.1 Slice A - Router Modal Core (Foundation)
 
-- [ ] 6.1.1 Implement/finish Router modal API
+- [x] 6.1.1 Implement/finish Router modal API
   - Owner: Subagent A
   - Depends on: none
   - Files:
@@ -110,7 +110,7 @@ This phase replaces the old linear testing checklist with vertical slices. Each 
 
 ### 6.2 Slice B - Save/Load Error Flow Migration
 
-- [ ] 6.2.1 Migrate save/load screens to Router modals
+- [x] 6.2.1 Migrate save/load screens to Router modals
   - Owner: Subagent B
   - Depends on: 6.1.1
   - Files:
@@ -130,7 +130,7 @@ This phase replaces the old linear testing checklist with vertical slices. Each 
 
 ### 6.3 Slice C - Booking and Confirmation Flows
 
-- [ ] 6.3.1 Migrate booking screens to Router confirmations
+- [x] 6.3.1 Migrate booking screens to Router confirmations
   - Owner: Subagent C
   - Depends on: 6.1.1
   - Files:
@@ -157,7 +157,7 @@ This phase replaces the old linear testing checklist with vertical slices. Each 
 
 ### 6.4 Slice D - Roster/Simulation Modal Paths
 
-- [ ] 6.4.1 Align roster inspect and simulation error paths with Router rules
+- [x] 6.4.1 Align roster inspect and simulation error paths with Router rules
   - Owner: Subagent D
   - Depends on: 6.1.1
   - Files:

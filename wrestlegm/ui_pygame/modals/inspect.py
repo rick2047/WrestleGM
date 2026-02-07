@@ -56,7 +56,6 @@ class WrestlerInspectModal(BaseModal):
         self._container = pygame_gui.elements.UIPanel(
             relative_rect=modal_rect,
             manager=self._manager,
-            starting_layer_height=100,
         )
 
         # Title

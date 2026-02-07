@@ -308,18 +308,12 @@ class PromoBookingScreen(BaseScreen):
 
     def _on_clear(self) -> None:
         """Clear the slot and return to booking hub."""
-        from ..modals import ConfirmModal
-
         existing = self._app.state.show_card[self._slot_index]
         if existing is None:
             return
 
-        # Show confirmation modal
-        parent_rect = self._get_screen_rect()
-        confirm_modal = ConfirmModal(
-            self._app,
-            self._app.ui_manager,
-            parent_rect,
+        # Show confirmation modal via router
+        self._router.show_confirm(
             title="Clear Slot",
             message="Are you sure you want to clear this promo slot?",
             on_confirm=self._do_clear,
@@ -327,7 +321,6 @@ class PromoBookingScreen(BaseScreen):
             confirm_text="Yes",
             cancel_text="No",
         )
-        confirm_modal.show()
 
     def _do_clear(self) -> None:
         """Actually clear the slot."""
@@ -350,11 +343,6 @@ class PromoBookingScreen(BaseScreen):
         promo = Promo(wrestler=wrestler)
         self._app.state.set_slot(self._slot_index, promo)
         self._router.back()
-
-    def _get_screen_rect(self) -> Rect:
-        """Get the current screen rectangle."""
-        zones = self._compute_zones(pygame.display.get_surface().get_rect())
-        return zones["body"]
 
     def handle_event(self, event) -> bool:
         """Handle pygame events."""

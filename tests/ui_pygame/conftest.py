@@ -129,3 +129,39 @@ def app_with_interaction():
 
     yield app
     pygame.quit()
+
+
+@pytest.fixture
+def populated_save_slot(app_with_interaction):
+    """Create a save slot with existing game data for testing load flows."""
+    app = app_with_interaction
+
+    # Create a game state and save it to slot 1
+    if hasattr(app, "session") and app.session:
+        # Create a new game and save it
+        from wrestlegm.persistence import slot_path
+
+        new_state = app.session.new_game(1, "Test Save")
+        # Increment show number to simulate progress
+        new_state._show_index = 2  # Show 2 means some progress
+        app.session.save_current_slot(new_state)
+
+    yield 1  # Return slot index
+
+
+@pytest.fixture
+def corrupt_save_slot(app_with_interaction, tmp_path):
+    """Create a corrupt save file for testing error recovery."""
+    app = app_with_interaction
+
+    # Create a corrupt save file directly
+    if hasattr(app, "session") and app.session:
+        from wrestlegm.persistence import slot_path
+
+        # Write invalid JSON to slot 2's save file
+        save_path = slot_path(2, app.session._save_dir)
+        save_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(save_path, "w") as f:
+            f.write("{ invalid json content")
+
+    yield 2  # Return slot index with corrupt save

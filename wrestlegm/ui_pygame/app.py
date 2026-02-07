@@ -113,6 +113,13 @@ class WrestleGMApp:
         """Quit the application."""
         self._running = False
 
+    def quit_gracefully(self) -> None:
+        """Clean shutdown for fatal errors.
+
+        Called by Router when fatal error modal is dismissed.
+        """
+        self._running = False
+
     def _rebuild_current_screen(self) -> None:
         """Rebuild the current screen's UI elements.
 
@@ -147,6 +154,15 @@ class WrestleGMApp:
                     self._running = False
 
                 self._ui_manager.process_events(event)
+
+                # Check modal events first (blocks navigation while modal is active)
+                if self._router.has_active_modal:
+                    if self._router.handle_modal_event(event):
+                        continue  # Modal consumed the event
+
+                # Block navigation while modal is active
+                if self._router.has_active_modal:
+                    continue  # Skip screen event handling while modal is open
 
                 # Pass to current screen (skip during active transition)
                 if not self._transition_manager.is_active():

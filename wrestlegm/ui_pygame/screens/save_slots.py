@@ -5,6 +5,7 @@ from __future__ import annotations
 import pygame
 import pygame_gui
 from pygame.rect import Rect
+from pygame_gui.core import ObjectID
 from pygame_gui.elements import UIButton, UILabel, UIPanel
 
 from wrestlegm import persistence
@@ -28,7 +29,6 @@ class SaveSlotSelectionScreen(BaseScreen):
         self._slot_panels: list[pygame_gui.elements.UIPanel] = []
         self._back_button: pygame_gui.elements.UIButton | None = None
         self._title_label: pygame_gui.elements.UILabel | None = None
-        self._error_modal = None
 
     def _build_header(self, manager, rect) -> None:
         """Build header with title and back button."""
@@ -43,6 +43,7 @@ class SaveSlotSelectionScreen(BaseScreen):
             relative_rect=back_rect,
             text="← BACK",
             manager=manager,
+            object_id=ObjectID(class_id="@secondary_button"),
         )
 
         # Title label centered
@@ -51,6 +52,7 @@ class SaveSlotSelectionScreen(BaseScreen):
             relative_rect=title_rect,
             text=title_text,
             manager=manager,
+            object_id=ObjectID(class_id="@header_title"),
         )
 
     def _build_body(self, manager, rect) -> None:
@@ -250,61 +252,46 @@ class SaveSlotSelectionScreen(BaseScreen):
                 self._show_error_modal("No Save Data", "This slot is empty.")
 
     def _show_error_modal(self, title: str, message: str) -> None:
-        """Show an error modal."""
-        from ..modals import ErrorModal
-
-        # Get the screen rectangle for centering
-        screen_rect = Rect(0, 0, 480, 800)
-
-        self._error_modal = ErrorModal(
-            app=self._app,
-            manager=self._app.ui_manager,
-            parent_rect=screen_rect,
-            title=title,
-            message=message,
-        )
-        self._error_modal.show()
+        """Show an error modal via Router."""
+        self._router.show_error(title, message)
 
     def _show_overwrite_modal(self, slot: persistence.SaveSlotInfo) -> None:
-        """Show overwrite confirmation modal."""
-        from ..modals import ConfirmModal
-
-        screen_rect = Rect(0, 0, 480, 800)
+        """Show overwrite confirmation modal via Router."""
+        slot_index = slot.slot_index  # Capture slot_index for closure
 
         def on_confirm():
-            self._start_new_game(slot.slot_index)
+            self._start_new_game(slot_index)
 
         def on_cancel():
             pass
 
-        modal = ConfirmModal(
-            app=self._app,
-            manager=self._app.ui_manager,
-            parent_rect=screen_rect,
+        self._router.show_confirm(
             title=f"Overwrite Slot {slot.slot_index}?",
             message=f'This will replace "{slot.name or "Unnamed"}".',
             on_confirm=on_confirm,
             on_cancel=on_cancel,
+            confirm_text="Yes",
+            cancel_text="No",
         )
-        modal.show()
 
     def _start_new_game(self, slot_index: int) -> None:
         """Start a new game in the specified slot."""
         # Use SessionManager to create new game
         if hasattr(self._app, "session"):
-            self._app.state = self._app.session.new_game(
+            # Access internal _state directly since state is a read-only property
+            self._app._state = self._app.session.new_game(
                 slot_index, f"Slot {slot_index}"
             )
-            # Navigate to game hub (placeholder - will be implemented later)
-            # For now, just navigate back or show a placeholder
+            # Navigate to game hub
             self._router.navigate("game_hub")
 
     def _load_game(self, slot_index: int) -> None:
         """Load a game from the specified slot."""
         if hasattr(self._app, "session"):
             try:
-                self._app.state = self._app.session.load_game(slot_index)
-                # Navigate to game hub (placeholder - will be implemented later)
+                # Access internal _state directly since state is a read-only property
+                self._app._state = self._app.session.load_game(slot_index)
+                # Navigate to game hub
                 self._router.navigate("game_hub")
             except ValueError as exc:
                 # Handle various load errors
@@ -317,8 +304,3 @@ class SaveSlotSelectionScreen(BaseScreen):
                     message = "Save file is missing."
                 self._show_error_modal("Load Error", message)
                 raise
-
-    def update(self, time_delta: float) -> None:
-        """Update modal if active."""
-        if self._error_modal and self._error_modal.is_open():
-            self._error_modal.update(time_delta)

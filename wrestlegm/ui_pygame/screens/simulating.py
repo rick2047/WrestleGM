@@ -105,20 +105,11 @@ class SimulatingScreen(BaseScreen):
             # Navigate to results with the show data
             self._router.navigate("results", show=show)
         except ValueError as e:
-            # Handle simulation error
-            from ..modals import ErrorModal
-
-            parent_rect = self._compute_zones(pygame.display.get_surface().get_rect())[
-                "body"
-            ]
-            error_modal = ErrorModal(
-                self._app,
-                self._app.ui_manager,
-                parent_rect,
+            # Handle simulation error via Router
+            self._router.show_error(
                 title="Simulation Error",
                 message=str(e),
             )
-            error_modal.show()
 
     def handle_event(self, event) -> bool:
         """Handle pygame events."""

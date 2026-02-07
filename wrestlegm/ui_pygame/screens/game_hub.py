@@ -184,9 +184,8 @@ class GameHubScreen(BaseScreen):
             self._router.navigate("booking_hub")
 
     def _on_roster(self) -> None:
-        """Navigate to roster screen (placeholder)."""
-        # Roster screen not yet implemented
-        pass
+        """Navigate to roster screen."""
+        self._router.navigate("roster")
 
     def _on_save_quit(self) -> None:
         """Save game and return to main menu."""

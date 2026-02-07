@@ -8,10 +8,11 @@ if TYPE_CHECKING:
 
 
 OnNavigateCallback = Callable[[], None]
+ModalCallback = Callable[[], None]
 
 
 class Router:
-    """Manages screen stack and navigation."""
+    """Manages screen stack and navigation with modal support."""
 
     def __init__(self, app: "WrestleGMApp") -> None:
         self._app = app
@@ -20,6 +21,12 @@ class Router:
         self._transition_manager = None
         self._pending_navigation: "BaseScreen | None" = None
         self._on_navigate_callback: OnNavigateCallback | None = None
+
+        # Modal management
+        self._active_modal: Any | None = None
+        self._on_modal_confirm: ModalCallback | None = None
+        self._on_modal_cancel: ModalCallback | None = None
+        self._fatal_error: Exception | None = None
 
     def set_on_navigate_callback(self, callback: OnNavigateCallback | None) -> None:
         """Set a default callback to be called after every navigation.
@@ -53,6 +60,10 @@ class Router:
                         Use this to build the screen's UI elements.
             **kwargs: Additional arguments passed to screen constructor
         """
+        # Block navigation while modal is active
+        if self._active_modal is not None:
+            return
+
         screen_class = self._screens.get(route)
         if screen_class is None:
             raise ValueError(f"No screen registered for route: {route}")
@@ -140,6 +151,231 @@ class Router:
         if self._stack:
             self._stack.pop()
         self.navigate(route, **kwargs)
+
+    # Helper methods placeholder
+    # Future helpers (can_go_back, is_at, etc.) will be added here as needed
+
+    # Modal Management
+
+    @property
+    def has_active_modal(self) -> bool:
+        """Check if a modal is currently displayed.
+
+        Returns:
+            True if modal is active, False otherwise.
+        """
+        return self._active_modal is not None
+
+    def show_confirm(
+        self,
+        title: str,
+        message: str,
+        on_confirm: ModalCallback | None = None,
+        on_cancel: ModalCallback | None = None,
+        confirm_text: str = "Yes",
+        cancel_text: str = "No",
+    ) -> bool:
+        """Show confirmation modal - blocks navigation until dismissed.
+
+        Enforces one-modal-at-a-time rule.
+
+        Args:
+            title: Modal window title
+            message: Confirmation message text
+            on_confirm: Callback when user confirms
+            on_cancel: Callback when user cancels
+            confirm_text: Text for confirm button
+            cancel_text: Text for cancel button
+
+        Returns:
+            True if modal shown, False if another modal already active.
+        """
+        if self._active_modal is not None:
+            return False
+
+        try:
+            from pygame_gui.windows import UIConfirmationDialog
+            from pygame.rect import Rect
+
+            self._active_modal = UIConfirmationDialog(
+                rect=Rect(60, 250, 360, 200),
+                manager=self._app.ui_manager,
+                window_title=title,
+                action_long_desc=message,
+                action_short_name=confirm_text,
+                blocking=True,
+            )
+            self._on_modal_confirm = on_confirm
+            self._on_modal_cancel = on_cancel
+            return True
+        except Exception as e:
+            # Log error but don't crash
+            print(f"Error showing confirm modal: {e}")
+            return False
+
+    def show_error(self, title: str, message: str) -> bool:
+        """Show error message modal - blocks navigation until dismissed.
+
+        Args:
+            title: Modal window title
+            message: Error message text
+
+        Returns:
+            True if modal shown, False if another modal already active.
+        """
+        if self._active_modal is not None:
+            return False
+
+        try:
+            from pygame_gui.windows import UIMessageWindow
+            from pygame.rect import Rect
+
+            self._active_modal = UIMessageWindow(
+                rect=Rect(60, 250, 360, 200),
+                manager=self._app.ui_manager,
+                window_title=title,
+                html_message=message,
+            )
+            return True
+        except Exception as e:
+            print(f"Error showing error modal: {e}")
+            return False
+
+    def show_fatal_error(self, error: Exception) -> bool:
+        """Show fatal error modal with Quit option only.
+
+        Called by App when unhandled exception occurs. User must quit.
+
+        Args:
+            error: The exception that caused the fatal error
+
+        Returns:
+            True if modal shown, False if another modal already active.
+        """
+        if self._active_modal is not None:
+            self._active_modal.kill()
+
+        try:
+            from pygame_gui.windows import UIConfirmationDialog
+            from pygame.rect import Rect
+
+            self._fatal_error = error
+            error_message = (
+                f"{type(error).__name__}: {str(error)}\n\nThe application will close."
+            )
+            self._active_modal = UIConfirmationDialog(
+                rect=Rect(60, 250, 360, 200),
+                manager=self._app.ui_manager,
+                window_title="Error",
+                action_long_desc=error_message,
+                action_short_name="Quit",
+                blocking=True,
+            )
+            self._on_modal_confirm = self._app.quit_gracefully
+            return True
+        except Exception as e:
+            print(f"Error showing fatal error modal: {e}")
+            return False
+
+    def dismiss_modal(self) -> None:
+        """Dismiss the currently active modal (if any).
+
+        Called automatically when modal buttons are pressed, or can be
+        called programmatically to close modals.
+        """
+        if self._active_modal is not None:
+            # Handle both pygame_gui elements (kill) and custom modals (close)
+            if hasattr(self._active_modal, "kill"):
+                self._active_modal.kill()
+            elif hasattr(self._active_modal, "close"):
+                self._active_modal.close()
+            self._active_modal = None
+            self._on_modal_confirm = None
+            self._on_modal_cancel = None
+            self._fatal_error = None
+
+    def show_custom_modal(self, modal) -> bool:
+        """Show a custom modal through Router for one-at-a-time enforcement.
+
+        This allows screens to use custom modal classes (like WrestlerInspectModal)
+        while still respecting Router's one-modal-at-a-time rule and event priority.
+
+        Args:
+            modal: The custom modal instance to display. Must have show() and
+                   handle_event(event) methods.
+
+        Returns:
+            True if modal shown, False if another modal already active.
+        """
+        if self._active_modal is not None:
+            return False
+
+        # Store the modal and show it
+        self._active_modal = modal
+        modal.show()
+        return True
+
+    def handle_modal_event(self, event: Any) -> bool:
+        """Process events for the active modal.
+
+        Returns True if event was consumed by modal, False otherwise.
+        Should be called before passing events to screens.
+
+        Args:
+            event: The pygame event to process
+
+        Returns:
+            True if event was consumed, False otherwise.
+        """
+        if self._active_modal is None:
+            return False
+
+        try:
+            import pygame
+            import pygame_gui
+
+            # Check if this is a custom modal (like WrestlerInspectModal)
+            # Custom modals have their own handle_event method
+            if hasattr(self._active_modal, "handle_event") and not hasattr(
+                self._active_modal, "confirm_button"
+            ):
+                # Let the custom modal handle the event
+                consumed = self._active_modal.handle_event(event)
+                if consumed:
+                    # Check if modal was closed (is_open method or _container is None)
+                    is_closed = False
+                    if hasattr(self._active_modal, "is_open"):
+                        is_closed = not self._active_modal.is_open()
+                    elif hasattr(self._active_modal, "_container"):
+                        is_closed = self._active_modal._container is None
+
+                    if is_closed:
+                        self._active_modal = None
+                return consumed
+
+            if event.type == pygame_gui.UI_BUTTON_PRESSED:
+                # Check if this is a confirmation dialog
+                from pygame_gui.windows import UIConfirmationDialog
+
+                if isinstance(self._active_modal, UIConfirmationDialog):
+                    if event.ui_element == self._active_modal.confirm_button:
+                        if self._on_modal_confirm:
+                            self._on_modal_confirm()
+                    elif event.ui_element == self._active_modal.cancel_button:
+                        if self._on_modal_cancel:
+                            self._on_modal_cancel()
+
+                    # Always dismiss after button press
+                    self.dismiss_modal()
+                    return True
+                else:
+                    # For message windows, any button dismisses
+                    self.dismiss_modal()
+                    return True
+        except Exception as e:
+            print(f"Error handling modal event: {e}")
+
+        return False
 
     @property
     def current(self) -> "BaseScreen | None":
