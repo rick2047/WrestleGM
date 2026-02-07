@@ -52,3 +52,12 @@ Only regenerate snapshots that are affected. Avoid bulk updates; use pytest filt
 
 ## Tooling
 - Use `uv` to run Python (e.g., `uv run python`).
+
+## Documentation Resources
+
+### Context7 (AI-Optimized Documentation)
+Always use context7 to research available documentation before proposing or making changes.
+
+**Available Libraries:**
+- pygame_gui: `websites/pygame-gui_readthedocs_io-en`
+  - Use for: researching UI elemnts to avoid custom ones.
