@@ -40,9 +40,9 @@ wrestlegm/ui_pygame/
 ├── router.py                # Screen navigation state machine
 ├── constants.py             # UI constants (colors, sizes, fonts)
 ├── theme.py                 # pygame_gui theming configuration
-├── screens/
+├── screens/                 # Screen implementations (4-zone layout)
 │   ├── __init__.py
-│   ├── base.py              # BaseScreen with 4-zone layout
+│   ├── base.py              # BaseScreen base class
 │   ├── main_menu.py
 │   ├── save_slots.py
 │   ├── game_hub.py
@@ -54,19 +54,28 @@ wrestlegm/ui_pygame/
 │   ├── simulating.py
 │   ├── results.py
 │   └── bankruptcy.py
-├── widgets/
+├── widgets/                 # Reusable UI components (DEPRECATED - use pygame_gui directly)
 │   ├── __init__.py
-│   ├── header.py            # Standard header with title/info
-│   ├── footer.py            # Status/hints bar
-│   ├── wrestler_card.py     # Wrestler info display (32×32 + text)
-│   ├── match_summary.py     # Match slot preview
-│   └── scroll_list.py       # Touch-friendly scrollable list
-└── modals/
+│   ├── header.py            # 
+│   ├── footer.py            # 
+│   ├── wrestler_card.py     # 
+│   ├── match_summary.py     # 
+│   └── scroll_list.py       # 
+├── modals/                  # Modal dialogs (single instance only)
+│   ├── __init__.py
+│   ├── base.py              # Modal base class
+│   ├── confirm.py           # Yes/No confirmation
+│   └── error.py             # Error message display
+└── assets/                  # Static assets (images, fonts)
     ├── __init__.py
-    ├── base.py              # Modal base class
-    ├── confirm.py           # Yes/No confirmation
-    └── error.py             # Error message display
+    ├── fonts/               # Pixel fonts (Press Start 2P, etc.)
+    └── images/              # 32x32 pixel art, icons
 ```
+
+**Notes:**
+- **widgets/** folder is deprecated - use pygame_gui components directly per "no custom components" rule
+- **modals/** enforce single-instance pattern - only one modal visible at a time
+- **assets/** folder added for 32x32 pixel art and bundled fonts
 
 ## Core Classes
 
@@ -239,6 +248,95 @@ class BaseScreen:
         # Handle screen-specific events
         # Return True if consumed
 ```
+
+### Modals (wrestlegm/ui_pygame/modals/)
+
+Modal dialogs that overlay the current screen to capture user attention for confirmations, errors, or inspections. Modals block interaction with the underlying screen until dismissed.
+
+**Design Rule: One Modal At A Time**
+
+Only one modal may be visible at any given moment. If a second modal needs to open, the first must be closed. This prevents modal stacking complexity and maintains clear user focus.
+
+**Implementation Using pygame_gui.windows:**
+
+Per the "no custom components" rule, modals use pygame_gui's built-in window classes:
+
+- **UIConfirmationDialog** - Yes/No confirmation dialogs
+- **UIMessageWindow** - Information/error dialogs with OK button  
+- **UIFileDialog** - File selection (not used in WrestleGM)
+
+These window classes automatically:
+- Block input to underlying UI elements
+- Provide window chrome (title bar, close button)
+- Handle window positioning and sizing
+- Manage focus and event propagation
+
+**Modal Creation Pattern:**
+
+```python
+from pygame_gui.windows import UIConfirmationDialog, UIMessageWindow
+
+# Confirmation dialog (Yes/No)
+confirm_dialog = UIConfirmationDialog(
+    rect=Rect(90, 300, 300, 150),  # Centered on 480x800
+    manager=ui_manager,
+    window_title='Confirm Run Show',
+    message_text='Cost ($5000) exceeds money ($3000). Go into debt?',
+    action_long_name='Run Show',
+    action_short_name='Run',
+    blocking=True  # Blocks other input
+)
+
+# Message dialog (OK only) - for errors
+error_dialog = UIMessageWindow(
+    rect=Rect(90, 300, 300, 150),
+    manager=ui_manager,
+    window_title='Error',
+    message_text='Save file is corrupt',
+    always_on_top=True
+)
+```
+
+**Modal Handling in Screens:**
+
+```python
+class BookingHubScreen(BaseScreen):
+    def __init__(self, app, router):
+        super().__init__(app, router)
+        self._confirm_dialog = None  # Track active modal
+        
+    def _on_run_show_clicked(self):
+        """Show confirmation modal if going into debt."""
+        if self._confirm_dialog is not None:
+            return  # Already showing a modal (one at a time rule)
+            
+        if show_cost > self._app.state.money:
+            self._confirm_dialog = UIConfirmationDialog(
+                Rect(90, 300, 300, 150),
+                self._app.ui_manager,
+                'Confirm Run Show',
+                f'Cost (${show_cost}) exceeds money (${self._app.state.money})',
+                'Run Show', 'Run'
+            )
+    
+    def handle_event(self, event):
+        # Check for dialog dismissal
+        if self._confirm_dialog is not None:
+            if event.type == pygame_gui.UI_BUTTON_PRESSED:
+                if event.ui_element == self._confirm_dialog.confirm_button:
+                    self._actually_run_show()
+                # Dialog dismissed (confirm or cancel)
+                self._confirm_dialog = None
+                return True
+```
+
+**Key Behaviors:**
+
+1. **Single Instance**: Screens check `if self._modal is not None` before opening new modals
+2. **Auto-blocking**: pygame_gui windows automatically block clicks to underlying UI
+3. **Dismissal Tracking**: Screens track modal reference and clear it on dismissal
+4. **No Navigation**: Modals don't trigger router navigation; they modify state then close
+5. **Centered**: All modals centered on screen (90px from left on 480px screen = centered 300px dialog)
 
 ## Testing Architecture
 
@@ -690,6 +788,212 @@ BODY_HEIGHT = DESIGN_HEIGHT - HEADER_HEIGHT - ACTIONS_HEIGHT - FOOTER_HEIGHT
 # Margins/padding (8dp grid)
 MARGIN = 8
 PADDING = 8
+```
+
+## Four-Zone Layout Deep Dive
+
+The 4-zone layout (Header → Body → Actions → Footer) is implemented using pygame_gui containers and elements. We follow a strict rule: **no custom components**. Always use pygame_gui's built-in elements or compositions thereof.
+
+### Design Rule: No Custom Components
+
+**Principle:** When implementing any UI pattern, first research pygame_gui's available components using context7 or documentation. Only compose existing elements; never write custom rendering or event handling.
+
+**Rationale:**
+- pygame_gui handles theming, focus, accessibility, and event propagation
+- Custom components require re-implementing solved problems
+- Sticking to built-ins ensures consistent behavior across the app
+
+**Process for adding new UI patterns:**
+1. Check if pygame_gui has a component that does this (UIPanel, UIButton, UIScrollingContainer, etc.)
+2. If not, compose multiple built-in elements
+3. Only as last resort: extend an existing class minimally
+
+### Zone-by-Zone Implementation
+
+#### Header Zone (50px height)
+
+**Purpose:** Display title, contextual info (money, show number), status indicators
+
+**Components:**
+- **Container:** `UIPanel` as header background
+- **Title:** `UILabel` (left-aligned, bold, 24-26px)
+- **Info labels:** `UILabel` (right-aligned for money/show number)
+
+**Layout:**
+```python
+header_rect = Rect(0, 0, DESIGN_WIDTH, HEADER_HEIGHT)
+header_panel = UIPanel(header_rect, manager=manager)
+
+# Title on left
+title_rect = Rect(MARGIN, 10, 200, 30)
+UILabel(title_rect, "WRESTLE GM", manager=manager, container=header_panel)
+
+# Info on right  
+money_rect = Rect(DESIGN_WIDTH - 150, 10, 140, 30)
+UILabel(money_rect, "$10,000", manager=manager, container=header_panel)
+```
+
+**Info Alignment Rules:**
+- Title: Always left-aligned at MARGIN (8px)
+- Primary info (Money): Right-aligned
+- Secondary info (Show #): Right-aligned, to left of money
+
+#### Body Zone (Flexible height, scrollable)
+
+**Purpose:** Primary content area - scrollable lists, forms, detailed content
+
+**Components:**
+- **Container:** `UIScrollingContainer` for scrollable content
+- **Content:** `UIButton`, `UILabel`, `UISelectionList`, custom panels inside the scrolling container
+
+**Layout:**
+```python
+body_rect = Rect(0, HEADER_HEIGHT, DESIGN_WIDTH, BODY_HEIGHT)
+body_container = UIScrollingContainer(body_rect, manager=manager)
+
+# Add content - it scrolls automatically if larger than container
+for i, wrestler in enumerate(roster):
+    row_rect = Rect(MARGIN, i * 60, DESIGN_WIDTH - 2*MARGIN, 56)
+    UIButton(row_rect, wrestler.name, manager=manager, 
+             container=body_container)
+```
+
+**Scrolling Behavior:**
+- `UIScrollingContainer` automatically shows vertical scrollbar when content exceeds container height
+- Horizontal scrolling: Avoid if possible; design for vertical scroll only
+- Scroll bar theming configured in theme.py
+
+#### Actions Zone (70px height)
+
+**Purpose:** Primary action buttons (Confirm, Cancel, Back)
+
+**Components:**
+- **Container:** `UIPanel` as background
+- **Buttons:** `UIButton` horizontally arranged
+
+**Layout:**
+```python
+actions_rect = Rect(0, HEADER_HEIGHT + BODY_HEIGHT, 
+                    DESIGN_WIDTH, ACTIONS_HEIGHT)
+actions_panel = UIPanel(actions_rect, manager=manager)
+
+# Center buttons horizontally
+total_button_width = 3 * 120 + 2 * 20  # 3 buttons, 20px gap
+start_x = (DESIGN_WIDTH - total_button_width) // 2
+
+# Cancel button
+UIButton(Rect(start_x, 15, 120, 40), "CANCEL", 
+         manager=manager, container=actions_panel)
+
+# Confirm button  
+UIButton(Rect(start_x + 140, 15, 120, 40), "CONFIRM",
+         manager=manager, container=actions_panel)
+```
+
+**Button Overflow Rule:**
+- Maximum 3 primary action buttons visible
+- If more actions needed, use "More" dropdown or move to Body zone
+- Buttons are always centered horizontally in the Actions zone
+
+#### Footer Zone (40px height)
+
+**Purpose:** Contextual hints, status messages, keyboard shortcuts help
+
+**Components:**
+- **Container:** `UIPanel` as background
+- **Text:** Single `UILabel` centered
+
+**Layout:**
+```python
+footer_rect = Rect(0, DESIGN_HEIGHT - FOOTER_HEIGHT,
+                   DESIGN_WIDTH, FOOTER_HEIGHT)
+footer_panel = UIPanel(footer_rect, manager=manager)
+
+hint_rect = Rect(0, 10, DESIGN_WIDTH, 20)
+UILabel(hint_rect, "Click a wrestler to select", 
+        manager=manager, container=footer_panel)
+```
+
+**Footer Content Rules:**
+- Single line of text (no wrapping)
+- Updated dynamically based on current context
+- Center-aligned
+
+### Complete Screen Build Example
+
+```python
+class MainMenuScreen(BaseScreen):
+    def build(self, manager, rect):
+        zones = self._compute_zones(rect)
+        
+        # HEADER - UIPanel + UILabel
+        self._header_panel = UIPanel(zones['header'], manager=manager)
+        UILabel(Rect(8, 10, 200, 30), "WRESTLE GM", 
+                manager=manager, container=self._header_panel)
+        
+        # BODY - UIScrollingContainer + UIButtons
+        self._body_container = UIScrollingContainer(
+            zones['body'], manager=manager)
+        
+        self._new_game_button = UIButton(
+            Rect(140, 50, 200, 60), "NEW GAME",
+            manager=manager, container=self._body_container)
+            
+        self._load_game_button = UIButton(
+            Rect(140, 130, 200, 60), "LOAD GAME", 
+            manager=manager, container=self._body_container)
+            
+        self._quit_button = UIButton(
+            Rect(140, 210, 200, 60), "QUIT",
+            manager=manager, container=self._body_container)
+        
+        # ACTIONS - None for Main Menu (buttons in body)
+        
+        # FOOTER - UIPanel + UILabel
+        self._footer_panel = UIPanel(zones['footer'], manager=manager)
+        UILabel(Rect(0, 10, 480, 20), "Select an option to continue",
+                manager=manager, container=self._footer_panel)
+```
+
+### Extensibility: Adding a New Screen
+
+To add a new screen following the 4-zone pattern:
+
+1. **Create screen file** in `wrestlegm/ui_pygame/screens/new_screen.py`
+2. **Inherit from BaseScreen** 
+3. **Implement build()** using only pygame_gui components:
+   - Header: UIPanel + UILabel
+   - Body: UIScrollingContainer (if scrollable) or UIPanel
+   - Actions: UIPanel + UIButton (if needed)
+   - Footer: UIPanel + UILabel
+4. **Register in router:** `router.register("new_screen", NewScreen)`
+5. **Add navigation trigger** in existing screen
+6. **Add snapshot test** following the 4-zone pattern
+
+**Example New Screen Template:**
+```python
+class NewFeatureScreen(BaseScreen):
+    def build(self, manager, rect):
+        zones = self._compute_zones(rect)
+        
+        # HEADER
+        header = UIPanel(zones['header'], manager=manager)
+        UILabel(Rect(8, 10, 200, 30), "NEW FEATURE",
+                manager=manager, container=header)
+        
+        # BODY (scrollable if needed)
+        body = UIScrollingContainer(zones['body'], manager=manager)
+        # ... add content to body ...
+        
+        # ACTIONS (optional)
+        if self._needs_actions:
+            actions = UIPanel(zones['actions'], manager=manager)
+            # ... add buttons to actions ...
+        
+        # FOOTER
+        footer = UIPanel(zones['footer'], manager=manager)
+        UILabel(Rect(0, 10, 480, 20), "Hint text here",
+                manager=manager, container=footer)
 ```
 
 ## Event Handling
