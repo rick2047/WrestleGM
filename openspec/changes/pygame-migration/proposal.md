@@ -37,6 +37,7 @@ Moving to pygame + pygame_gui enables:
 - Mouse/touch-only interaction (no keyboard shortcuts initially)
 - Mobile-friendly layouts (touch targets, scrolling, readable text)
 - New package structure: `wrestlegm/ui_pygame/`
+- **Two-tier testing strategy** (see Testing section below)
 
 ### Out of Scope
 - Changes to game core logic (GameState, SessionManager, SimulationEngine, etc.)
@@ -54,9 +55,56 @@ Moving to pygame + pygame_gui enables:
 3. **Mobile-ready**: UI elements meet mobile usability standards (min 44×44dp touch targets, readable text)
 4. **Entry point**: `main.py` launches pygame version instead of Textual
 5. **Tests pass**: Existing tests continue to work (they test game logic, not UI)
-6. **Visual snapshot testing**: New pygame UI has Syrupy-based PNG snapshot tests matching Textual coverage
-7. **Real interaction testing**: Tests simulate user clicks through pygame event system (not mocks)
+6. **Visual regression testing**: Syrupy-based PNG snapshot tests for all screens
+7. **Flow testing**: Real interaction tests verify all user journeys work correctly
 8. **No regression**: Game data (saves) remain compatible
+
+## Testing Strategy Overview
+
+This migration implements a **two-tier testing approach**:
+
+### Tier 1: Screen Snapshot Testing (Visual Regression)
+**Purpose**: Ensure UI appearance remains consistent across versions
+**Approach**: 
+- Use Syrupy with PNGImageSnapshotExtension
+- Populate screen with test data → render → capture PNG → compare to baseline
+- Tests **appearance only**, not functionality
+- Each screen has one snapshot test
+
+**Example**:
+```python
+def test_main_menu_snapshot(app_with_built_screen, snapshot_image):
+    app = app_with_built_screen
+    # Capture screen surface as PNG
+    surface = pygame.Surface((480, 800))
+    app.ui_manager.draw_ui(surface)
+    # Compare to baseline
+    assert surface_to_png(surface) == snapshot_image
+```
+
+### Tier 2: Flow Testing (Real Interaction)
+**Purpose**: Ensure user interactions work correctly through the full event system
+**Approach**:
+- Simulate real pygame events (MOUSEBUTTONDOWN/UP)
+- Events flow through: `pygame.event.post()` → `UIManager.process_events()` → `Screen.handle_event()`
+- Tests **functionality and navigation**, not appearance
+- Each user flow has one interaction test
+
+**Example**:
+```python
+def test_new_game_flow(app_with_interaction):
+    app = app_with_interaction
+    # Click NEW GAME button
+    app.click(app.router.current._new_game_button)
+    # Verify navigation occurred
+    assert app.router.current.__class__.__name__ == "SaveSlotSelectionScreen"
+```
+
+**Why Two Tiers?**
+- **Separation of concerns**: Visual changes don't break functional tests, and vice versa
+- **Debugging**: When a test fails, you know immediately if it's a visual regression or functional bug
+- **Speed**: Snapshot tests can skip event processing; flow tests skip pixel comparison
+- **Coverage**: Together they ensure both "looks right" and "works right"
 
 ## Impact
 
@@ -64,22 +112,13 @@ Moving to pygame + pygame_gui enables:
 - **Entry point** (`main.py`): Switch from Textual to pygame app launch
 - **UI layer** (`wrestlegm/ui/` → `wrestlegm/ui_pygame/`): New implementation
 - **Dependencies**: Add pygame and pygame_gui to requirements
-- **Test infrastructure**: UI snapshot tests will need updates (different output format)
+- **Test infrastructure**: New two-tier testing approach
 
 ### Unchanged Areas
 - **Game core** (`wrestlegm/state.py`, `wrestlegm/sim.py`, `wrestlegm/economy.py`, etc.): Zero changes
 - **Data layer** (`wrestlegm/data.py`, `wrestlegm/persistence.py`): Zero changes
 - **Models** (`wrestlegm/models.py`): Zero changes
 - **Save format**: Compatible with existing saves
-
-## Risks & Considerations
-
-1. **Development time**: Rebuilding ~12 screens is substantial work; will proceed task-by-task
-2. **pygame_gui limitations**: May need custom widgets for complex layouts (data tables, custom wrestler cards)
-3. **Mobile complexity**: Responsive design for variable screen sizes adds complexity
-4. **Asset creation**: Future graphics/sounds require additional effort beyond this migration
-5. **Testing**: UI snapshot tests use Textual's SVG output; will need new approach for pygame
-6. **Learning curve**: pygame_gui theming and layout system has its own complexity
 
 ## UI Architecture
 
@@ -101,166 +140,118 @@ All screens follow the proven **Header → Body → Actions → Footer** layout 
 └─────────────────────────────────────────────┘
 ```
 
-- **Header**: Dynamic title, contextual info (money, show number), status indicators
-- **Body**: Primary content, scrollable when needed, touch-friendly spacing
-- **Actions**: Primary action buttons (Confirm, Cancel, Back), disabled state support
-- **Footer**: Contextual hints or status messages
+## Required Flow Tests
 
-This consistency reduces cognitive load and mirrors the terminal UI users already know.
+These end-to-end interaction tests verify complete user journeys:
 
-## Display Resolution & Scaling Strategy
+### 1. New Game Flow
+**Path:** Main Menu → Save Slots → Game Hub  
+**Test:** Click NEW GAME → select empty slot → verify Game Hub displays  
+**Validates:** Navigation, screen building, save slot creation
 
-**Target Design Resolution**: 480×800 (portrait)
-- Fits most phones (lowest common denominator)
-- Aspect ratio 9:16 matches modern smartphones
-- Desktop windowed mode scales proportionally
+### 2. Load Game Flow  
+**Path:** Main Menu → Save Slots → Game Hub  
+**Test:** Click LOAD GAME → select occupied slot → verify loaded state  
+**Validates:** Save loading, state restoration
 
-**Visual Assets**: 32×32 pixel images
-- Wrestler avatars, icons, match type graphics
-- Crisp at 1× scale, acceptable at 2× (64×64)
-- Integer scaling only (no blurry interpolation)
+### 3. Book a Match Flow
+**Path:** Game Hub → Booking Hub → Match Booking → Wrestler Selection → Booking Hub  
+**Test:** Navigate to Booking Hub → click match slot → select wrestlers → confirm  
+**Validates:** Multi-step navigation, match creation
 
-**Text Strategy**:
-| Element | Size | Notes |
-|---------|------|-------|
-| Header Title | 24-28px | Bold, primary |
-| Body Text | 16-18px | Readable at arm's length |
-| Stats/Numbers | 20-24px | Important values stand out |
-| Buttons | 18-20px | Clear call-to-action |
-| Footer | 14-16px | Secondary information |
+### 4. Complete Show Flow
+**Path:** Game Hub → Booking Hub → [book all 5 slots] → Run Show → Results → Game Hub  
+**Test:** Book complete show → run simulation → view results → continue  
+**Validates:** Full game loop, simulation integration
 
-**Touch Target Minimum**: 44×44dp (density-independent pixels)
-- Buttons: 48dp height minimum
-- List items: 56-64dp for easy selection
-- Spacing: 8dp grid system (margins, padding)
+### 5. Roster Inspection Flow
+**Path:** Game Hub → Roster → Inspect Modal → Roster  
+**Test:** Navigate to Roster → click wrestler → view details → close modal  
+**Validates:** Modal handling, data display
 
-**Scaling Approach**:
-- Design at 1× (480×800)
-- Runtime scale to device: `scale = min(width/480, height/800)`
-- UI elements scale linearly, pixel art stays crisp at integer multiples
-- Letterbox if aspect ratio differs (maintain game area aspect)
+### 6. Save & Quit Flow
+**Path:** Game Hub → (Save & Quit) → Main Menu → Load Game  
+**Test:** Make changes → save → load → verify persistence  
+**Validates:** Save functionality, data integrity
 
-**Implications of 32×32 Pixel Art**:
-- **Pro**: Small download size, retro aesthetic, fast to create
-- **Con**: Limited detail for wrestler expressions, scales poorly to tablets
-- **Mitigation**: Focus on readable text and color coding; pixel art supplements rather than communicates primary info
+### 7. Bankruptcy Flow
+**Path:** [Run shows until money < 0] → Bankruptcy → Try Again → Game Hub  
+**Test:** Spend until bankrupt → restart → verify fresh state  
+**Validates:** Game over detection, reset
 
-## Visual Style Guide
+### 8. Back Navigation Flow
+**Path:** Main Menu → Save Slots → (back) → Main Menu → Game Hub → (back)  
+**Test:** Navigate deep → use back button → verify correct previous screens  
+**Validates:** Navigation stack
 
-**Color Palette** (retro-inspired but readable):
-- Background: Deep grays (#1a1a1a, #2d2d2d)
-- Primary: Wrestling gold (#d4af37) for headers, important actions
-- Secondary: Steel blue (#4682b4) for secondary info
-- Success: Green (#228b22) for positive outcomes
-- Warning: Orange (#ff8c00) for stamina warnings
-- Danger: Red (#dc143c) for errors, bankruptcy
-- Text: Off-white (#e8e8e8) for readability
+### 9. Error Recovery Flow
+**Path:** Main Menu → Load Game → (click corrupt save) → Error Modal → Save Slots  
+**Test:** Attempt corrupt load → error modal → dismiss → still on Save Slots  
+**Validates:** Error handling, graceful failure
 
-**Typography**:
-- Use system fonts or bundled pixel font
-- All caps for headers (terminates better at low res)
-- Monospace for stats/tables (alignment)
-- Emoji support for alignment icons, rivalry indicators
+### 10. Cancel Navigation Flow
+**Path:** Main Menu → Save Slots → (cancel/back) → Main Menu  
+**Test:** Navigate to save slots → click back → verify return to main menu  
+**Validates:** Back button behavior, state preservation
 
 ## Implementation Approach
 
 Phased rollout to manage complexity:
 
-**Phase 1: Foundation** (Entry point, screen router, base classes)
+**Phase 1: Foundation** (Entry point, screen router, base classes, testing fixtures)
 **Phase 2: Core Screens** (Main Menu, Save Slots, Game Hub, Booking Hub - minimum playable)
 **Phase 3: Booking Flow** (Match Booking, Promo Booking, Wrestler Selection)
 **Phase 4: Results & Polish** (Simulating, Results, Roster, remaining screens)
-**Phase 5: Assets & Refinement** (Sounds, animations, responsive tweaks)
+**Phase 5: Testing** (Screen snapshot tests, flow interaction tests)
 
 Each phase will be a set of tasks in the task artifact.
 
 ## Why Real Interaction Testing Matters
 
 **The Problem with Mock Tests:**
-Traditional unit tests mock the UI and call methods directly:
-```python
-# BAD: Doesn't test actual event flow
-def test_mock():
-    screen._on_new_game()  # Direct method call
-    assert router.navigate.called
-```
-This misses bugs in the event handling chain that real users trigger.
+Traditional unit tests mock the UI and call methods directly. This misses bugs in the event handling chain.
 
 **Real Interaction Testing:**
 We simulate actual pygame events and let them flow through the real system:
-```python
-# GOOD: Tests real event flow
-def test_real():
-    pygame.event.post(MOUSEBUTTONDOWN)  # Real pygame event
-    app.ui_manager.process_events(event)  # Real pygame_gui processing
-    screen.handle_event(event)  # Real screen handling
-    assert router.current is save_slots_screen
-```
+- `pygame.event.post(MOUSEBUTTONDOWN)` - Real pygame event
+- `app.ui_manager.process_events(event)` - Real pygame_gui processing  
+- `screen.handle_event(event)` - Real screen handling
 
 **Benefits:**
-- Catches event handling bugs (like the navigation build bug we found)
-- Tests the same code paths real users execute
+- Catches event handling bugs (like navigation build issues)
+- Tests same code paths as real users
 - No "works in test, broken in production" surprises
-- Validates pygame_gui theming and event processing
+- Slightly slower than mocks, but catches real bugs
 
-**Trade-off:** Slightly slower than mocks, but catches real bugs that affect users.
+## Display Resolution & Scaling Strategy
 
-## Required Flow Tests
+**Target Design Resolution**: 480×800 (portrait)
+- Fits most phones (lowest common denominator)
+- Aspect ratio 9:16 matches modern smartphones
 
-These end-to-end tests verify complete user journeys through the pygame event system:
+**Visual Assets**: 32×32 pixel images
+- Wrestler avatars, icons, match type graphics
+- Integer scaling only (no blurry interpolation)
 
-### 1. New Game Flow
-**Path:** Main Menu → Save Slots → Game Hub  
-**Test:** Click NEW GAME → select empty slot → verify Game Hub displays with correct initial state  
-**Validates:** Navigation, screen building, save slot creation, state initialization
+**Touch Target Minimum**: 44×44dp
+- Buttons: 48dp height minimum
+- Spacing: 8dp grid system
 
-### 2. Load Game Flow  
-**Path:** Main Menu → Save Slots → Game Hub  
-**Test:** Click LOAD GAME → select occupied slot → verify Game Hub displays with loaded state  
-**Validates:** Save loading, state restoration, navigation history
+## Visual Style Guide
 
-### 3. Booking Flow - Match
-**Path:** Game Hub → Booking Hub → Match Booking → Wrestler Selection → (select wrestler) → Booking Hub  
-**Test:** Navigate to Booking Hub → click empty match slot → click SELECT WRESTLER → select available wrestler → confirm → verify match appears in slot  
-**Validates:** Multi-step navigation, data passing between screens, match creation, UI updates
+**Color Palette**:
+- Background: Deep grays (#1a1a1a, #2d2d2d)
+- Primary: Wrestling gold (#d4af37)
+- Secondary: Steel blue (#4682b4)
+- Success: Green (#228b22)
+- Warning: Orange (#ff8c00)
+- Danger: Red (#dc143c)
+- Text: Off-white (#e8e8e8)
 
-### 4. Booking Flow - Promo
-**Path:** Game Hub → Booking Hub → Promo Booking → Wrestler Selection → (select wrestler) → Booking Hub  
-**Test:** Navigate to Booking Hub → click empty promo slot → click SELECT WRESTLER → select wrestler → confirm → verify promo appears in slot  
-**Validates:** Same as match flow but for promos
+## Risks & Considerations
 
-### 5. Full Show Cycle
-**Path:** Game Hub → Booking Hub → [book 3 matches + 2 promos] → Run Show → Simulating → Results → Game Hub  
-**Test:** Book complete show card → click RUN SHOW → verify simulation runs → verify results display → click CONTINUE → verify back at Game Hub with updated state  
-**Validates:** Complete game loop, simulation integration, state persistence, money updates
-
-### 6. Roster Inspection Flow
-**Path:** Game Hub → Roster → (click wrestler) → Inspect Modal → (close) → Roster → Game Hub  
-**Test:** Navigate to Roster → click wrestler → verify modal opens with details → close modal → verify back to roster → navigate back  
-**Validates:** Modal handling, data display, navigation with modals open
-
-### 7. Save & Quit Flow
-**Path:** Game Hub → (Save & Quit) → Main Menu → Load Game → (verify save preserved)  
-**Test:** Make changes in game → Save & Quit → verify Main Menu → Load Game → verify changes persisted  
-**Validates:** Save functionality, data persistence, menu navigation
-
-### 8. Bankruptcy Flow
-**Path:** [Run shows until money < 0] → Bankruptcy Screen → Try Again → Game Hub (reset)  
-**Test:** Spend until bankrupt → verify Bankruptcy screen → click Try Again → verify fresh game state  
-**Validates:** Bankruptcy detection, game reset, state reinitialization
-
-### 9. Back Navigation Flow
-**Path:** Main Menu → Save Slots → (back) → Main Menu → Game Hub → Booking Hub → (back) → Game Hub  
-**Test:** Navigate deep into app → use back button at each level → verify correct previous screens  
-**Validates:** Navigation stack, back button behavior, state preservation
-
-### 10. Error Recovery Flow
-**Path:** Main Menu → Load Game → (click corrupt save) → Error Modal → (dismiss) → Save Slots  
-**Test:** Attempt to load corrupt save → verify error modal → dismiss → still on Save Slots screen  
-**Validates:** Error handling, modal dialogs, graceful failure
-
-**Testing Strategy:**
-- Each flow test simulates actual pygame events (MOUSEBUTTONDOWN/UP)
-- Events flow through real app code: `pygame.event.post()` → `ui_manager.process_events()` → `screen.handle_event()`
-- Tests verify both navigation occurred AND UI elements were built (catches navigation build bug)
-- Headless mode (`SDL_VIDEODRIVER=dummy`) allows CI/CD execution
+1. **Testing complexity**: Two-tier testing requires more test files but provides better coverage
+2. **Snapshot maintenance**: Visual tests need baseline updates when UI intentionally changes
+3. **Development time**: Rebuilding ~12 screens is substantial work
+4. **pygame_gui limitations**: May need custom widgets for complex layouts
+5. **Mobile complexity**: Responsive design for variable screen sizes

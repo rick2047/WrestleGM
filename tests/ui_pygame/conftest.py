@@ -74,3 +74,58 @@ def create_button_click_event():
         )
 
     return _create
+
+
+@pytest.fixture
+def app_with_interaction():
+    """App with interaction helpers for testing real user events.
+
+    Provides:
+    - app.click(x, y) or app.click(element): Simulate mouse click
+    - app.pump_events(): Process all pending events
+    - app.events_processed: List of all events that went through the system
+    """
+    os.environ["SDL_VIDEODRIVER"] = "dummy"
+    pygame.init()
+    from wrestlegm.ui_pygame import WrestleGMApp
+    from pygame import Rect
+
+    app = WrestleGMApp()
+    app.router.navigate("main_menu")
+    screen = app.router.current
+    screen.build(app.ui_manager, Rect(0, 0, 480, 800))
+
+    # Track events processed
+    app.events_processed = []
+
+    def click(target):
+        """Simulate a mouse click.
+
+        Args:
+            target: Either (x, y) tuple or a UI element with .rect attribute
+        """
+        if hasattr(target, "rect"):
+            pos = target.rect.center
+        else:
+            pos = target
+
+        # Post mouse events
+        pygame.event.post(pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=pos, button=1))
+        pygame.event.post(pygame.event.Event(pygame.MOUSEBUTTONUP, pos=pos, button=1))
+
+        # Process events
+        pump_events()
+
+    def pump_events():
+        """Process all pending pygame events through the app."""
+        for event in pygame.event.get():
+            app.events_processed.append(event)
+            app.ui_manager.process_events(event)
+            if app.router.current:
+                app.router.current.handle_event(event)
+
+    app.click = click
+    app.pump_events = pump_events
+
+    yield app
+    pygame.quit()

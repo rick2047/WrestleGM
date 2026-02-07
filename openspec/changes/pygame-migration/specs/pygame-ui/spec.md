@@ -8,25 +8,260 @@ The system SHALL organize pygame UI code in a dedicated package structure separa
 - **THEN** all pygame UI code is located in `wrestlegm/ui_pygame/`
 - **AND** Textual UI code remains in `wrestlegm/ui/` untouched
 
+### Requirement: Two-Tier Testing Strategy
+The system SHALL implement two distinct types of UI tests: Screen Tests for visual regression and Flow Tests for interaction verification.
+
+#### Scenario: Screen Tests - Visual Regression
+- **WHEN** testing UI appearance
+- **THEN** tests capture screen as PNG using Syrupy
+- **AND** tests compare against baseline snapshot
+- **AND** tests do NOT verify functionality
+- **AND** one test exists per screen
+
+#### Scenario: Flow Tests - Real Interaction
+- **WHEN** testing UI functionality
+- **THEN** tests simulate real pygame events (MOUSEBUTTONDOWN/UP)
+- **AND** events flow through: pygame → UIManager → Screen → Router
+- **AND** tests verify navigation and state changes
+- **AND** tests do NOT compare visual output
+- **AND** one test exists per user journey
+
+### Requirement: Screen Test Implementation
+The system SHALL implement visual regression tests using Syrupy PNGImageSnapshotExtension.
+
+#### Scenario: Screen test setup
+- **GIVEN** a headless pygame app with built screen
+- **WHEN** test renders UI to surface
+- **THEN** surface is captured as PNG bytes
+- **AND** compared to baseline using snapshot_image fixture
+- **AND** test fails if pixels differ
+
+#### Scenario: Screen test coverage
+- **WHEN** all screens are implemented
+- **THEN** each screen has one snapshot test:
+  - Main Menu
+  - Save Slots
+  - Game Hub
+  - Booking Hub
+  - Match Booking
+  - Promo Booking
+  - Wrestler Selection
+  - Roster
+  - Simulating
+  - Results
+  - Bankruptcy
+
+#### Scenario: Screen test fixture
+- **GIVEN** the app_with_built_screen fixture
+- **THEN** it provides app with pre-built current screen
+- **AND** screen is rendered with test data
+- **AND** UI elements are created via screen.build()
+
+### Requirement: Flow Test Implementation
+The system SHALL implement interaction tests using real pygame event simulation.
+
+#### Scenario: Flow test setup
+- **GIVEN** a headless pygame app with interaction helpers
+- **WHEN** test calls app.click(button)
+- **THEN** MOUSEBUTTONDOWN event posted at button position
+- **AND** MOUSEBUTTONUP event posted at same position
+- **AND** events processed through UIManager
+- **AND** UI_BUTTON_PRESSED event generated
+- **AND** screen.handle_event() receives event
+
+#### Scenario: Flow test coverage
+- **WHEN** all user journeys are defined
+- **THEN** each journey has one flow test:
+  1. New Game Flow
+  2. Load Game Flow
+  3. Book a Match Flow
+  4. Complete Show Flow
+  5. Roster Inspection Flow
+  6. Save and Quit Flow
+  7. Bankruptcy Flow
+  8. Back Navigation Flow
+  9. Error Recovery Flow
+  10. Cancel Navigation Flow
+
+#### Scenario: Flow test fixture
+- **GIVEN** the app_with_interaction fixture
+- **THEN** it provides app.click(element) method
+- **AND** it provides app.pump_events() method
+- **AND** it tracks all events processed
+- **AND** events flow through real code paths
+
+### Requirement: Flow 1 - New Game
+The system SHALL test the complete new game creation journey.
+
+#### Scenario: New Game Flow Test
+- **GIVEN** app is at Main Menu
+- **WHEN** test clicks _new_game_button
+- **THEN** navigates to SaveSlotSelectionScreen with mode=new
+- **AND** screen is built (_slot_buttons is not None)
+- **WHEN** test clicks _slot_buttons[0] (first empty slot)
+- **THEN** navigates to GameHubScreen
+- **AND** state.show_number is 1 (fresh game)
+- **AND** screen is built (_booking_hub_button is not None)
+
+### Requirement: Flow 2 - Load Game
+The system SHALL test the complete game loading journey.
+
+#### Scenario: Load Game Flow Test
+- **GIVEN** app is at Main Menu
+- **AND** a populated save exists in slot 2
+- **WHEN** test clicks _load_game_button
+- **THEN** navigates to SaveSlotSelectionScreen with mode=load
+- **AND** occupied slots are clickable
+- **WHEN** test clicks _slot_buttons[2] (occupied slot)
+- **THEN** navigates to GameHubScreen
+- **AND** state.show_number greater than 1 (not fresh game)
+- **AND** loaded data matches original save
+
+### Requirement: Flow 3 - Book Match
+The system SHALL test the complete match booking journey.
+
+#### Scenario: Book Match Flow Test
+- **GIVEN** app is at Game Hub
+- **WHEN** test clicks _booking_hub_button
+- **THEN** navigates to BookingHubScreen
+- **AND** 5 slot buttons are visible
+- **WHEN** test clicks _slot_buttons[0] (empty match slot)
+- **THEN** navigates to MatchBookingScreen
+- **AND** category is singles, 2 wrestler slots visible
+- **WHEN** test clicks _wrestler_slot_buttons[0]
+- **THEN** navigates to WrestlerSelectionScreen
+- **AND** roster list displayed
+- **WHEN** test clicks _wrestler_buttons[0] (available wrestler)
+- **THEN** navigates back to MatchBookingScreen
+- **AND** wrestler slot 0 is populated
+- **WHEN** test selects second wrestler and clicks _confirm_button
+- **THEN** navigates to BookingHubScreen
+- **AND** slot 0 shows match summary
+
+### Requirement: Flow 4 - Complete Show
+The system SHALL test the complete show cycle from booking to results.
+
+#### Scenario: Complete Show Flow Test
+- **GIVEN** app is at Game Hub with show N
+- **WHEN** test navigates to Booking Hub
+- **AND** books all 5 slots (3 matches + 2 promos)
+- **THEN** _run_show_button is enabled (was disabled)
+- **WHEN** test clicks _run_show_button
+- **THEN** navigates to SimulatingScreen
+- **AND** progress indicator animates
+- **WHEN** simulation completes (auto-advance)
+- **THEN** navigates to ResultsScreen
+- **AND** show rating is displayed
+- **AND** per-slot results shown
+- **WHEN** test clicks _continue_button
+- **THEN** navigates to GameHubScreen
+- **AND** state.show_number is N+1
+- **AND** state.money is updated
+
+### Requirement: Flow 5 - Roster Inspection
+The system SHALL test viewing wrestler details from roster.
+
+#### Scenario: Roster Inspection Flow Test
+- **GIVEN** app is at Game Hub
+- **WHEN** test clicks _roster_button
+- **THEN** navigates to RosterScreen
+- **AND** scrollable wrestler list displayed
+- **WHEN** test clicks _wrestler_panels[0] (first wrestler)
+- **THEN** WrestlerInspectModal opens
+- **AND** modal shows wrestler details (stats, rivalries)
+- **WHEN** test clicks _close_button
+- **THEN** modal closes
+- **AND** back at RosterScreen
+
+### Requirement: Flow 6 - Save and Quit
+The system SHALL test saving game and reloading.
+
+#### Scenario: Save and Quit Flow Test
+- **GIVEN** app is at Game Hub with show number N
+- **WHEN** test clicks _save_quit_button
+- **THEN** game state is saved
+- **AND** navigates to MainMenuScreen
+- **WHEN** test clicks _load_game_button
+- **AND** clicks slot 0 (where saved)
+- **THEN** navigates to GameHubScreen
+- **AND** state.show_number is N (preserved)
+- **AND** all game data matches pre-save
+
+### Requirement: Flow 7 - Bankruptcy
+The system SHALL test bankruptcy detection and restart.
+
+#### Scenario: Bankruptcy Flow Test
+- **GIVEN** app has negative money
+- **WHEN** app navigates to bankruptcy screen
+- **THEN** BankruptcyScreen displays with warning
+- **AND** _try_again_button is visible
+- **WHEN** test clicks _try_again_button
+- **THEN** navigates to GameHubScreen
+- **AND** state.show_number is 1 (fresh)
+- **AND** state.money is initial amount (positive)
+
+### Requirement: Flow 8 - Back Navigation
+The system SHALL testing using back button to return to previous screens.
+
+#### Scenario: Back Navigation Flow Test
+- **GIVEN** app is at Main Menu
+- **WHEN** test clicks _new_game_button
+- **THEN** navigates to SaveSlotSelectionScreen
+- **WHEN** test clicks _back_button
+- **THEN** navigates to MainMenuScreen
+- **WHEN** test clicks _new_game_button
+- **AND** clicks _slot_buttons[0]
+- **THEN** navigates to GameHubScreen
+- **WHEN** test clicks _booking_hub_button
+- **THEN** navigates to BookingHubScreen
+- **WHEN** test clicks _back_button
+- **THEN** navigates to GameHubScreen
+
+### Requirement: Flow 9 - Error Recovery
+The system SHALL test graceful handling of corrupt saves.
+
+#### Scenario: Error Recovery Flow Test
+- **GIVEN** corrupt save exists in slot 2
+- **AND** app is at Main Menu
+- **WHEN** test clicks _load_game_button
+- **THEN** navigates to SaveSlotSelectionScreen
+- **WHEN** test clicks _slot_buttons[2] (corrupt slot)
+- **THEN** ErrorModal displays with corrupt message
+- **AND** app remains on SaveSlotSelectionScreen
+- **WHEN** test clicks _ok_button on modal
+- **THEN** modal closes
+- **AND** still on SaveSlotSelectionScreen
+
+### Requirement: Flow 10 - Cancel Navigation
+The system SHALL test canceling navigation and returning.
+
+#### Scenario: Cancel Navigation Flow Test
+- **GIVEN** app is at Main Menu
+- **WHEN** test clicks _new_game_button
+- **THEN** navigates to SaveSlotSelectionScreen
+- **WHEN** test clicks _back_button (cancel)
+- **THEN** navigates back to MainMenuScreen
+- **AND** no game was created
+
 ### Requirement: Main Menu screen
 The system SHALL display a main menu with options for New Game, Load Game, and Quit.
 
 #### Scenario: Display main menu
 - **WHEN** the application launches
 - **THEN** the Main Menu screen is displayed
-- **AND** it shows three buttons: "New Game", "Load Game", "Quit"
+- **AND** it shows three buttons: New Game, Load Game, Quit
 - **AND** the screen follows the 4-zone layout (Header → Body → Actions → Footer)
 
 #### Scenario: Navigate to save slots from main menu
-- **WHEN** user clicks "New Game" button
-- **THEN** the application navigates to Save Slot Selection screen in "new" mode
+- **WHEN** user clicks New Game button
+- **THEN** the application navigates to Save Slot Selection screen in new mode
 
 #### Scenario: Navigate to load game from main menu
-- **WHEN** user clicks "Load Game" button
-- **THEN** the application navigates to Save Slot Selection screen in "load" mode
+- **WHEN** user clicks Load Game button
+- **THEN** the application navigates to Save Slot Selection screen in load mode
 
 #### Scenario: Quit from main menu
-- **WHEN** user clicks "Quit" button
+- **WHEN** user clicks Quit button
 - **THEN** the application closes gracefully
 
 ### Requirement: Save Slot Selection screen
@@ -39,19 +274,19 @@ The system SHALL allow users to select a save slot for new or loaded games.
 - **AND** provides Back button to return to Main Menu
 
 #### Scenario: Select slot for new game
-- **GIVEN** the screen is in "new" mode
+- **GIVEN** the screen is in new mode
 - **WHEN** user clicks an empty slot
 - **THEN** the application creates a new game in that slot
 - **AND** navigates to the Game Hub
 
 #### Scenario: Select slot for loading
-- **GIVEN** the screen is in "load" mode
+- **GIVEN** the screen is in load mode
 - **WHEN** user clicks an occupied slot
 - **THEN** the application loads the game from that slot
 - **AND** navigates to the Game Hub
 
 #### Scenario: Handle corrupt save
-- **GIVEN** the screen is in "load" mode
+- **GIVEN** the screen is in load mode
 - **WHEN** user clicks a slot with corrupt data
 - **THEN** an error modal is displayed
 - **AND** user remains on Save Slot Selection screen
@@ -66,15 +301,15 @@ The system SHALL provide a central hub for game navigation.
 - **AND** displays current show number and money in header
 
 #### Scenario: Navigate to booking hub
-- **WHEN** user clicks "Booking Hub"
+- **WHEN** user clicks Booking Hub
 - **THEN** the application navigates to Booking Hub screen
 
 #### Scenario: Navigate to roster view
-- **WHEN** user clicks "Roster View"
+- **WHEN** user clicks Roster View
 - **THEN** the application navigates to Roster screen
 
 #### Scenario: Save and quit
-- **WHEN** user clicks "Save & Quit"
+- **WHEN** user clicks Save & Quit
 - **THEN** the current game state is saved
 - **AND** the application returns to Main Menu
 
@@ -106,14 +341,14 @@ The system SHALL display the current show card with all booked slots.
 #### Scenario: Run show validation
 - **GIVEN** the show card is incomplete
 - **WHEN** user attempts to run the show
-- **THEN** the "Run Show" button is disabled
+- **THEN** the Run Show button is disabled
 - **AND** a message indicates the show is incomplete
 
 #### Scenario: Confirm run show
 - **GIVEN** the show card is complete
-- **WHEN** user clicks "Run Show"
+- **WHEN** user clicks Run Show
 - **THEN** a confirmation modal appears if cost exceeds money
-- **AND** clicking "Confirm" navigates to Simulating screen
+- **AND** clicking Confirm navigates to Simulating screen
 
 ### Requirement: Match Booking screen
 The system SHALL allow users to book a match with wrestlers and match type.
@@ -149,18 +384,18 @@ The system SHALL allow users to book a match with wrestlers and match type.
 
 #### Scenario: Confirm booking
 - **GIVEN** all required wrestlers are selected
-- **WHEN** user clicks "Confirm"
+- **WHEN** user clicks Confirm
 - **THEN** the match is saved to the show card
 - **AND** the application returns to Booking Hub
 
 #### Scenario: Cancel booking
-- **WHEN** user clicks "Cancel"
+- **WHEN** user clicks Cancel
 - **THEN** no changes are saved
 - **AND** the application returns to Booking Hub
 
 #### Scenario: Clear slot
 - **GIVEN** a match exists in the slot
-- **WHEN** user clicks "Clear Slot"
+- **WHEN** user clicks Clear Slot
 - **THEN** the slot is emptied
 - **AND** the application returns to Booking Hub
 
@@ -172,7 +407,7 @@ The system SHALL allow users to book a promo with a single wrestler.
 - **THEN** it displays:
   - Single wrestler selection slot
   - Cost for the wrestler
-  - Wrestler's mic skill stat
+  - Wrestler mic skill stat
 
 #### Scenario: Select wrestler for promo
 - **WHEN** user clicks the wrestler slot
@@ -180,7 +415,7 @@ The system SHALL allow users to book a promo with a single wrestler.
 
 #### Scenario: Confirm promo booking
 - **GIVEN** a wrestler is selected
-- **WHEN** user clicks "Confirm"
+- **WHEN** user clicks Confirm
 - **THEN** the promo is saved to the show card
 - **AND** the application returns to Booking Hub
 
@@ -191,7 +426,7 @@ The system SHALL display a scrollable list of available wrestlers.
 - **WHEN** navigating to Wrestler Selection screen
 - **THEN** it displays all roster wrestlers in a scrollable list
 - **AND** shows for each wrestler:
-  - Avatar (32×32)
+  - Avatar (32x32)
   - Name
   - Popularity (stars)
   - Stamina (battery icon + value)
@@ -203,7 +438,7 @@ The system SHALL display a scrollable list of available wrestlers.
 - **GIVEN** some wrestlers are booked elsewhere or have low stamina
 - **WHEN** the list is displayed
 - **THEN** unavailable wrestlers are visually distinct (grayed out)
-- **AND** a reason is shown ("Booked", "Low Stamina")
+- **AND** a reason is shown (Booked, Low Stamina)
 
 #### Scenario: Select wrestler
 - **GIVEN** a wrestler is available
@@ -212,7 +447,7 @@ The system SHALL display a scrollable list of available wrestlers.
 - **AND** the application returns to the calling screen (Match/Promo Booking)
 
 #### Scenario: Cancel selection
-- **WHEN** user clicks "Cancel"
+- **WHEN** user clicks Cancel
 - **THEN** no wrestler is selected
 - **AND** the application returns to the calling screen
 
@@ -230,7 +465,7 @@ The system SHALL allow viewing detailed wrestler information.
   - Active rivalries with other wrestlers
 
 #### Scenario: Close inspect modal
-- **WHEN** user clicks "Close" or outside the modal
+- **WHEN** user clicks Close or outside the modal
 - **THEN** the modal closes
 - **AND** user returns to Wrestler Selection screen
 
@@ -240,7 +475,7 @@ The system SHALL show simulation progress and transition to results.
 #### Scenario: Display simulation
 - **WHEN** navigating to Simulating screen
 - **THEN** it displays a progress indicator
-- **AND** shows "Simulating Show #N" text
+- **AND** shows Simulating Show #N text
 - **AND** automatically advances when simulation completes
 
 #### Scenario: Complete simulation
@@ -262,7 +497,7 @@ The system SHALL display show results with match outcomes and ratings.
   - Updated money amount
 
 #### Scenario: Continue after results
-- **WHEN** user clicks "Continue"
+- **WHEN** user clicks Continue
 - **THEN** the show results are applied to roster stats
 - **AND** the game is saved
 - **AND** the application navigates to Game Hub
@@ -290,7 +525,7 @@ The system SHALL display when the promotion runs out of money.
 - **AND** shows options: Try Again (restart), Main Menu
 
 #### Scenario: Restart from bankruptcy
-- **WHEN** user clicks "Try Again"
+- **WHEN** user clicks Try Again
 - **THEN** the game resets to initial state
 - **AND** navigates to Booking Hub
 
@@ -301,15 +536,15 @@ The system SHALL provide confirmation dialogs for destructive actions.
 - **GIVEN** show cost exceeds current money
 - **WHEN** user attempts to run show
 - **THEN** a modal warns about going into debt
-- **AND** shows "Money: $X, Cost: $Y, Will debt: $Z"
-- **AND** provides "Cancel" and "Confirm" options
+- **AND** shows Money: $X, Cost: $Y, Will debt: $Z
+- **AND** provides Cancel and Confirm options
 
 #### Scenario: Confirm clear slot
 - **GIVEN** a slot has booked content
-- **WHEN** user clicks "Clear Slot"
+- **WHEN** user clicks Clear Slot
 - **THEN** a confirmation modal appears
-- **AND** asks "Clear this slot?"
-- **AND** provides "Cancel" and "Confirm" options
+- **AND** asks Clear this slot?
+- **AND** provides Cancel and Confirm options
 
 ### Requirement: Error modals
 The system SHALL display error messages for invalid operations.
@@ -318,7 +553,7 @@ The system SHALL display error messages for invalid operations.
 - **GIVEN** an error occurs (e.g., corrupt save)
 - **WHEN** the error is triggered
 - **THEN** an error modal displays with the error message
-- **AND** provides "OK" button to dismiss
+- **AND** provides OK button to dismiss
 
 ### Requirement: Mouse-only interaction
 The system SHALL support complete gameplay using only mouse/touch input.
@@ -327,7 +562,7 @@ The system SHALL support complete gameplay using only mouse/touch input.
 - **GIVEN** no keyboard is used
 - **WHEN** user plays the game
 - **THEN** all navigation is possible via clicking/tapping
-- **AND** all buttons are touch-friendly (min 44×44dp)
+- **AND** all buttons are touch-friendly (min 44x44dp)
 - **AND** scrollable areas support touch scrolling
 
 ### Requirement: Mobile-friendly layout
@@ -335,11 +570,11 @@ The system SHALL use a mobile-first responsive layout.
 
 #### Scenario: Layout on mobile device
 - **GIVEN** the game runs on a mobile device
-- **WHEN** displayed at 480×800 resolution
+- **WHEN** displayed at 480x800 resolution
 - **THEN** all UI elements are readable
-- **AND** touch targets are at least 44×44dp
+- **AND** touch targets are at least 44x44dp
 - **AND** text is 16px minimum for body, 24px for headers
-- **AND** 32×32 pixel art displays crisply
+- **AND** 32x32 pixel art displays crisply
 
 #### Scenario: Layout scales to larger screens
 - **GIVEN** the game runs on a tablet or desktop
@@ -404,74 +639,3 @@ The system SHALL maintain save/load compatibility.
 - **WHEN** loading in pygame UI
 - **THEN** the game loads successfully
 - **AND** all data is preserved correctly
-
-### Requirement: Real Interaction Testing
-The system SHALL test user interactions through the actual pygame event system.
-
-#### Scenario: Simulate mouse click on button
-- **GIVEN** a screen with buttons is displayed
-- **WHEN** a test simulates a mouse click at button coordinates
-- **THEN** pygame_gui processes the event
-- **AND** UI_BUTTON_PRESSED event is generated
-- **AND** screen.handle_event() receives the event
-- **AND** the button's action is triggered
-
-#### Scenario: Test full user journey
-- **GIVEN** the application is at Main Menu
-- **WHEN** tests simulate: click NEW GAME → select slot 1 → click BOOKING HUB → click Match Slot 1 → click SELECT WRESTLER → click wrestler → click CONFIRM
-- **THEN** each navigation occurs correctly
-- **AND** each screen is built and interactive
-- **AND** final state shows match booked in slot 1
-
-#### Scenario: Verify event flow matches real user
-- **GIVEN** a test simulates user clicking a button
-- **WHEN** the event flows through: pygame.MOUSEBUTTONDOWN → UIManager.process_events() → UI_BUTTON_PRESSED → screen.handle_event()
-- **THEN** the exact same code paths execute as when a real user clicks
-- **AND** no mock methods are called
-
-### Requirement: Interaction Test Fixtures
-The system SHALL provide fixtures for interaction testing.
-
-#### Scenario: app_with_interaction fixture
-- **GIVEN** the app_with_interaction fixture is used
-- **THEN** it provides an app with built screen
-- **AND** it provides a click() method: click(x, y) or click(element)
-- **AND** it provides a pump_events() method to process event queue
-- **AND** it tracks all events processed
-
-#### Scenario: simulate_click helper
-- **GIVEN** a simulate_click helper function
-- **WHEN** called with a UI element
-- **THEN** it posts MOUSEBUTTONDOWN at element center
-- **AND** it posts MOUSEBUTTONUP at same position
-- **AND** it calls ui_manager.process_events() for each
-- **AND** it returns True if button press event was generated
-
-#### Scenario: verify_navigation helper
-- **GIVEN** a verify_navigation helper
-- **WHEN** called after clicking a navigation button
-- **THEN** it asserts router.current is the expected screen
-- **AND** it asserts new screen has been built (UI elements exist)
-- **AND** it asserts navigation happened exactly once
-
-### Requirement: Interaction vs Visual Testing Separation
-The system SHALL distinguish between visual snapshot tests and interaction tests.
-
-#### Scenario: Visual snapshot tests
-- **WHEN** visual regression testing is needed
-- **THEN** tests use PNG snapshots
-- **AND** tests verify appearance matches baseline
-- **AND** tests do NOT verify functionality
-
-#### Scenario: Interaction tests  
-- **WHEN** functionality testing is needed
-- **THEN** tests simulate user events through pygame
-- **AND** tests verify actions trigger correctly
-- **AND** tests do NOT compare visual output
-
-#### Scenario: Combined coverage
-- **WHEN** both visual and functional coverage needed
-- **THEN** separate test files for each concern
-- **AND** visual tests in test_*_snapshot.py
-- **AND** interaction tests in test_*_interaction.py
-
