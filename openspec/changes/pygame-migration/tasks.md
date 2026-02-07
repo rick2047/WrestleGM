@@ -6,6 +6,8 @@
 - [x] 1.4 Create theme.py with pygame_gui JSON theme configuration
 - [x] 1.5 Create ScalingManager class with integer scaling logic
 - [x] 1.6 Create Router class for screen navigation (push/pop/switch)
+- [x] 1.6.1 Implement router.back() method - Pop current screen, return to previous, trigger rebuild
+- [ ] 1.6.2 Add helper methods placeholder comment - Future helpers (can_go_back, switch, is_at, etc.) added as needed
 - [x] 1.7 Create BaseScreen class with 4-zone layout (Header → Body → Actions → Footer)
 - [x] 1.8 Create TransitionManager for fade transitions between screens
 - [x] 1.9 Create WrestleGMApp class with main game loop and UIManager

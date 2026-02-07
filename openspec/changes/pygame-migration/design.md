@@ -117,15 +117,32 @@ class Router:
         # Register screen class for a route
         
     def navigate(self, route: str, **kwargs) -> None:
-        # Push new screen onto stack
-        # Call _on_navigate_callback if set
+        """Push new screen onto stack.
+        
+        Creates new screen instance, adds to stack, and triggers
+        on_navigate callback to build UI elements.
+        """
         
     def back(self) -> None:
-        # Pop current screen, return to previous
+        """Pop current screen, return to previous screen in stack.
         
+        If stack has only 1 screen (main menu), does nothing.
+        Automatically triggers rebuild of previous screen.
+        
+        Example:
+            # User at Save Slots, clicks Back button
+            router.back()  # Returns to Main Menu
+        """
+        
+    # Helper methods will be added here as needed
+    # Future helpers may include:
+    # - can_go_back() - Check if there's a previous screen
+    # - switch() - Replace current without adding to history
+    # - is_at(route) - Check if at specific route
+    
     @property
     def current(self) -> BaseScreen:
-        # Current top of stack
+        """Current top of stack."""
 ```
 
 ### BaseScreen (wrestlegm/ui_pygame/screens/base.py)

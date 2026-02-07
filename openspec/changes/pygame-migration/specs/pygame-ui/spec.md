@@ -90,6 +90,26 @@ The system SHALL implement interaction tests using real pygame event simulation.
 - **AND** it tracks all events processed
 - **AND** events flow through real code paths
 
+### Requirement: Router Navigation Helpers
+The system SHALL provide the back() navigation helper method. Additional helpers will be added as needed.
+
+#### Scenario: Back navigation
+- **GIVEN** the navigation stack has multiple screens
+- **WHEN** router.back() is called
+- **THEN** current screen is popped from stack
+- **AND** previous screen becomes current
+- **AND** on_navigate callback is triggered to rebuild UI
+
+#### Scenario: Back at root screen
+- **GIVEN** the navigation stack has only 1 screen (Main Menu)
+- **WHEN** router.back() is called
+- **THEN** no action is taken
+- **AND** user remains on Main Menu
+- **AND** no error occurs
+
+#### Note: Future Helpers
+Additional navigation helper methods (can_go_back, switch, is_at, etc.) will be added to the Router class as specific UI needs arise. The class structure includes a placeholder section for these helpers.
+
 ### Requirement: Flow 1 - New Game
 The system SHALL test the complete new game creation journey.
 
