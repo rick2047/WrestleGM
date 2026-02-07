@@ -97,52 +97,121 @@ class WrestleGMApp:
 
 ### Router (wrestlegm/ui_pygame/router.py)
 
-Screen navigation state machine with automatic rebuilding:
+Screen navigation state machine with automatic rebuilding. The Router manages a stack-based navigation system where screens can be pushed onto the stack (navigate forward), popped off (go back), or replaced. It coordinates with the App to ensure UI elements are rebuilt after each navigation.
+
+**Key Concepts:**
+- **Stack-based navigation**: Screens are pushed/popped from a stack, maintaining navigation history
+- **Automatic rebuilding**: After each navigation, a callback triggers UI rebuilding so new screens have interactive elements
+- **Transition support**: Optional fade transitions between screens with deferred callbacks
+- **Route registration**: Screen classes are registered by name, then instantiated during navigation
+
+**Navigation Patterns:**
+- `navigate()` - Push new screen onto stack (adds to history)
+- `back()` - Pop current screen, return to previous
+- `switch()` - Replace current screen (no history entry)
+- `navigate_with_transition()` - Push screen with fade animation
 
 ```python
 class Router:
-    """Manages screen stack and navigation."""
+    """Manages screen stack and navigation with automatic UI rebuilding."""
     
     def __init__(self, app: WrestleGMApp) -> None:
-        self._app = app
-        self._screens: dict[str, type[BaseScreen]] = {}
-        self._stack: list[BaseScreen] = []
-        self._on_navigate_callback: Optional[Callable] = None
+        """Initialize router with empty screen registry and stack.
         
-    def set_on_navigate_callback(self, callback: Callable) -> None:
-        # Set callback invoked after every navigation
-        # Used by App to rebuild screen UI
+        Sets up storage for registered routes, navigation stack, and
+        optional transition/callback managers.
+        """
+        
+    def set_on_navigate_callback(self, callback: Optional[Callable]) -> None:
+        """Set default callback invoked after every navigation.
+        
+        This callback is triggered after a screen is added to the stack,
+        allowing the App to build UI elements for the new screen. Used
+        for automatic screen rebuilding after navigation.
+        """
+        
+    def set_transition_manager(self, transition_manager) -> None:
+        """Set the transition manager for animated navigation.
+        
+        The transition manager handles fade animations between screens.
+        If set, navigate_with_transition() will use it; otherwise
+        navigation happens immediately without animation.
+        """
         
     def register(self, route: str, screen_class: type[BaseScreen]) -> None:
-        # Register screen class for a route
+        """Register a screen class for a named route.
         
-    def navigate(self, route: str, **kwargs) -> None:
-        """Push new screen onto stack.
+        Associates a route name (e.g., "main_menu") with a screen class.
+        When navigate() is called with this route, the registered class
+        is instantiated to create the screen.
+        """
         
-        Creates new screen instance, adds to stack, and triggers
-        on_navigate callback to build UI elements.
+    def navigate(self, route: str, *, on_navigate: Optional[Callable] = None, **kwargs) -> None:
+        """Push new screen onto navigation stack.
+        
+        Looks up the registered screen class for the route, creates an
+        instance (passing kwargs to constructor), and pushes it onto the
+        stack. Then triggers the on_navigate callback to build UI elements.
+        
+        The optional on_navigate parameter allows overriding the default
+        callback for this specific navigation.
+        
+        Raises ValueError if route is not registered.
+        """
+        
+    def navigate_with_transition(self, route: str, *, on_navigate: Optional[Callable] = None, **kwargs) -> bool:
+        """Navigate with fade transition animation.
+        
+        Similar to navigate(), but if a transition manager is set and
+        not already active, starts a fade transition. The actual screen
+        switch is deferred until the transition completes.
+        
+        Stores the target screen and callback as "pending navigation"
+        until complete_transition() is called.
+        
+        Returns True if transition was started, False if navigated
+        immediately (no transition manager or already in transition).
+        """
+        
+    def complete_transition(self) -> None:
+        """Complete a pending navigation after transition finishes.
+        
+        Called by the App when a fade transition completes. Appends the
+        pending screen to the stack and triggers the stored callback
+        (either the one passed to navigate_with_transition or the default).
+        
+        Clears the pending navigation state after completion.
         """
         
     def back(self) -> None:
         """Pop current screen, return to previous screen in stack.
         
-        If stack has only 1 screen (main menu), does nothing.
-        Automatically triggers rebuild of previous screen.
+        If stack has only 1 screen (at root/Main Menu), does nothing.
+        Otherwise removes current screen from stack, making the previous
+        screen current. The App's callback then rebuilds that screen's UI.
         
-        Example:
-            # User at Save Slots, clicks Back button
-            router.back()  # Returns to Main Menu
+        Used for Back button behavior throughout the app.
         """
         
-    # Helper methods will be added here as needed
-    # Future helpers may include:
-    # - can_go_back() - Check if there's a previous screen
-    # - switch() - Replace current without adding to history
-    # - is_at(route) - Check if at specific route
-    
+    def switch(self, route: str, **kwargs) -> None:
+        """Replace current screen without adding to history.
+        
+        Pops the current screen from stack before navigating to the new
+        route. This means the user cannot go "back" to the replaced screen.
+        
+        Used for:
+        - Save & Quit (replace Game Hub with Main Menu)
+        - Any navigation that should not appear in back history
+        """
+        
     @property
-    def current(self) -> BaseScreen:
-        """Current top of stack."""
+    def current(self) -> Optional[BaseScreen]:
+        """Get the current top-of-stack screen.
+        
+        Returns the screen at the top of the navigation stack, or None
+        if stack is empty. This is the active screen that should be
+        rendered and receive events.
+        """
 ```
 
 ### BaseScreen (wrestlegm/ui_pygame/screens/base.py)
