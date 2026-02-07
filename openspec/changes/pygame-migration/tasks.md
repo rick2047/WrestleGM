@@ -61,9 +61,9 @@
 ## 5. Phase 5 - Polish and Assets
 
 - [x] 5.1 Bundle pixel font (Press Start 2P or similar)
-- [x] 5.2 Create base modals (ConfirmModal, ErrorModal)
-- [x] 5.3 Implement confirmation modal for debt warning
-- [x] 5.4 Implement error modal for save/load failures
+- [x] 5.2 Implement Router.show_confirm() for confirmation dialogs
+- [x] 5.3 Implement Router.show_error() for error dialogs
+- [x] 5.4 Add modal management to Router (one-at-a-time enforcement, event handling)
 - [x] 5.5 Add screen transitions (fade 300ms) - Integrated TransitionManager into Router and App, 300ms fade
 - [x] 5.6 Test all touch targets meet 44×44dp minimum - Verified constants.py has TOUCH_TARGET_MIN = 44
 - [x] 5.7 Verify text readability at 16px body / 24px header - Verified constants.py has FONT_SIZE_BODY = 16, FONT_SIZE_HEADER = 26
@@ -281,9 +281,9 @@
   - Click _load_game_button
   - Verify navigated to SaveSlotSelectionScreen
   - Click _slot_buttons[2] (corrupt slot)
-  - Verify ErrorModal displays with corrupt message
+  - Verify error modal displays with corrupt message via Router.show_error()
   - Verify app remains on SaveSlotSelectionScreen
-  - Click _ok_button on modal
+  - Click OK button on modal
   - Verify modal closes
   - Verify still on SaveSlotSelectionScreen
   

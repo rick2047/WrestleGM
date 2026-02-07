@@ -246,7 +246,7 @@ The system SHALL test graceful handling of corrupt saves.
 - **WHEN** test clicks _load_game_button
 - **THEN** navigates to SaveSlotSelectionScreen
 - **WHEN** test clicks _slot_buttons[2] (corrupt slot)
-- **THEN** ErrorModal displays with corrupt message
+- **THEN** error modal displays with corrupt message via Router.show_error()
 - **AND** app remains on SaveSlotSelectionScreen
 - **WHEN** test clicks _ok_button on modal
 - **THEN** modal closes
