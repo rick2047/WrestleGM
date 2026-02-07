@@ -204,3 +204,63 @@ def test_real():
 - Validates pygame_gui theming and event processing
 
 **Trade-off:** Slightly slower than mocks, but catches real bugs that affect users.
+
+## Required Flow Tests
+
+These end-to-end tests verify complete user journeys through the pygame event system:
+
+### 1. New Game Flow
+**Path:** Main Menu → Save Slots → Game Hub  
+**Test:** Click NEW GAME → select empty slot → verify Game Hub displays with correct initial state  
+**Validates:** Navigation, screen building, save slot creation, state initialization
+
+### 2. Load Game Flow  
+**Path:** Main Menu → Save Slots → Game Hub  
+**Test:** Click LOAD GAME → select occupied slot → verify Game Hub displays with loaded state  
+**Validates:** Save loading, state restoration, navigation history
+
+### 3. Booking Flow - Match
+**Path:** Game Hub → Booking Hub → Match Booking → Wrestler Selection → (select wrestler) → Booking Hub  
+**Test:** Navigate to Booking Hub → click empty match slot → click SELECT WRESTLER → select available wrestler → confirm → verify match appears in slot  
+**Validates:** Multi-step navigation, data passing between screens, match creation, UI updates
+
+### 4. Booking Flow - Promo
+**Path:** Game Hub → Booking Hub → Promo Booking → Wrestler Selection → (select wrestler) → Booking Hub  
+**Test:** Navigate to Booking Hub → click empty promo slot → click SELECT WRESTLER → select wrestler → confirm → verify promo appears in slot  
+**Validates:** Same as match flow but for promos
+
+### 5. Full Show Cycle
+**Path:** Game Hub → Booking Hub → [book 3 matches + 2 promos] → Run Show → Simulating → Results → Game Hub  
+**Test:** Book complete show card → click RUN SHOW → verify simulation runs → verify results display → click CONTINUE → verify back at Game Hub with updated state  
+**Validates:** Complete game loop, simulation integration, state persistence, money updates
+
+### 6. Roster Inspection Flow
+**Path:** Game Hub → Roster → (click wrestler) → Inspect Modal → (close) → Roster → Game Hub  
+**Test:** Navigate to Roster → click wrestler → verify modal opens with details → close modal → verify back to roster → navigate back  
+**Validates:** Modal handling, data display, navigation with modals open
+
+### 7. Save & Quit Flow
+**Path:** Game Hub → (Save & Quit) → Main Menu → Load Game → (verify save preserved)  
+**Test:** Make changes in game → Save & Quit → verify Main Menu → Load Game → verify changes persisted  
+**Validates:** Save functionality, data persistence, menu navigation
+
+### 8. Bankruptcy Flow
+**Path:** [Run shows until money < 0] → Bankruptcy Screen → Try Again → Game Hub (reset)  
+**Test:** Spend until bankrupt → verify Bankruptcy screen → click Try Again → verify fresh game state  
+**Validates:** Bankruptcy detection, game reset, state reinitialization
+
+### 9. Back Navigation Flow
+**Path:** Main Menu → Save Slots → (back) → Main Menu → Game Hub → Booking Hub → (back) → Game Hub  
+**Test:** Navigate deep into app → use back button at each level → verify correct previous screens  
+**Validates:** Navigation stack, back button behavior, state preservation
+
+### 10. Error Recovery Flow
+**Path:** Main Menu → Load Game → (click corrupt save) → Error Modal → (dismiss) → Save Slots  
+**Test:** Attempt to load corrupt save → verify error modal → dismiss → still on Save Slots screen  
+**Validates:** Error handling, modal dialogs, graceful failure
+
+**Testing Strategy:**
+- Each flow test simulates actual pygame events (MOUSEBUTTONDOWN/UP)
+- Events flow through real app code: `pygame.event.post()` → `ui_manager.process_events()` → `screen.handle_event()`
+- Tests verify both navigation occurred AND UI elements were built (catches navigation build bug)
+- Headless mode (`SDL_VIDEODRIVER=dummy`) allows CI/CD execution
