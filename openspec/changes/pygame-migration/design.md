@@ -333,6 +333,54 @@ if __name__ == "__main__":
 
 ## Testing Strategy
 
+### Real Interaction Testing (NEW)
+
+Unlike mocking or calling methods directly, we simulate real user actions through pygame's event system:
+
+```python
+# Minimal example of interaction test
+def test_click_new_game_navigates_to_save_slots(app_with_interaction):
+    app = app_with_interaction
+    
+    # Get the NEW GAME button's screen position
+    button = app.router.current._new_game_button
+    button_center = button.rect.center
+    
+    # Simulate real mouse click through pygame event system
+    pygame.event.post(pygame.event.Event(
+        pygame.MOUSEBUTTONDOWN, 
+        pos=button_center, 
+        button=1
+    ))
+    pygame.event.post(pygame.event.Event(
+        pygame.MOUSEBUTTONUP, 
+        pos=button_center, 
+        button=1
+    ))
+    
+    # Process events exactly as real app does
+    for event in pygame.event.get():
+        app.ui_manager.process_events(event)
+        app.router.current.handle_event(event)
+    
+    # Verify navigation happened
+    assert app.router.current.__class__.__name__ == "SaveSlotSelectionScreen"
+    assert app.router.current._slot_buttons is not None  # Screen was built
+```
+
+**Event Flow Matches Real User:**
+```
+Test Code:
+  pygame.event.post(MOUSEBUTTONDOWN) 
+        ↓
+App Code (unchanged):
+  for event in pygame.event.get():
+      app.ui_manager.process_events(event)  # pygame_gui handles
+      app.router.current.handle_event(event)  # Screen receives UI_BUTTON_PRESSED
+        ↓
+Result: Same code paths as real user click
+```
+
 ### Visual Snapshot Testing with Syrupy
 
 We use **Syrupy** with **PNGImageSnapshotExtension** for deterministic visual regression testing, similar to the existing Textual SVG snapshot approach.

@@ -404,3 +404,74 @@ The system SHALL maintain save/load compatibility.
 - **WHEN** loading in pygame UI
 - **THEN** the game loads successfully
 - **AND** all data is preserved correctly
+
+### Requirement: Real Interaction Testing
+The system SHALL test user interactions through the actual pygame event system.
+
+#### Scenario: Simulate mouse click on button
+- **GIVEN** a screen with buttons is displayed
+- **WHEN** a test simulates a mouse click at button coordinates
+- **THEN** pygame_gui processes the event
+- **AND** UI_BUTTON_PRESSED event is generated
+- **AND** screen.handle_event() receives the event
+- **AND** the button's action is triggered
+
+#### Scenario: Test full user journey
+- **GIVEN** the application is at Main Menu
+- **WHEN** tests simulate: click NEW GAME → select slot 1 → click BOOKING HUB → click Match Slot 1 → click SELECT WRESTLER → click wrestler → click CONFIRM
+- **THEN** each navigation occurs correctly
+- **AND** each screen is built and interactive
+- **AND** final state shows match booked in slot 1
+
+#### Scenario: Verify event flow matches real user
+- **GIVEN** a test simulates user clicking a button
+- **WHEN** the event flows through: pygame.MOUSEBUTTONDOWN → UIManager.process_events() → UI_BUTTON_PRESSED → screen.handle_event()
+- **THEN** the exact same code paths execute as when a real user clicks
+- **AND** no mock methods are called
+
+### Requirement: Interaction Test Fixtures
+The system SHALL provide fixtures for interaction testing.
+
+#### Scenario: app_with_interaction fixture
+- **GIVEN** the app_with_interaction fixture is used
+- **THEN** it provides an app with built screen
+- **AND** it provides a click() method: click(x, y) or click(element)
+- **AND** it provides a pump_events() method to process event queue
+- **AND** it tracks all events processed
+
+#### Scenario: simulate_click helper
+- **GIVEN** a simulate_click helper function
+- **WHEN** called with a UI element
+- **THEN** it posts MOUSEBUTTONDOWN at element center
+- **AND** it posts MOUSEBUTTONUP at same position
+- **AND** it calls ui_manager.process_events() for each
+- **AND** it returns True if button press event was generated
+
+#### Scenario: verify_navigation helper
+- **GIVEN** a verify_navigation helper
+- **WHEN** called after clicking a navigation button
+- **THEN** it asserts router.current is the expected screen
+- **AND** it asserts new screen has been built (UI elements exist)
+- **AND** it asserts navigation happened exactly once
+
+### Requirement: Interaction vs Visual Testing Separation
+The system SHALL distinguish between visual snapshot tests and interaction tests.
+
+#### Scenario: Visual snapshot tests
+- **WHEN** visual regression testing is needed
+- **THEN** tests use PNG snapshots
+- **AND** tests verify appearance matches baseline
+- **AND** tests do NOT verify functionality
+
+#### Scenario: Interaction tests  
+- **WHEN** functionality testing is needed
+- **THEN** tests simulate user events through pygame
+- **AND** tests verify actions trigger correctly
+- **AND** tests do NOT compare visual output
+
+#### Scenario: Combined coverage
+- **WHEN** both visual and functional coverage needed
+- **THEN** separate test files for each concern
+- **AND** visual tests in test_*_snapshot.py
+- **AND** interaction tests in test_*_interaction.py
+

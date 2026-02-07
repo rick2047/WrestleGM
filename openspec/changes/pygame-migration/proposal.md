@@ -55,7 +55,8 @@ Moving to pygame + pygame_gui enables:
 4. **Entry point**: `main.py` launches pygame version instead of Textual
 5. **Tests pass**: Existing tests continue to work (they test game logic, not UI)
 6. **Visual snapshot testing**: New pygame UI has Syrupy-based PNG snapshot tests matching Textual coverage
-7. **No regression**: Game data (saves) remain compatible
+7. **Real interaction testing**: Tests simulate user clicks through pygame event system (not mocks)
+8. **No regression**: Game data (saves) remain compatible
 
 ## Impact
 
@@ -172,3 +173,34 @@ Phased rollout to manage complexity:
 **Phase 5: Assets & Refinement** (Sounds, animations, responsive tweaks)
 
 Each phase will be a set of tasks in the task artifact.
+
+## Why Real Interaction Testing Matters
+
+**The Problem with Mock Tests:**
+Traditional unit tests mock the UI and call methods directly:
+```python
+# BAD: Doesn't test actual event flow
+def test_mock():
+    screen._on_new_game()  # Direct method call
+    assert router.navigate.called
+```
+This misses bugs in the event handling chain that real users trigger.
+
+**Real Interaction Testing:**
+We simulate actual pygame events and let them flow through the real system:
+```python
+# GOOD: Tests real event flow
+def test_real():
+    pygame.event.post(MOUSEBUTTONDOWN)  # Real pygame event
+    app.ui_manager.process_events(event)  # Real pygame_gui processing
+    screen.handle_event(event)  # Real screen handling
+    assert router.current is save_slots_screen
+```
+
+**Benefits:**
+- Catches event handling bugs (like the navigation build bug we found)
+- Tests the same code paths real users execute
+- No "works in test, broken in production" surprises
+- Validates pygame_gui theming and event processing
+
+**Trade-off:** Slightly slower than mocks, but catches real bugs that affect users.
