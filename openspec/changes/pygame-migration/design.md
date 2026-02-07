@@ -368,6 +368,51 @@ def test_click_new_game_navigates_to_save_slots(app_with_interaction):
     assert app.router.current._slot_buttons is not None  # Screen was built
 ```
 
+**The `app_with_interaction` Fixture:**
+
+This pytest fixture creates a headless app with helper methods for interaction testing:
+
+```python
+@pytest.fixture
+def app_with_interaction():
+    """App with interaction helpers for testing real user events.
+    
+    Provides:
+    - app.click(x, y) or app.click(element): Simulate mouse click
+    - app.pump_events(): Process all pending events  
+    - app.events_processed: List of all events that went through system
+    """
+    os.environ["SDL_VIDEODRIVER"] = "dummy"
+    pygame.init()
+    app = WrestleGMApp()
+    app.router.navigate("main_menu")
+    app.router.current.build(app.ui_manager, Rect(0, 0, 480, 800))
+    
+    # Track events
+    app.events_processed = []
+    
+    def click(target):
+        """Simulate mouse click at position or on element."""
+        pos = target.rect.center if hasattr(target, 'rect') else target
+        pygame.event.post(pygame.event.Event(MOUSEBUTTONDOWN, pos=pos, button=1))
+        pygame.event.post(pygame.event.Event(MOUSEBUTTONUP, pos=pos, button=1))
+        pump_events()
+    
+    def pump_events():
+        """Process all pending events through app."""
+        for event in pygame.event.get():
+            app.events_processed.append(event)
+            app.ui_manager.process_events(event)
+            if app.router.current:
+                app.router.current.handle_event(event)
+    
+    app.click = click
+    app.pump_events = pump_events
+    
+    yield app
+    pygame.quit()
+```
+
 **Event Flow Matches Real User:**
 ```
 Test Code:
