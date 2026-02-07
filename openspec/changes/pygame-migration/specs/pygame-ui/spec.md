@@ -90,6 +90,24 @@ The system SHALL implement interaction tests using real pygame event simulation.
 - **AND** it tracks all events processed
 - **AND** events flow through real code paths
 
+#### Scenario: Post-navigation interactivity validation
+- **GIVEN** a flow test that asserts navigation to a destination screen
+- **WHEN** navigation assertion passes
+- **THEN** the test MUST click at least one destination-screen element via `app.click(...)`
+- **AND** verify resulting state transition or UI reaction
+- **AND** this click acts as proof that destination screen is rebuilt and interactive
+- **AND** destination probe elements are:
+  - Flow 1: `_slot_buttons[0]`
+  - Flow 2: occupied `_slot_buttons[2]`
+  - Flow 3: `_slot_buttons[0]`, then `_wrestler_slot_buttons[0]`
+  - Flow 4: slot entry button, then `_run_show_button`
+  - Flow 5: `_wrestler_panels[0]`
+  - Flow 6: `_load_game_button`
+  - Flow 7: `_try_again_button`
+  - Flow 8: `_new_game_button` immediately after back
+  - Flow 9: `_back_button` (or another Save Slots control) after modal dismiss
+  - Flow 10: `_new_game_button` immediately after back
+
 ### Requirement: Router Navigation Helpers
 The system SHALL provide the back() navigation helper method. Additional helpers will be added as needed.
 
@@ -201,6 +219,7 @@ The system SHALL test saving game and reloading.
 - **WHEN** test clicks _save_quit_button
 - **THEN** game state is saved
 - **AND** navigates to MainMenuScreen
+- **AND** MainMenu is interactive (test clicks `_load_game_button`)
 - **WHEN** test clicks _load_game_button
 - **AND** clicks slot 0 (where saved)
 - **THEN** navigates to GameHubScreen
@@ -229,6 +248,10 @@ The system SHALL testing using back button to return to previous screens.
 - **THEN** navigates to SaveSlotSelectionScreen
 - **WHEN** test clicks _back_button
 - **THEN** navigates to MainMenuScreen
+- **WHEN** test clicks _new_game_button immediately after returning
+- **THEN** navigates to SaveSlotSelectionScreen (proves returned MainMenu is rebuilt and interactive)
+- **WHEN** test clicks _back_button
+- **THEN** navigates to MainMenuScreen
 - **WHEN** test clicks _new_game_button
 - **AND** clicks _slot_buttons[0]
 - **THEN** navigates to GameHubScreen
@@ -251,6 +274,8 @@ The system SHALL test graceful handling of corrupt saves.
 - **WHEN** test clicks _ok_button on modal
 - **THEN** modal closes
 - **AND** still on SaveSlotSelectionScreen
+- **WHEN** test clicks _back_button
+- **THEN** navigates to MainMenuScreen
 
 ### Requirement: Flow 10 - Cancel Navigation
 The system SHALL test canceling navigation and returning.
@@ -262,6 +287,8 @@ The system SHALL test canceling navigation and returning.
 - **WHEN** test clicks _back_button (cancel)
 - **THEN** navigates back to MainMenuScreen
 - **AND** no game was created
+- **WHEN** test clicks _new_game_button immediately after returning
+- **THEN** navigates to SaveSlotSelectionScreen
 
 ### Requirement: Main Menu screen
 The system SHALL display a main menu with options for New Game, Load Game, and Quit.

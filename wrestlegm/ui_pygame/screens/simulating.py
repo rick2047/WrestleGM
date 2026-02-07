@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional
 
-import pygame
 import pygame_gui
 from pygame.rect import Rect
+from pygame_gui.core import ObjectID
 from pygame_gui.elements import UILabel
 
 from .base import BaseScreen
@@ -40,12 +40,11 @@ class SimulatingScreen(BaseScreen):
             relative_rect=title_rect,
             text=f"SIMULATING SHOW #{self._show_number}",
             manager=manager,
+            object_id=ObjectID(class_id="@header_title", object_id="#simulating_title"),
         )
 
     def _build_body(self, manager, rect) -> None:
         """Build body with progress display."""
-        from ..constants import FONT_SIZE_BODY
-
         # Center the progress text vertically
         progress_y = rect.y + (rect.height // 2) - 40
         progress_rect = Rect(rect.x, progress_y, rect.width, 40)
@@ -53,6 +52,9 @@ class SimulatingScreen(BaseScreen):
             relative_rect=progress_rect,
             text="0%",
             manager=manager,
+            object_id=ObjectID(
+                class_id="@sim_progress", object_id="#simulating_progress"
+            ),
         )
 
     def _build_actions(self, manager, rect) -> None:
@@ -66,6 +68,7 @@ class SimulatingScreen(BaseScreen):
             relative_rect=hint_rect,
             text="Please wait while the show is simulated...",
             manager=manager,
+            object_id=ObjectID(class_id="@footer_hint", object_id="#simulating_hint"),
         )
 
     def update(self, time_delta: float) -> None:

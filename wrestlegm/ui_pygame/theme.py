@@ -85,6 +85,35 @@ DEFAULT_THEME = {
             "list_item_height": "40",
         },
     },
+    "@header_title": {
+        "font": {"name": "fira_code", "size": "20", "bold": "1", "italic": "0"}
+    },
+    "@money_label": {"misc": {"text_horiz_alignment": "right"}},
+    "@footer_hint": {"colours": {"normal_text": "#b6b6b6"}},
+    "@secondary_button": {
+        "colours": {
+            "normal_bg": "#222222",
+            "hovered_bg": "#313131",
+            "normal_border": "#6f6f6f",
+            "hovered_border": "#8a8a8a",
+        }
+    },
+    "@primary_button": {
+        "colours": {
+            "normal_bg": "#3a3a3a",
+            "hovered_bg": "#4a4a4a",
+            "normal_border": "#d4af37",
+            "hovered_border": "#e8c547",
+        }
+    },
+    "@booking_slot_button": {"misc": {"shape_corner_radius": "2"}},
+    "@wrestler_slot_button": {
+        "font": {"name": "fira_code", "size": "16", "bold": "1", "italic": "0"}
+    },
+    "@danger_text": {
+        "colours": {"normal_text": "#d95c5c"},
+        "font": {"name": "fira_code", "size": "22", "bold": "1", "italic": "0"},
+    },
 }
 
 

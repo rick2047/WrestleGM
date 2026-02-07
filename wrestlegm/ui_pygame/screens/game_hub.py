@@ -3,16 +3,13 @@
 from __future__ import annotations
 
 from pygame.rect import Rect
+from pygame_gui.core import ObjectID
 from pygame_gui.elements import UIButton, UILabel
 
 from wrestlegm.ui_pygame.screens.base import BaseScreen
 from wrestlegm.ui_pygame.constants import (
     MARGIN,
     PADDING,
-    FONT_SIZE_HEADER,
-    FONT_SIZE_BODY,
-    COLOR_TEXT,
-    COLOR_TEXT_MUTED,
 )
 
 
@@ -47,6 +44,7 @@ class GameHubScreen(BaseScreen):
             relative_rect=title_rect,
             text="GAME HUB",
             manager=manager,
+            object_id=ObjectID(class_id="@header_title", object_id="#game_hub_title"),
         )
 
         # Money on the right
@@ -61,6 +59,7 @@ class GameHubScreen(BaseScreen):
             relative_rect=money_rect,
             text=money_text,
             manager=manager,
+            object_id=ObjectID(class_id="@money_label", object_id="#game_hub_money"),
         )
 
     def _build_body(self, manager, rect: Rect) -> None:
@@ -82,6 +81,9 @@ class GameHubScreen(BaseScreen):
             relative_rect=continue_rect,
             text=f"CONTINUE GAME\nShow #{show_num}",
             manager=manager,
+            object_id=ObjectID(
+                class_id="@primary_button", object_id="#game_hub_continue"
+            ),
         )
 
         # Booking Hub button
@@ -95,6 +97,9 @@ class GameHubScreen(BaseScreen):
             relative_rect=booking_rect,
             text="BOOKING HUB",
             manager=manager,
+            object_id=ObjectID(
+                class_id="@primary_button", object_id="#game_hub_booking"
+            ),
         )
 
         # Roster View button (placeholder)
@@ -108,6 +113,9 @@ class GameHubScreen(BaseScreen):
             relative_rect=roster_rect,
             text="ROSTER VIEW\n(Coming Soon)",
             manager=manager,
+            object_id=ObjectID(
+                class_id="@secondary_button", object_id="#game_hub_roster"
+            ),
         )
 
         # Save & Quit button
@@ -121,6 +129,9 @@ class GameHubScreen(BaseScreen):
             relative_rect=save_quit_rect,
             text="SAVE & QUIT",
             manager=manager,
+            object_id=ObjectID(
+                class_id="@secondary_button", object_id="#game_hub_save_quit"
+            ),
         )
 
     def _build_actions(self, manager, rect: Rect) -> None:
@@ -139,6 +150,7 @@ class GameHubScreen(BaseScreen):
             relative_rect=footer_rect,
             text="Select an option to continue",
             manager=manager,
+            object_id=ObjectID(class_id="@footer_hint", object_id="#game_hub_hint"),
         )
 
     def update(self, time_delta: float) -> None:

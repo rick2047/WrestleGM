@@ -8,10 +8,10 @@ from typing import TYPE_CHECKING
 import pygame
 import pygame_gui
 from pygame.rect import Rect
+from pygame_gui.core import ObjectID
 from pygame_gui.elements import UIButton, UIDropDownMenu, UILabel, UIPanel
 
 from wrestlegm.models import MATCH_CATEGORIES, Match, MatchCategory
-from wrestlegm.ui_pygame.constants import DESIGN_HEIGHT, DESIGN_WIDTH
 
 from .base import BaseScreen
 
@@ -75,6 +75,9 @@ class MatchBookingScreen(BaseScreen):
             relative_rect=title_rect,
             text=f"Book Match - Slot {self._slot_index + 1}",
             manager=manager,
+            object_id=ObjectID(
+                class_id="@header_title", object_id="#match_booking_title"
+            ),
         )
 
         # Money display
@@ -83,6 +86,9 @@ class MatchBookingScreen(BaseScreen):
             relative_rect=money_rect,
             text=f"${self._app.state.money:,}",
             manager=manager,
+            object_id=ObjectID(
+                class_id="@money_label", object_id="#match_booking_money"
+            ),
         )
 
     def _build_body(self, manager, rect) -> None:
@@ -95,6 +101,9 @@ class MatchBookingScreen(BaseScreen):
             relative_rect=category_label_rect,
             text="Category:",
             manager=manager,
+            object_id=ObjectID(
+                class_id="@field_label", object_id="#match_booking_category_label"
+            ),
         )
 
         category_dropdown_rect = Rect(rect.x + 90, y_offset, 180, 32)
@@ -111,6 +120,10 @@ class MatchBookingScreen(BaseScreen):
                 category_options[0][0],
             ),
             manager=manager,
+            object_id=ObjectID(
+                class_id="@booking_dropdown",
+                object_id="#match_booking_category_dropdown",
+            ),
         )
         self._category_dropdown.category_map = {
             opt[0]: int(opt[1]) for opt in category_options
@@ -123,6 +136,9 @@ class MatchBookingScreen(BaseScreen):
             relative_rect=type_label_rect,
             text="Type:",
             manager=manager,
+            object_id=ObjectID(
+                class_id="@field_label", object_id="#match_booking_type_label"
+            ),
         )
 
         type_dropdown_rect = Rect(rect.x + 90, y_offset, 180, 32)
@@ -138,6 +154,9 @@ class MatchBookingScreen(BaseScreen):
                 match_type_options[0][0] if match_type_options else "",
             ),
             manager=manager,
+            object_id=ObjectID(
+                class_id="@booking_dropdown", object_id="#match_booking_type_dropdown"
+            ),
         )
         self._type_dropdown.type_map = {opt[0]: opt[1] for opt in match_type_options}
 
@@ -148,6 +167,7 @@ class MatchBookingScreen(BaseScreen):
             relative_rect=cost_rect,
             text=self._get_cost_text(),
             manager=manager,
+            object_id=ObjectID(class_id="@cost_label", object_id="#match_booking_cost"),
         )
 
         # Wrestler slots
@@ -170,6 +190,10 @@ class MatchBookingScreen(BaseScreen):
             slot_panel = UIPanel(
                 relative_rect=slot_rect,
                 manager=manager,
+                object_id=ObjectID(
+                    class_id="@wrestler_slot_panel",
+                    object_id=f"#match_booking_wrestler_panel_{i + 1}",
+                ),
             )
 
             # Wrestler button
@@ -187,7 +211,10 @@ class MatchBookingScreen(BaseScreen):
                 text=button_text,
                 manager=manager,
                 container=slot_panel,
-                object_id=f"wrestler_slot_{i}",
+                object_id=ObjectID(
+                    class_id="@wrestler_slot_button",
+                    object_id=f"#match_booking_wrestler_slot_{i + 1}",
+                ),
             )
             self._wrestler_slot_buttons.append(button)
 
@@ -200,6 +227,7 @@ class MatchBookingScreen(BaseScreen):
                 text=rivalry_text,
                 manager=manager,
                 container=slot_panel,
+                object_id=ObjectID(class_id="@rivalry_label"),
             )
             self._rivalry_labels.append(rivalry_label)
             self._slot_panels.append(slot_panel)
@@ -216,6 +244,9 @@ class MatchBookingScreen(BaseScreen):
             relative_rect=cancel_rect,
             text="CANCEL",
             manager=manager,
+            object_id=ObjectID(
+                class_id="@secondary_button", object_id="#match_booking_cancel"
+            ),
         )
 
         # Clear Slot button
@@ -229,6 +260,9 @@ class MatchBookingScreen(BaseScreen):
             relative_rect=clear_rect,
             text="CLEAR SLOT",
             manager=manager,
+            object_id=ObjectID(
+                class_id="@secondary_button", object_id="#match_booking_clear"
+            ),
         )
         # Disable if no existing match
         if self._match is None:
@@ -245,6 +279,9 @@ class MatchBookingScreen(BaseScreen):
             relative_rect=confirm_rect,
             text="CONFIRM",
             manager=manager,
+            object_id=ObjectID(
+                class_id="@primary_button", object_id="#match_booking_confirm"
+            ),
         )
         self._update_confirm_button()
 
@@ -255,6 +292,9 @@ class MatchBookingScreen(BaseScreen):
             relative_rect=footer_rect,
             text="Select category, type, and wrestlers for this match",
             manager=manager,
+            object_id=ObjectID(
+                class_id="@footer_hint", object_id="#match_booking_hint"
+            ),
         )
 
     def _get_match_type_options(self) -> list[tuple[str, str]]:
@@ -407,6 +447,10 @@ class MatchBookingScreen(BaseScreen):
             slot_panel = UIPanel(
                 relative_rect=slot_rect,
                 manager=manager,
+                object_id=ObjectID(
+                    class_id="@wrestler_slot_panel",
+                    object_id=f"#match_booking_wrestler_panel_{i + 1}",
+                ),
             )
 
             # Wrestler button
@@ -424,7 +468,10 @@ class MatchBookingScreen(BaseScreen):
                 text=button_text,
                 manager=manager,
                 container=slot_panel,
-                object_id=f"wrestler_slot_{i}",
+                object_id=ObjectID(
+                    class_id="@wrestler_slot_button",
+                    object_id=f"#match_booking_wrestler_slot_{i + 1}",
+                ),
             )
             self._wrestler_slot_buttons.append(button)
 
@@ -437,6 +484,7 @@ class MatchBookingScreen(BaseScreen):
                 text=rivalry_text,
                 manager=manager,
                 container=slot_panel,
+                object_id=ObjectID(class_id="@rivalry_label"),
             )
             self._rivalry_labels.append(rivalry_label)
             self._slot_panels.append(slot_panel)
@@ -520,17 +568,7 @@ class MatchBookingScreen(BaseScreen):
         # Validate
         errors = self._app.state.validate_match(match, slot_index=self._slot_index)
         if errors:
-            # Show error modal
-            from ..modals.error import ErrorModal
-
-            error_modal = ErrorModal(
-                self._app,
-                self._app.ui_manager,
-                Rect(0, 0, 480, 800),
-                "Validation Error",
-                "\n".join(errors),
-            )
-            error_modal.show()
+            self._router.show_error("Validation Error", "\n".join(errors))
             return
 
         # Save to show card

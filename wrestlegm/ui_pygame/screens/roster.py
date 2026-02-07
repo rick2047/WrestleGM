@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-import pygame
 import pygame_gui
 from pygame.rect import Rect
+from pygame_gui.core import ObjectID
 from pygame_gui.elements import UIButton, UILabel, UIPanel, UIScrollingContainer
 
 from .base import BaseScreen
@@ -30,6 +30,9 @@ class RosterScreen(BaseScreen):
             relative_rect=back_rect,
             text="BACK",
             manager=manager,
+            object_id=ObjectID(
+                class_id="@secondary_button", object_id="#roster_back_button"
+            ),
         )
 
         # Title
@@ -38,6 +41,7 @@ class RosterScreen(BaseScreen):
             relative_rect=title_rect,
             text="ROSTER",
             manager=manager,
+            object_id=ObjectID(class_id="@header_title", object_id="#roster_title"),
         )
 
         # Money display
@@ -46,6 +50,7 @@ class RosterScreen(BaseScreen):
             relative_rect=money_rect,
             text=f"${self._app.state.money:,}",
             manager=manager,
+            object_id=ObjectID(class_id="@money_label", object_id="#roster_money"),
         )
 
     def _build_body(self, manager, rect) -> None:
@@ -55,6 +60,7 @@ class RosterScreen(BaseScreen):
         self._scroll_container = UIScrollingContainer(
             relative_rect=scroll_rect,
             manager=manager,
+            object_id=ObjectID(class_id="@roster_scroll", object_id="#roster_scroll"),
         )
 
         # Build wrestler list
@@ -74,6 +80,9 @@ class RosterScreen(BaseScreen):
                 relative_rect=row_rect,
                 manager=manager,
                 container=self._scroll_container,
+                object_id=ObjectID(
+                    class_id="@roster_row_panel", object_id=f"#roster_row_panel_{i + 1}"
+                ),
             )
 
             # Invisible button overlay for click detection
@@ -84,7 +93,10 @@ class RosterScreen(BaseScreen):
                 text="",
                 manager=manager,
                 container=row_panel,
-                object_id="#wrestler_row_button",
+                object_id=ObjectID(
+                    class_id="@roster_row_button",
+                    object_id=f"#roster_row_button_{wrestler.id}",
+                ),
             )
 
             # Avatar placeholder (32x32)
@@ -95,6 +107,7 @@ class RosterScreen(BaseScreen):
                 text=avatar_text,
                 manager=manager,
                 container=row_panel,
+                object_id=ObjectID(class_id="@roster_avatar"),
             )
 
             # Name
@@ -104,6 +117,7 @@ class RosterScreen(BaseScreen):
                 text=wrestler.name[:20],
                 manager=manager,
                 container=row_panel,
+                object_id=ObjectID(class_id="@roster_name"),
             )
 
             # Stats line (Pop, Sta, Mic)
@@ -116,6 +130,7 @@ class RosterScreen(BaseScreen):
                 text=stats_text,
                 manager=manager,
                 container=row_panel,
+                object_id=ObjectID(class_id="@roster_stats"),
             )
 
             # Booking price
@@ -126,6 +141,7 @@ class RosterScreen(BaseScreen):
                 text=f"${cost:,}",
                 manager=manager,
                 container=row_panel,
+                object_id=ObjectID(class_id="@roster_cost"),
             )
 
             # Alignment
@@ -136,6 +152,7 @@ class RosterScreen(BaseScreen):
                 text=align_text,
                 manager=manager,
                 container=row_panel,
+                object_id=ObjectID(class_id="@roster_alignment"),
             )
 
             # Store button for click detection (panel is just for layout)
@@ -158,24 +175,25 @@ class RosterScreen(BaseScreen):
             relative_rect=footer_rect,
             text="Click on a wrestler to inspect details",
             manager=manager,
+            object_id=ObjectID(class_id="@footer_hint", object_id="#roster_hint"),
         )
 
     def _on_wrestler_clicked(self, wrestler) -> None:
-        """Open the inspect modal for the selected wrestler via Router."""
-        from ..modals.inspect import WrestlerInspectModal
+        """Open wrestler details using a Router-managed modal."""
 
         # Build rivalry list for this wrestler
         rivalries = self._build_rivalry_list(wrestler.id)
+        rivalry_text = "\n".join(rivalries) if rivalries else "No active rivalries"
 
-        # Create and show modal through Router for one-at-a-time enforcement
-        modal = WrestlerInspectModal(
-            self._app,
-            self._app.ui_manager,
-            Rect(0, 0, 480, 800),  # Use full screen rect for centering
-            wrestler,
-            rivalries,
+        details = (
+            f"Popularity: {wrestler.popularity}\n"
+            f"Stamina: {wrestler.stamina}\n"
+            f"Mic Skill: {wrestler.mic_skill}\n"
+            f"Alignment: {wrestler.alignment.title()}\n"
+            f"\nRivalries:\n{rivalry_text}"
         )
-        self._router.show_custom_modal(modal)
+
+        self._router.show_error(f"{wrestler.name}", details)
 
     def _build_rivalry_list(self, wrestler_id: str) -> list[str]:
         """Build rivalry list entries for the inspected wrestler."""

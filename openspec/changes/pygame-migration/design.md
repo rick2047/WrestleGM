@@ -543,6 +543,22 @@ Test verifies:
 
 **Flow Tests Required** (one per user journey):
 
+**Post-Navigation Interactivity Rule (applies to every flow):**
+- After each navigation assertion, tests must perform at least one real click on a known element in the destination screen.
+- This proves the destination screen is rebuilt and interactive, not only present in `router.current`.
+
+**Interaction Probe Matrix (required click targets):**
+- Flow 1 (New Game): after Save Slots, click `_slot_buttons[0]`
+- Flow 2 (Load Game): after Save Slots, click occupied `_slot_buttons[2]`
+- Flow 3 (Book Match): after Booking Hub, click `_slot_buttons[0]`; after Match Booking, click `_wrestler_slot_buttons[0]`
+- Flow 4 (Complete Show): after Booking Hub, click `_slot_buttons[0]` (or equivalent slot entry point), later click `_run_show_button`
+- Flow 5 (Roster Inspection): after Roster, click `_wrestler_panels[0]`
+- Flow 6 (Save and Quit): after returning to Main Menu, click `_load_game_button`
+- Flow 7 (Bankruptcy): after Bankruptcy screen shown, click `_try_again_button`
+- Flow 8 (Back Navigation): after back to Main Menu, click `_new_game_button` immediately
+- Flow 9 (Error Recovery): after dismissing error modal, click `_back_button` (or another slot button)
+- Flow 10 (Cancel Navigation): after back to Main Menu, click `_new_game_button` immediately
+
 ### Flow 1: New Game Creation
 ```python
 def test_new_game_flow(app_with_interaction):
@@ -752,6 +768,12 @@ def test_back_navigation_flow(app_with_interaction):
     assert app.router.current.__class__.__name__ == "SaveSlotSelectionScreen"
     
     # Click back
+    app.click(app.router.current._back_button)
+    assert app.router.current.__class__.__name__ == "MainMenuScreen"
+
+    # Regression check: returned screen must be interactive immediately
+    app.click(app.router.current._new_game_button)
+    assert app.router.current.__class__.__name__ == "SaveSlotSelectionScreen"
     app.click(app.router.current._back_button)
     assert app.router.current.__class__.__name__ == "MainMenuScreen"
     

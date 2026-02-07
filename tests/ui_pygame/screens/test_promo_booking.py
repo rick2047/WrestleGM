@@ -10,7 +10,7 @@ from pygame import Rect
 def test_promo_booking_render(pygame_app, snapshot_image):
     """Test promo booking screen renders correctly."""
     app = pygame_app
-    app.state.new_game()
+    app._state = app.session.new_game(1, "Test Save")
     app.router.navigate("promo_booking")
 
     current = app.router.current

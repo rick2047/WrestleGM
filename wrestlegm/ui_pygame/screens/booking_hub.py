@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pygame.rect import Rect
+from pygame_gui.core import ObjectID
 from pygame_gui.elements import UIButton, UILabel, UIPanel
 
 from wrestlegm import constants
@@ -11,9 +12,6 @@ from wrestlegm.ui_pygame.screens.base import BaseScreen
 from wrestlegm.ui_pygame.constants import (
     MARGIN,
     PADDING,
-    COLOR_TEXT,
-    COLOR_TEXT_MUTED,
-    COLOR_DANGER,
 )
 
 
@@ -49,6 +47,9 @@ class BookingHubScreen(BaseScreen):
             relative_rect=title_rect,
             text="BOOKING HUB",
             manager=manager,
+            object_id=ObjectID(
+                class_id="@header_title", object_id="#booking_hub_title"
+            ),
         )
 
         # Show cost in the middle
@@ -64,6 +65,7 @@ class BookingHubScreen(BaseScreen):
             relative_rect=cost_rect,
             text=cost_text,
             manager=manager,
+            object_id=ObjectID(class_id="@header_stat", object_id="#booking_hub_cost"),
         )
 
         # Money on the right
@@ -78,6 +80,7 @@ class BookingHubScreen(BaseScreen):
             relative_rect=money_rect,
             text=money_text,
             manager=manager,
+            object_id=ObjectID(class_id="@money_label", object_id="#booking_hub_money"),
         )
 
     def _build_body(self, manager, rect: Rect) -> None:
@@ -94,6 +97,9 @@ class BookingHubScreen(BaseScreen):
             relative_rect=header_rect,
             text=f"Show #{show_index}",
             manager=manager,
+            object_id=ObjectID(
+                class_id="@section_title", object_id="#booking_hub_show_header"
+            ),
         )
 
         # Slot buttons
@@ -113,6 +119,10 @@ class BookingHubScreen(BaseScreen):
                 relative_rect=slot_rect,
                 text=slot_text,
                 manager=manager,
+                object_id=ObjectID(
+                    class_id="@booking_slot_button",
+                    object_id=f"#booking_slot_{index + 1}",
+                ),
             )
             # Store slot index on the button for reference
             button.slot_index = index
@@ -135,6 +145,9 @@ class BookingHubScreen(BaseScreen):
             relative_rect=back_rect,
             text="BACK",
             manager=manager,
+            object_id=ObjectID(
+                class_id="@secondary_button", object_id="#booking_hub_back"
+            ),
         )
 
         # Run Show button (right)
@@ -152,8 +165,12 @@ class BookingHubScreen(BaseScreen):
             relative_rect=run_rect,
             text="RUN SHOW",
             manager=manager,
+            object_id=ObjectID(
+                class_id="@primary_button", object_id="#booking_hub_run_show"
+            ),
         )
-        self._run_button.disable() if not is_valid else None
+        if not is_valid:
+            self._run_button.disable()
 
     def _build_footer(self, manager, rect: Rect) -> None:
         """Build footer with hint text."""
@@ -167,6 +184,7 @@ class BookingHubScreen(BaseScreen):
             relative_rect=footer_rect,
             text="Click a slot to book · Fill all slots to run show",
             manager=manager,
+            object_id=ObjectID(class_id="@footer_hint", object_id="#booking_hub_hint"),
         )
 
     def update(self, time_delta: float) -> None:

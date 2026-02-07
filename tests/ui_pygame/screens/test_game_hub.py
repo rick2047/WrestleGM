@@ -11,7 +11,7 @@ def test_game_hub_render(pygame_app, snapshot_image):
     """Test game hub renders correctly."""
     app = pygame_app
     # Setup game state
-    app.state.new_game()
+    app._state = app.session.new_game(1, "Test Save")
     app.router.navigate("game_hub")
 
     current = app.router.current
@@ -33,7 +33,7 @@ def test_game_hub_render(pygame_app, snapshot_image):
 def test_game_hub_with_data(pygame_app, snapshot_image):
     """Test game hub with active game data."""
     app = pygame_app
-    app.state.new_game()
+    app._state = app.session.new_game(1, "Test Save")
     app.router.navigate("game_hub")
 
     current = app.router.current

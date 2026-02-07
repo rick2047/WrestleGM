@@ -10,7 +10,7 @@ from pygame import Rect
 def test_wrestler_selection_render(pygame_app, snapshot_image):
     """Test wrestler selection screen renders correctly."""
     app = pygame_app
-    app.state.new_game()
+    app._state = app.session.new_game(1, "Test Save")
     app.router.navigate("wrestler_selection")
 
     current = app.router.current
@@ -32,7 +32,7 @@ def test_wrestler_selection_render(pygame_app, snapshot_image):
 def test_wrestler_selection_filtered(pygame_app, snapshot_image):
     """Test wrestler selection with filters applied."""
     app = pygame_app
-    app.state.new_game()
+    app._state = app.session.new_game(1, "Test Save")
     app.router.navigate("wrestler_selection")
 
     current = app.router.current

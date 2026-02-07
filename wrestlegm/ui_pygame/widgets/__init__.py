@@ -1,1 +1,0 @@
-"""Pygame UI widgets package."""

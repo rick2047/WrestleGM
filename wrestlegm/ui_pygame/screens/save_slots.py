@@ -32,7 +32,7 @@ class SaveSlotSelectionScreen(BaseScreen):
 
     def _build_header(self, manager, rect) -> None:
         """Build header with title and back button."""
-        from ..constants import MARGIN, PADDING
+        from ..constants import MARGIN
 
         # Title based on mode
         title_text = "LOAD GAME" if self._mode == "load" else "NEW GAME"
@@ -43,7 +43,9 @@ class SaveSlotSelectionScreen(BaseScreen):
             relative_rect=back_rect,
             text="← BACK",
             manager=manager,
-            object_id=ObjectID(class_id="@secondary_button"),
+            object_id=ObjectID(
+                class_id="@secondary_button", object_id="#save_slots_back_button"
+            ),
         )
 
         # Title label centered
@@ -52,13 +54,11 @@ class SaveSlotSelectionScreen(BaseScreen):
             relative_rect=title_rect,
             text=title_text,
             manager=manager,
-            object_id=ObjectID(class_id="@header_title"),
+            object_id=ObjectID(class_id="@header_title", object_id="#save_slots_title"),
         )
 
     def _build_body(self, manager, rect) -> None:
         """Build body with save slot grid."""
-        from ..constants import MARGIN, PADDING
-
         # Load slot data
         self._slots = self._load_slots()
 
@@ -92,6 +92,9 @@ class SaveSlotSelectionScreen(BaseScreen):
             panel = UIPanel(
                 relative_rect=slot_rect,
                 manager=manager,
+                object_id=ObjectID(
+                    class_id="@save_slot_panel", object_id=f"#save_slot_panel_{i + 1}"
+                ),
             )
             self._slot_panels.append(panel)
 
@@ -100,8 +103,6 @@ class SaveSlotSelectionScreen(BaseScreen):
 
     def _build_slot_content(self, manager, panel, slot, slot_rect) -> None:
         """Build content for a single save slot."""
-        from ..constants import FONT_SIZE_BODY, FONT_SIZE_STATS
-
         padding = 8
         content_x = slot_rect.x + padding
         content_y = slot_rect.y + padding
@@ -114,6 +115,7 @@ class SaveSlotSelectionScreen(BaseScreen):
             text=f"Slot {slot.slot_index}",
             manager=manager,
             container=panel,
+            object_id=ObjectID(class_id="@save_slot_header"),
         )
 
         if slot.exists:
@@ -128,6 +130,7 @@ class SaveSlotSelectionScreen(BaseScreen):
                 text=name,
                 manager=manager,
                 container=panel,
+                object_id=ObjectID(class_id="@save_slot_name"),
             )
 
             # Show number
@@ -137,6 +140,7 @@ class SaveSlotSelectionScreen(BaseScreen):
                 text=f"Show #{show_index}",
                 manager=manager,
                 container=panel,
+                object_id=ObjectID(class_id="@save_slot_meta"),
             )
 
             # Create clickable button overlay
@@ -148,6 +152,10 @@ class SaveSlotSelectionScreen(BaseScreen):
                 text="",
                 manager=manager,
                 tool_tip_text=f"Load {name}",
+                object_id=ObjectID(
+                    class_id="@save_slot_button",
+                    object_id=f"#save_slot_button_{slot.slot_index}",
+                ),
             )
             self._slot_buttons.append(button)
         else:
@@ -158,6 +166,7 @@ class SaveSlotSelectionScreen(BaseScreen):
                 text="[ EMPTY ]",
                 manager=manager,
                 container=panel,
+                object_id=ObjectID(class_id="@save_slot_empty"),
             )
 
             # Create clickable button overlay (only enabled for new game mode)
@@ -169,6 +178,10 @@ class SaveSlotSelectionScreen(BaseScreen):
                 text="",
                 manager=manager,
                 tool_tip_text="Start new game here",
+                object_id=ObjectID(
+                    class_id="@save_slot_button",
+                    object_id=f"#save_slot_button_{slot.slot_index}",
+                ),
             )
             # Disable button for empty slots in load mode
             if self._mode == "load":
@@ -191,6 +204,7 @@ class SaveSlotSelectionScreen(BaseScreen):
             relative_rect=hint_rect,
             text=hint_text,
             manager=manager,
+            object_id=ObjectID(class_id="@footer_hint", object_id="#save_slots_hint"),
         )
 
     def _load_slots(self) -> list[persistence.SaveSlotInfo]:

@@ -121,8 +121,10 @@ This phase replaces the old linear testing checklist with vertical slices. Each 
     - Remove direct dependency on custom modal classes in save/load interactions.
     - Route corrupt save errors through `router.show_error()`.
     - Update assertions to Router modal state (not screen-local modal fields).
+    - Add regression coverage that verifies Back returns to an interactive screen by clicking `NEW GAME` immediately after back.
   - Flow test ownership in `tests/ui_pygame/test_navigation_flow.py`:
     - Own and update: `test_new_game_flow`, `test_load_game_flow`, `test_error_recovery_flow`, `test_cancel_navigation_flow`, `test_save_and_quit_flow`.
+    - `test_cancel_navigation_flow` MUST verify screen interactivity after back (click NEW GAME again and assert Save Slots).
     - If these function names do not yet exist, create/rename tests to match these canonical names.
   - Acceptance tests:
     - `uv run pytest tests/ui_pygame/screens/test_save_slots.py -v`
@@ -177,7 +179,7 @@ This phase replaces the old linear testing checklist with vertical slices. Each 
 
 ### 6.4.2 Shared flow file conflict policy
 
-- [ ] 6.4.2a Prevent `test_navigation_flow.py` merge conflicts
+- [x] 6.4.2a Prevent `test_navigation_flow.py` merge conflicts
   - Owner: Integration lead (or Subagent A if no separate integrator)
   - Depends on: 6.2.1, 6.3.1, 6.4.1
   - Rules:
@@ -187,9 +189,32 @@ This phase replaces the old linear testing checklist with vertical slices. Each 
   - Acceptance tests:
     - `uv run pytest tests/ui_pygame/test_navigation_flow.py -v`
 
+- [x] 6.4.2b Add post-navigation interaction probes to all flow tests
+  - Owner: Integration lead
+  - Depends on: 6.2.1, 6.3.1, 6.4.1
+  - Files:
+    - `tests/ui_pygame/test_navigation_flow.py`
+    - `openspec/changes/pygame-migration/specs/pygame-ui/spec.md`
+    - `openspec/changes/pygame-migration/design.md`
+  - Scope:
+    - Enforce rule: every navigation assertion must be followed by at least one destination-screen click.
+    - Required probe targets per flow:
+      - Flow 1: `_slot_buttons[0]`
+      - Flow 2: occupied `_slot_buttons[2]`
+      - Flow 3: `_slot_buttons[0]`, `_wrestler_slot_buttons[0]`
+      - Flow 4: booking slot entry, `_run_show_button`
+      - Flow 5: `_wrestler_panels[0]`
+      - Flow 6: `_load_game_button`
+      - Flow 7: `_try_again_button`
+      - Flow 8: `_new_game_button` immediately after back
+      - Flow 9: `_back_button` after modal dismiss
+      - Flow 10: `_new_game_button` immediately after back
+  - Acceptance tests:
+    - `uv run pytest tests/ui_pygame/test_navigation_flow.py -v`
+
 ### 6.5 Slice E - ObjectID and Snapshot Readiness
 
-- [ ] 6.5.1 Apply ObjectID consistently and refresh snapshots for touched screens
+- [x] 6.5.1 Apply ObjectID consistently and refresh snapshots for touched screens
   - Owner: Subagent E
   - Depends on: 6.2.1, 6.3.1, 6.4.1
   - Files:
@@ -206,7 +231,7 @@ This phase replaces the old linear testing checklist with vertical slices. Each 
 
 ### 6.6 Slice F - Legacy Folder Cleanup
 
-- [ ] 6.6.1 Remove legacy modal/widget modules once references are gone
+- [x] 6.6.1 Remove legacy modal/widget modules once references are gone
   - Owner: Subagent F
   - Depends on: 6.2.1, 6.3.1, 6.4.1
   - Files:
@@ -221,14 +246,14 @@ This phase replaces the old linear testing checklist with vertical slices. Each 
 
 ## 7. Integration and Verification
 
-- [ ] 7.1 Integration pass after all slices
+- [x] 7.1 Integration pass after all slices
   - Rebase/merge slices in this order: A -> (B,C,D) -> E -> F.
   - Resolve conflicts centrally in Router and `test_navigation_flow.py`.
 
-- [ ] 7.2 Full pygame UI test run
+- [x] 7.2 Full pygame UI test run
   - `uv run pytest tests/ui_pygame -v`
 
-- [ ] 7.3 Snapshot update (only if required)
+- [x] 7.3 Snapshot update (only if required)
   - `uv run pytest tests/ui_pygame/screens --snapshot-update`
   - Update only affected baselines.
 
@@ -243,6 +268,6 @@ This phase replaces the old linear testing checklist with vertical slices. Each 
 - [x] Click slot - Navigates to game hub
 - [x] All buttons respond to clicks
 - [x] Back navigation works
-- [ ] Tests pass: uv run pytest tests/ui_pygame -v
-- [ ] Screen snapshot tests pass for touched screens
-- [ ] Flow tests pass for updated booking/save/roster paths
+- [x] Tests pass: uv run pytest tests/ui_pygame -v
+- [x] Screen snapshot tests pass for touched screens
+- [x] Flow tests pass for updated booking/save/roster paths

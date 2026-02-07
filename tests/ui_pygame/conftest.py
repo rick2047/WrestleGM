@@ -22,8 +22,6 @@ def pygame_app():
     from wrestlegm.ui_pygame import WrestleGMApp
 
     app = WrestleGMApp()
-    # Fix clock for determinism
-    app._clock.tick = lambda fps: 16  # Fixed ~60fps
 
     yield app
     pygame.quit()
@@ -121,6 +119,14 @@ def app_with_interaction():
         for event in pygame.event.get():
             app.events_processed.append(event)
             app.ui_manager.process_events(event)
+
+            if app.router.has_active_modal:
+                if app.router.handle_modal_event(event):
+                    continue
+
+            if app.router.has_active_modal:
+                continue
+
             if app.router.current:
                 app.router.current.handle_event(event)
 
@@ -136,17 +142,14 @@ def populated_save_slot(app_with_interaction):
     """Create a save slot with existing game data for testing load flows."""
     app = app_with_interaction
 
-    # Create a game state and save it to slot 1
+    # Create a game state and save it to slot 3 (index 2 in UI button list)
     if hasattr(app, "session") and app.session:
-        # Create a new game and save it
-        from wrestlegm.persistence import slot_path
-
-        new_state = app.session.new_game(1, "Test Save")
+        new_state = app.session.new_game(3, "Test Save")
         # Increment show number to simulate progress
         new_state._show_index = 2  # Show 2 means some progress
         app.session.save_current_slot(new_state)
 
-    yield 1  # Return slot index
+    yield 3  # Return slot number
 
 
 @pytest.fixture

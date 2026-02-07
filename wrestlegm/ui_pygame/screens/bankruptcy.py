@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import pygame_gui
 from pygame.rect import Rect
+from pygame_gui.core import ObjectID
 from pygame_gui.elements import UIButton, UILabel, UIPanel
 
-from ..constants import COLOR_DANGER
 from .base import BaseScreen
 
 
@@ -26,6 +26,7 @@ class BankruptcyScreen(BaseScreen):
             relative_rect=title_rect,
             text="BANKRUPTCY",
             manager=manager,
+            object_id=ObjectID(class_id="@header_title", object_id="#bankruptcy_title"),
         )
 
     def _build_body(self, manager, rect) -> None:
@@ -40,6 +41,9 @@ class BankruptcyScreen(BaseScreen):
         content_panel = UIPanel(
             relative_rect=Rect(panel_x, panel_y, panel_width, panel_height),
             manager=manager,
+            object_id=ObjectID(
+                class_id="@bankruptcy_panel", object_id="#bankruptcy_panel"
+            ),
         )
 
         # "BANKRUPT!" message (large)
@@ -50,7 +54,9 @@ class BankruptcyScreen(BaseScreen):
             text="BANKRUPT!",
             manager=manager,
             container=content_panel,
-            object_id="#danger_text",
+            object_id=ObjectID(
+                class_id="@danger_text", object_id="#bankruptcy_danger_text"
+            ),
         )
 
         # Subtitle message
@@ -60,6 +66,7 @@ class BankruptcyScreen(BaseScreen):
             text="Your promotion has run out of funds.",
             manager=manager,
             container=content_panel,
+            object_id=ObjectID(class_id="@bankruptcy_message"),
         )
 
         # Show final stats
@@ -75,6 +82,7 @@ class BankruptcyScreen(BaseScreen):
             text=f"Final Show: #{show_index}",
             manager=manager,
             container=content_panel,
+            object_id=ObjectID(class_id="@bankruptcy_stat"),
         )
 
         money_rect = Rect(20, stats_y + stats_spacing, panel_width - 40, 25)
@@ -83,6 +91,7 @@ class BankruptcyScreen(BaseScreen):
             text=f"Final Money: ${money:,}",
             manager=manager,
             container=content_panel,
+            object_id=ObjectID(class_id="@bankruptcy_stat"),
         )
 
     def _build_actions(self, manager, rect) -> None:
@@ -102,6 +111,9 @@ class BankruptcyScreen(BaseScreen):
             relative_rect=try_rect,
             text="TRY AGAIN",
             manager=manager,
+            object_id=ObjectID(
+                class_id="@primary_button", object_id="#bankruptcy_try_again"
+            ),
         )
 
         # Main Menu button (right)
@@ -112,6 +124,9 @@ class BankruptcyScreen(BaseScreen):
             relative_rect=menu_rect,
             text="MAIN MENU",
             manager=manager,
+            object_id=ObjectID(
+                class_id="@secondary_button", object_id="#bankruptcy_main_menu"
+            ),
         )
 
     def _build_footer(self, manager, rect) -> None:
@@ -121,6 +136,7 @@ class BankruptcyScreen(BaseScreen):
             relative_rect=footer_rect,
             text="Game Over - Choose an option to continue",
             manager=manager,
+            object_id=ObjectID(class_id="@footer_hint", object_id="#bankruptcy_hint"),
         )
 
     def _on_try_again(self) -> None:

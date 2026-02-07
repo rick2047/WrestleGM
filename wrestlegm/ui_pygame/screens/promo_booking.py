@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Callable, Optional
 import pygame
 import pygame_gui
 from pygame.rect import Rect
+from pygame_gui.core import ObjectID
 from pygame_gui.elements import UIButton, UILabel
 
 from wrestlegm.models import Promo
@@ -57,8 +58,6 @@ class PromoBookingScreen(BaseScreen):
 
     def _build_header(self, manager, rect) -> None:
         """Build header with title and money info."""
-        from ..constants import FONT_SIZE_HEADER
-
         # Title
         slot_num = sum(
             1
@@ -71,6 +70,9 @@ class PromoBookingScreen(BaseScreen):
             relative_rect=title_rect,
             text=title_text,
             manager=manager,
+            object_id=ObjectID(
+                class_id="@header_title", object_id="#promo_booking_title"
+            ),
         )
 
         # Money
@@ -82,11 +84,14 @@ class PromoBookingScreen(BaseScreen):
             relative_rect=money_rect,
             text=money_text,
             manager=manager,
+            object_id=ObjectID(
+                class_id="@money_label", object_id="#promo_booking_money"
+            ),
         )
 
     def _build_body(self, manager, rect) -> None:
         """Build body with single wrestler selection slot."""
-        from ..constants import MARGIN, PADDING, FONT_SIZE_BODY
+        from ..constants import MARGIN, PADDING
 
         # Wrestler selection area
         slot_height = 100
@@ -106,6 +111,10 @@ class PromoBookingScreen(BaseScreen):
                 relative_rect=slot_rect,
                 text="SELECT WRESTLER",
                 manager=manager,
+                object_id=ObjectID(
+                    class_id="@wrestler_slot_button",
+                    object_id="#promo_booking_select_wrestler",
+                ),
             )
 
     def _show_wrestler_info(self, manager, rect: Rect) -> None:
@@ -124,6 +133,9 @@ class PromoBookingScreen(BaseScreen):
             relative_rect=name_rect,
             text=wrestler.name,
             manager=manager,
+            object_id=ObjectID(
+                class_id="@section_title", object_id="#promo_booking_wrestler"
+            ),
         )
 
         # Mic skill
@@ -132,6 +144,7 @@ class PromoBookingScreen(BaseScreen):
             relative_rect=mic_rect,
             text=f"Mic Skill: {wrestler.mic_skill}",
             manager=manager,
+            object_id=ObjectID(class_id="@stat_label"),
         )
 
         # Cost
@@ -143,6 +156,7 @@ class PromoBookingScreen(BaseScreen):
             relative_rect=cost_rect,
             text=f"Cost: {format_money(cost)}",
             manager=manager,
+            object_id=ObjectID(class_id="@cost_label"),
         )
 
         # Change button
@@ -151,6 +165,10 @@ class PromoBookingScreen(BaseScreen):
             relative_rect=change_rect,
             text="CHANGE WRESTLER",
             manager=manager,
+            object_id=ObjectID(
+                class_id="@wrestler_slot_button",
+                object_id="#promo_booking_change_wrestler",
+            ),
         )
 
     def _build_actions(self, manager, rect) -> None:
@@ -167,6 +185,9 @@ class PromoBookingScreen(BaseScreen):
             relative_rect=cancel_rect,
             text="CANCEL",
             manager=manager,
+            object_id=ObjectID(
+                class_id="@secondary_button", object_id="#promo_booking_cancel"
+            ),
         )
 
         # Clear Slot button (center) - only if there's an existing slot
@@ -177,6 +198,9 @@ class PromoBookingScreen(BaseScreen):
             relative_rect=clear_rect,
             text="CLEAR SLOT",
             manager=manager,
+            object_id=ObjectID(
+                class_id="@secondary_button", object_id="#promo_booking_clear"
+            ),
         )
         self._clear_button.disable() if existing is None else None
 
@@ -191,6 +215,9 @@ class PromoBookingScreen(BaseScreen):
             relative_rect=confirm_rect,
             text="CONFIRM",
             manager=manager,
+            object_id=ObjectID(
+                class_id="@primary_button", object_id="#promo_booking_confirm"
+            ),
         )
 
         # Update confirm button state based on validation
@@ -203,6 +230,9 @@ class PromoBookingScreen(BaseScreen):
             relative_rect=hint_rect,
             text="Select a wrestler to book this promo",
             manager=manager,
+            object_id=ObjectID(
+                class_id="@footer_hint", object_id="#promo_booking_hint"
+            ),
         )
 
     def _update_confirm_button(self) -> None:

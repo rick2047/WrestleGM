@@ -38,7 +38,6 @@ class Router:
 
     def set_transition_manager(self, transition_manager) -> None:
         """Set the transition manager for animated navigation."""
-        """Set the transition manager for animated navigation."""
         self._transition_manager = transition_manager
 
     def register(self, route: str, screen_class: type) -> None:
@@ -143,8 +142,13 @@ class Router:
 
     def back(self) -> None:
         """Pop current screen, return to previous."""
+        if self._active_modal is not None:
+            return
+
         if len(self._stack) > 1:
             self._stack.pop()
+            if self._on_navigate_callback:
+                self._on_navigate_callback()
 
     def switch(self, route: str, **kwargs: Any) -> None:
         """Replace current screen (no back navigation)."""
@@ -284,36 +288,12 @@ class Router:
         called programmatically to close modals.
         """
         if self._active_modal is not None:
-            # Handle both pygame_gui elements (kill) and custom modals (close)
             if hasattr(self._active_modal, "kill"):
                 self._active_modal.kill()
-            elif hasattr(self._active_modal, "close"):
-                self._active_modal.close()
             self._active_modal = None
             self._on_modal_confirm = None
             self._on_modal_cancel = None
             self._fatal_error = None
-
-    def show_custom_modal(self, modal) -> bool:
-        """Show a custom modal through Router for one-at-a-time enforcement.
-
-        This allows screens to use custom modal classes (like WrestlerInspectModal)
-        while still respecting Router's one-modal-at-a-time rule and event priority.
-
-        Args:
-            modal: The custom modal instance to display. Must have show() and
-                   handle_event(event) methods.
-
-        Returns:
-            True if modal shown, False if another modal already active.
-        """
-        if self._active_modal is not None:
-            return False
-
-        # Store the modal and show it
-        self._active_modal = modal
-        modal.show()
-        return True
 
     def handle_modal_event(self, event: Any) -> bool:
         """Process events for the active modal.
@@ -331,27 +311,7 @@ class Router:
             return False
 
         try:
-            import pygame
             import pygame_gui
-
-            # Check if this is a custom modal (like WrestlerInspectModal)
-            # Custom modals have their own handle_event method
-            if hasattr(self._active_modal, "handle_event") and not hasattr(
-                self._active_modal, "confirm_button"
-            ):
-                # Let the custom modal handle the event
-                consumed = self._active_modal.handle_event(event)
-                if consumed:
-                    # Check if modal was closed (is_open method or _container is None)
-                    is_closed = False
-                    if hasattr(self._active_modal, "is_open"):
-                        is_closed = not self._active_modal.is_open()
-                    elif hasattr(self._active_modal, "_container"):
-                        is_closed = self._active_modal._container is None
-
-                    if is_closed:
-                        self._active_modal = None
-                return consumed
 
             if event.type == pygame_gui.UI_BUTTON_PRESSED:
                 # Check if this is a confirmation dialog

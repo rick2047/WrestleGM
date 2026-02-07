@@ -181,8 +181,8 @@ These end-to-end interaction tests verify complete user journeys:
 
 ### 8. Back Navigation Flow
 **Path:** Main Menu → Save Slots → (back) → Main Menu → Game Hub → (back)  
-**Test:** Navigate deep → use back button → verify correct previous screens  
-**Validates:** Navigation stack
+**Test:** Navigate to Save Slots → back to Main Menu → immediately click NEW GAME again → continue deep navigation and back checks  
+**Validates:** Navigation stack and post-back screen interactivity (returned screen is rebuilt, not just current)
 
 ### 9. Error Recovery Flow
 **Path:** Main Menu → Load Game → (click corrupt save) → Error Modal → Save Slots  
