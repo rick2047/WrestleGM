@@ -60,4 +60,4 @@ Always use context7 to research available documentation before proposing or maki
 
 **Available Libraries:**
 - pygame_gui: `websites/pygame-gui_readthedocs_io-en`
-  - Use for: researching UI elemnts to avoid custom ones.
+  - Use for: researching UI elements to avoid custom ones.
