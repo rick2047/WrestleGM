@@ -426,6 +426,132 @@ App Code (unchanged):
 Result: Same code paths as real user click
 ```
 
+### Flow Testing with Real Interaction
+
+**Testing Philosophy:**
+Flow tests use the real interaction approach exclusively. We simulate actual user clicks through pygame's event system rather than calling methods directly. This ensures we're testing the same code paths real users trigger.
+
+**Test Pattern:**
+```python
+def test_new_game_flow(app_with_interaction):
+    app = app_with_interaction
+    
+    # Start at Main Menu (already built by fixture)
+    # Click NEW GAME button
+    app.click(app.router.current._new_game_button)
+    
+    # Verify: navigated to Save Slots
+    assert app.router.current.__class__.__name__ == "SaveSlotSelectionScreen"
+    assert app.router.current._slot_buttons is not None  # Built successfully
+    
+    # Click Empty Slot 1 (first available slot)
+    app.click(app.router.current._slot_buttons[0])
+    
+    # Verify: navigated to Game Hub
+    assert app.router.current.__class__.__name__ == "GameHubScreen"
+    assert app.router.current._booking_hub_button is not None
+```
+
+**Detailed Flow Specifications:**
+
+#### Flow 1: New Game Creation
+**Path:** Main Menu → Save Slots → Game Hub
+
+**Button Sequence:**
+1. **Main Menu:** Click `_new_game_button` (labeled "NEW GAME")
+2. **Save Slots:** Click `_slot_buttons[0]` (first empty slot, enabled in "new" mode)
+3. **Result:** At Game Hub with fresh game state
+
+**Validations:**
+- After click 1: Router.current is SaveSlotSelectionScreen, mode="new"
+- After click 2: Router.current is GameHubScreen, state.money is initial amount
+- All screens have UI elements built (buttons not None)
+
+#### Flow 2: Load Existing Game
+**Path:** Main Menu → Save Slots → Game Hub
+
+**Button Sequence:**
+1. **Main Menu:** Click `_load_game_button` (labeled "LOAD GAME")
+2. **Save Slots:** Click `_slot_buttons[2]` (occupied slot with save data)
+3. **Result:** At Game Hub with loaded game state
+
+**Validations:**
+- After click 1: Router.current is SaveSlotSelectionScreen, mode="load"
+- After click 2: Router.current is GameHubScreen, state.show_number > 1 (not fresh game)
+- Loaded data matches original save
+
+#### Flow 3: Book a Match
+**Path:** Game Hub → Booking Hub → Match Booking → Wrestler Selection → (back) → Booking Hub
+
+**Button Sequence:**
+1. **Game Hub:** Click `_booking_hub_button` (labeled "BOOKING HUB")
+2. **Booking Hub:** Click `_slot_buttons[0]` (first match slot, currently empty)
+3. **Match Booking:** Click `_wrestler_slot_buttons[0]` (first wrestler slot)
+4. **Wrestler Selection:** Click `_wrestler_buttons[5]` (6th wrestler in list, available)
+5. **Match Booking:** Click `_confirm_button` (labeled "CONFIRM")
+6. **Result:** Back at Booking Hub, slot 0 now shows match summary
+
+**Validations:**
+- After click 1: At Booking Hub, shows 5 empty slots
+- After click 2: At Match Booking, category="singles", 2 wrestler slots visible
+- After click 3: At Wrestler Selection, roster displayed
+- After click 4: Back at Match Booking, wrestler slot 0 now populated
+- After click 5: Back at Booking Hub, slot 0 shows wrestler name and match type
+
+#### Flow 4: Complete Show and View Results
+**Path:** Game Hub → Booking Hub → [book all 5 slots] → Run Show → Simulating → Results → Game Hub
+
+**Button Sequence:**
+1. **Game Hub:** Click `_booking_hub_button`
+2. **Booking Hub:** Click `_slot_buttons[0]` (book match 1)
+3. **Match Booking:** Select wrestlers, Click `_confirm_button`
+4. **Booking Hub:** Click `_slot_buttons[1]` (book match 2)
+5. **Match Booking:** Select wrestlers, Click `_confirm_button`
+6. **Booking Hub:** Click `_slot_buttons[2]` (book match 3)
+7. **Match Booking:** Select wrestlers, Click `_confirm_button`
+8. **Booking Hub:** Click `_slot_buttons[3]` (book promo 1)
+9. **Promo Booking:** Select wrestler, Click `_confirm_button`
+10. **Booking Hub:** Click `_slot_buttons[4]` (book promo 2)
+11. **Promo Booking:** Select wrestler, Click `_confirm_button`
+12. **Booking Hub:** Click `_run_show_button` (enabled now that all slots full)
+13. **Simulating:** Auto-advances after simulation completes
+14. **Results:** Click `_continue_button`
+15. **Result:** Back at Game Hub with updated money and show number
+
+**Validations:**
+- After booking all slots: _run_show_button is enabled (was disabled when incomplete)
+- After click 12: At Simulating screen with progress indicator
+- After auto-advance: At Results screen showing match outcomes and ratings
+- After click 14: At Game Hub, state.show_number incremented, state.money updated
+
+#### Flow 5: Inspect Wrestler from Roster
+**Path:** Game Hub → Roster → (click wrestler) → Inspect Modal → (close) → Roster
+
+**Button Sequence:**
+1. **Game Hub:** Click `_roster_button` (labeled "ROSTER VIEW")
+2. **Roster:** Click `_wrestler_panels[3]` (4th wrestler row)
+3. **Inspect Modal:** Click `_close_button` or click outside modal
+4. **Result:** Back at Roster, modal closed
+
+**Validations:**
+- After click 1: At Roster screen with scrollable list
+- After click 2: Inspect modal opens showing wrestler details (stats, rivalries)
+- After click 3: Modal closes, back to Roster list
+
+#### Flow 6: Save and Quit
+**Path:** Game Hub → (Save & Quit) → Main Menu → Load Game → (verify save)
+
+**Button Sequence:**
+1. **Game Hub:** Click `_save_quit_button` (labeled "SAVE & QUIT")
+2. **Main Menu:** Click `_load_game_button`
+3. **Save Slots:** Click `_slot_buttons[0]` (slot we just saved to)
+4. **Result:** At Game Hub with same state as before save
+
+**Validations:**
+- After click 1: Back at Main Menu, save file created/updated
+- After click 3: At Game Hub, state.show_number matches pre-save value
+- State consistency: All game data preserved (roster, history, economy)
+
 ### Visual Snapshot Testing with Syrupy
 
 We use **Syrupy** with **PNGImageSnapshotExtension** for deterministic visual regression testing, similar to the existing Textual SVG snapshot approach.
