@@ -22,6 +22,11 @@
 ## OpenSpec Workflow
 - OpenSpec is the primary driver for workflow: create one PR per OpenSpec change, and keep only one change active at a time.
 
+## Coding Style
+- All imports must be at the top of files.
+- No local/function-scoped imports unless there is a documented, exceptional reason.
+- This rule applies to production code AND tests.
+
 ## Review Comment Handling
 - When asked to address review comments, reply on each review comment with what you did to resolve it.
 - Never resolve review threads unless explicitly asked.
@@ -52,3 +57,12 @@ Only regenerate snapshots that are affected. Avoid bulk updates; use pytest filt
 
 ## Tooling
 - Use `uv` to run Python (e.g., `uv run python`).
+
+## Documentation Resources
+
+### Context7 (AI-Optimized Documentation)
+Always use context7 to research available documentation before proposing or making changes.
+
+**Available Libraries:**
+- pygame_gui: `websites/pygame-gui_readthedocs_io-en`
+  - Use for: researching UI elements to avoid custom ones.

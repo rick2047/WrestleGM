@@ -1,0 +1,218 @@
+"""Wrestler selection screen with scrollable roster list."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Callable
+
+import pygame_gui
+from pygame.rect import Rect
+from pygame_gui.elements import UIButton, UILabel, UIScrollingContainer
+
+from wrestlegm import constants
+from wrestlegm.ui_pygame.wrestler_card import WrestlerCard
+
+from .base import BaseScreen
+
+if TYPE_CHECKING:
+    pass
+
+
+class WrestlerSelectionScreen(BaseScreen):
+    """Scrollable list of available wrestlers."""
+
+    def __init__(
+        self,
+        app,
+        router,
+        on_select: Callable | None = None,
+        exclude: list[str] | None = None,
+        slot_index: int = 0,
+    ):
+        super().__init__(app, router)
+        self._on_select = on_select
+        self._exclude = exclude or []
+        self._slot_index = slot_index
+        self._scroll_container = None
+        self._wrestler_buttons: list[UIButton] = []
+        self._wrestler_data: list[tuple] = []
+        self._wrestler_cards: list[WrestlerCard] = []
+        self._back_button: UIButton | None = None
+
+    def build(self, manager, rect) -> None:
+        """Build UI elements in the 4 zones."""
+        zones = self._compute_zones(rect)
+        self._build_header(manager, zones["header"])
+        self._build_body(manager, zones["body"])
+        self._build_actions(manager, zones["actions"])
+        self._build_footer(manager, zones["footer"])
+
+    def _build_header(self, manager, rect) -> None:
+        """Build header with title and back button."""
+        # Title
+        title_rect = Rect(rect.x + 8, rect.y + 10, rect.width - 80, 30)
+        UILabel(
+            relative_rect=title_rect,
+            text="SELECT WRESTLER",
+            manager=manager,
+        )
+
+        # Money display
+        money_rect = Rect(rect.x + rect.width - 120, rect.y + 10, 110, 30)
+        UILabel(
+            relative_rect=money_rect,
+            text=f"${self._app.state.money:,}",
+            manager=manager,
+        )
+
+    def _build_body(self, manager, rect) -> None:
+        """Build scrollable list of wrestlers."""
+        # Create scrolling container
+        scroll_rect = Rect(rect.x + 8, rect.y + 8, rect.width - 16, rect.height - 16)
+        self._scroll_container = UIScrollingContainer(
+            relative_rect=scroll_rect,
+            manager=manager,
+        )
+
+        # Build wrestler list
+        self._wrestler_buttons = []
+        self._wrestler_data = []
+        self._wrestler_cards = []
+
+        roster = list(self._app.state.roster.values())
+        row_height = 98
+        row_spacing = 8
+
+        for i, wrestler in enumerate(roster):
+            is_available = self._is_wrestler_available(wrestler)
+            unavailable_reason = self._get_unavailable_reason(wrestler)
+
+            row_y = i * (row_height + row_spacing)
+            row_rect = Rect(0, row_y, scroll_rect.width - 24, row_height)
+            cost = self._app.state.wrestler_booking_price(wrestler.id)
+            status_text = unavailable_reason if not is_available else ""
+            definition = self._app.state.wrestler_defs.get(wrestler.id)
+            avatar_path = definition.avatar_path if definition else ""
+            card = WrestlerCard(
+                row_rect,
+                manager=manager,
+                container=self._scroll_container,
+                wrestler=wrestler,
+                cost_text=f"${cost:,}",
+                action_text="+",
+                action_object_id="@primary_button",
+                status_text=status_text,
+                avatar_path=avatar_path,
+            )
+
+            visible_fields = {"name", "stats", "alignment", "cost", "action"}
+            if not is_available:
+                visible_fields.add("status")
+                card.action_button.disable()
+            else:
+                self._wrestler_buttons.append(card.action_button)
+                self._wrestler_data.append(wrestler)
+
+            card.set_visible_fields(visible_fields)
+            self._wrestler_cards.append(card)
+
+        # Set scrollable area height
+        total_height = len(roster) * (row_height + row_spacing)
+        self._scroll_container.set_scrollable_area_dimensions(
+            (scroll_rect.width - 24, total_height)
+        )
+
+    def _build_actions(self, manager, rect) -> None:
+        """Build action buttons."""
+        button_width = 120
+        button_height = 44
+        button_y = rect.y + (rect.height - button_height) // 2
+
+        # Cancel/Back button
+        cancel_rect = Rect(
+            rect.x + (rect.width - button_width) // 2,
+            button_y,
+            button_width,
+            button_height,
+        )
+        self._back_button = UIButton(
+            relative_rect=cancel_rect,
+            text="BACK",
+            manager=manager,
+        )
+
+    def _build_footer(self, manager, rect) -> None:
+        """Build footer with hints."""
+        footer_rect = Rect(rect.x + 8, rect.y + 8, rect.width - 16, 24)
+        UILabel(
+            relative_rect=footer_rect,
+            text="Click + to select a wrestler",
+            manager=manager,
+        )
+
+    def _is_wrestler_available(self, wrestler) -> bool:
+        """Check if a wrestler can be selected."""
+        # Check if in exclude list (already selected in this match)
+        if wrestler.id in self._exclude:
+            return False
+
+        # Check if already booked in another slot
+        if self._app.state.is_wrestler_booked(
+            wrestler.id, exclude_slot=self._slot_index
+        ):
+            return False
+
+        # Check stamina
+        if wrestler.stamina <= constants.STAMINA_MIN_BOOKABLE:
+            return False
+
+        return True
+
+    def _get_unavailable_reason(self, wrestler) -> str:
+        """Get the reason why a wrestler is unavailable."""
+        if wrestler.id in self._exclude:
+            return "Selected"
+
+        if self._app.state.is_wrestler_booked(
+            wrestler.id, exclude_slot=self._slot_index
+        ):
+            return "Booked"
+
+        if wrestler.stamina <= constants.STAMINA_MIN_BOOKABLE:
+            return "Low Stamina"
+
+        return ""
+
+    def _on_wrestler_clicked(self, wrestler) -> None:
+        """Handle wrestler selection."""
+        if not self._is_wrestler_available(wrestler):
+            return
+
+        if self._on_select:
+            self._on_select(wrestler)
+
+        self._router.back()
+
+    def _on_back_clicked(self) -> None:
+        """Return to previous screen without selection."""
+        self._router.back()
+
+    def handle_event(self, event) -> bool:
+        """Handle pygame events for this screen."""
+        if event.type == pygame_gui.UI_BUTTON_PRESSED:
+            # Check wrestler selection buttons
+            for i, button in enumerate(self._wrestler_buttons):
+                if event.ui_element == button:
+                    wrestler = self._wrestler_data[i]
+                    self._on_wrestler_clicked(wrestler)
+                    return True
+
+            # Check back button
+            if event.ui_element == self._back_button:
+                self._on_back_clicked()
+                return True
+
+        return False
+
+    def update(self, time_delta: float) -> None:
+        """Update screen state."""
+        pass

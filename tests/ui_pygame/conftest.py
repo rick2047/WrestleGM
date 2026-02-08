@@ -1,0 +1,173 @@
+"""Pytest fixtures for pygame UI testing."""
+
+import os
+
+import pygame
+import pytest
+from syrupy.extensions.image import PNGImageSnapshotExtension
+
+
+@pytest.fixture
+def snapshot_image(snapshot):
+    """Snapshot fixture for pygame surface images."""
+    return snapshot.use_extension(PNGImageSnapshotExtension)
+
+
+@pytest.fixture
+def pygame_app(tmp_path):
+    """Headless pygame app with fixed clock for deterministic testing."""
+    os.environ["SDL_VIDEODRIVER"] = "dummy"
+    pygame.init()
+
+    from wrestlegm.ui_pygame import WrestleGMApp
+
+    app = WrestleGMApp()
+    app._session._save_dir = tmp_path / "save"
+
+    yield app
+    pygame.quit()
+
+
+@pytest.fixture
+def app_with_built_screen(tmp_path):
+    """App with main_menu screen built and ready for interaction testing."""
+    os.environ["SDL_VIDEODRIVER"] = "dummy"
+    pygame.init()
+    from wrestlegm.ui_pygame import WrestleGMApp
+    from pygame import Rect
+
+    app = WrestleGMApp()
+    app._session._save_dir = tmp_path / "save"
+    app.router.navigate("main_menu")
+    screen = app.router.current
+    screen.build(app.ui_manager, Rect(0, 0, 480, 800))
+
+    yield app
+    pygame.quit()
+
+
+@pytest.fixture
+def navigation_tracker(app_with_built_screen):
+    """Monkey-patches router.navigate to record all navigation calls."""
+    app = app_with_built_screen
+    tracker = []
+    original_navigate = app.router.navigate
+
+    def tracked_navigate(route, **kwargs):
+        tracker.append((route, kwargs))
+        return original_navigate(route, **kwargs)
+
+    app.router.navigate = tracked_navigate
+    yield tracker
+
+
+@pytest.fixture
+def create_button_click_event():
+    """Helper function to create UI_BUTTON_PRESSED events for testing."""
+
+    def _create(button_element):
+        import pygame
+        import pygame_gui
+
+        return pygame.event.Event(
+            pygame_gui.UI_BUTTON_PRESSED, {"ui_element": button_element}
+        )
+
+    return _create
+
+
+@pytest.fixture
+def app_with_interaction(tmp_path):
+    """App with interaction helpers for testing real user events.
+
+    Provides:
+    - app.click(x, y) or app.click(element): Simulate mouse click
+    - app.pump_events(): Process all pending events
+    - app.events_processed: List of all events that went through the system
+    """
+    os.environ["SDL_VIDEODRIVER"] = "dummy"
+    pygame.init()
+    from wrestlegm.ui_pygame import WrestleGMApp
+    from pygame import Rect
+
+    app = WrestleGMApp()
+    app._session._save_dir = tmp_path / "save"
+    app.router.navigate("main_menu")
+    screen = app.router.current
+    screen.build(app.ui_manager, Rect(0, 0, 480, 800))
+
+    # Track events processed
+    app.events_processed = []
+
+    def click(target):
+        """Simulate a mouse click.
+
+        Args:
+            target: Either (x, y) tuple or a UI element with .rect attribute
+        """
+        if hasattr(target, "rect"):
+            pos = target.rect.center
+        else:
+            pos = target
+
+        # Post mouse events
+        pygame.event.post(pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=pos, button=1))
+        pygame.event.post(pygame.event.Event(pygame.MOUSEBUTTONUP, pos=pos, button=1))
+
+        # Process events
+        pump_events()
+
+    def pump_events():
+        """Process all pending pygame events through the app."""
+        for event in pygame.event.get():
+            app.events_processed.append(event)
+            app.ui_manager.process_events(event)
+
+            if app.router.has_active_modal:
+                if app.router.handle_modal_event(event):
+                    continue
+
+            if app.router.has_active_modal:
+                continue
+
+            if app.router.current:
+                app.router.current.handle_event(event)
+
+    app.click = click
+    app.pump_events = pump_events
+
+    yield app
+    pygame.quit()
+
+
+@pytest.fixture
+def populated_save_slot(app_with_interaction):
+    """Create a save slot with existing game data for testing load flows."""
+    app = app_with_interaction
+
+    # Create a game state and save it to slot 3 (index 2 in UI button list)
+    if hasattr(app, "session") and app.session:
+        new_state = app.session.new_game(3, "Test Save")
+        # Increment show number to simulate progress
+        new_state._show_index = 2  # Show 2 means some progress
+        app.session.save_current_slot(new_state)
+
+    yield 3  # Return slot number
+
+
+@pytest.fixture
+def corrupt_save_slot(app_with_interaction, tmp_path):
+    """Create a corrupt save file for testing error recovery."""
+    app = app_with_interaction
+
+    # Create a corrupt save file directly
+    if hasattr(app, "session") and app.session:
+        from wrestlegm.persistence import slot_path
+
+        # Write invalid JSON to slot 2's save file
+        save_path = slot_path(2, app.session._save_dir)
+        save_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(save_path, "w") as f:
+            f.write("{ invalid json content")
+
+    yield 2  # Return slot index with corrupt save
