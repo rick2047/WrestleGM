@@ -9,11 +9,25 @@ These tests verify that:
 Uses mocked screens to avoid pygame_gui dependencies.
 """
 
+from unittest.mock import MagicMock, Mock, call, patch
+
+import pygame
+import pygame_gui
 import pytest
-from unittest.mock import Mock, MagicMock, call, patch
 from pygame.rect import Rect
 
+from wrestlegm import constants
+from wrestlegm.models import MATCH_CATEGORIES, Match, Promo
+from wrestlegm.persistence import slot_path
 from wrestlegm.ui_pygame.router import Router
+from wrestlegm.ui_pygame.screens.bankruptcy import BankruptcyScreen
+from wrestlegm.ui_pygame.screens.booking_hub import BookingHubScreen
+from wrestlegm.ui_pygame.screens.game_hub import GameHubScreen
+from wrestlegm.ui_pygame.screens.main_menu import MainMenuScreen
+from wrestlegm.ui_pygame.screens.match_booking import MatchBookingScreen
+from wrestlegm.ui_pygame.screens.roster import RosterScreen
+from wrestlegm.ui_pygame.screens.save_slots import SaveSlotSelectionScreen
+from wrestlegm.ui_pygame.screens.wrestler_selection import WrestlerSelectionScreen
 
 
 class MockScreen:
@@ -638,9 +652,6 @@ class TestSaveLoadFlows:
 
     def test_new_game_flow(self, app_with_interaction):
         """Flow 1: main_menu -> save_slots -> game_hub."""
-        from wrestlegm.ui_pygame.screens.game_hub import GameHubScreen
-        from wrestlegm.ui_pygame.screens.save_slots import SaveSlotSelectionScreen
-
         app = app_with_interaction
 
         app.click(app.router.current._new_game_button)
@@ -649,6 +660,9 @@ class TestSaveLoadFlows:
         assert isinstance(app.router.current, SaveSlotSelectionScreen)
         assert app.router.current._mode == "new"
         assert len(app.router.current._slot_buttons) > 0
+        assert all(not slot.exists for slot in app.router.current._slots), (
+            "Flow test expects isolated save dir with empty slots"
+        )
 
         # Probe matrix target: _slot_buttons[0]
         empty_button = None
@@ -661,33 +675,22 @@ class TestSaveLoadFlows:
 
         if empty_button is None:
             empty_button = app.router.current._slot_buttons[0]
-        save_slots_screen = app.router.current
+
         app.click(empty_button)
         app.pump_events()
 
-        if app.router.current is save_slots_screen and not app.router.has_active_modal:
-            import pygame
-            import pygame_gui
-
-            synthetic_click = pygame.event.Event(
-                pygame_gui.UI_BUTTON_PRESSED, {"ui_element": empty_button}
-            )
-            app.router.current.handle_event(synthetic_click)
-
-        if app.router.has_active_modal and app.router._on_modal_confirm:
-            confirm_callback = app.router._on_modal_confirm
-            app.router.dismiss_modal()
-            confirm_callback()
-            app.pump_events()
+        # New game now requires explicit save-name entry
+        assert app.router.current._name_window is not None
+        assert app.router.current._name_input is not None
+        app.router.current._name_input.set_text("My New Save")
+        app.click(app.router.current._name_confirm_button)
+        app.pump_events()
 
         assert isinstance(app.router.current, GameHubScreen)
         assert app._state.show_index == 1
 
     def test_load_game_flow(self, app_with_interaction, populated_save_slot):
         """Flow 2: load existing game from known occupied slot."""
-        from wrestlegm.ui_pygame.screens.game_hub import GameHubScreen
-        from wrestlegm.ui_pygame.screens.save_slots import SaveSlotSelectionScreen
-
         app = app_with_interaction
 
         app.click(app.router.current._load_game_button)
@@ -706,15 +709,116 @@ class TestSaveLoadFlows:
         assert isinstance(app.router.current, GameHubScreen)
         assert app._state.show_index >= 1
 
-    def test_error_recovery_flow(self, app_with_interaction, corrupt_save_slot):
-        """Flow 9/10: corrupt load error, then back to interactive menu."""
-        from wrestlegm.ui_pygame.screens.main_menu import MainMenuScreen
-        from wrestlegm.ui_pygame.screens.save_slots import SaveSlotSelectionScreen
-        from wrestlegm.persistence import slot_path
-
+    def test_new_game_blank_name_shows_error(self, app_with_interaction):
+        """Flow guard: blank save name must not start a game."""
         app = app_with_interaction
 
-        # Ensure a deterministic corrupt slot target (slot 1 => index 0)
+        app.click(app.router.current._new_game_button)
+        app.pump_events()
+        assert isinstance(app.router.current, SaveSlotSelectionScreen)
+
+        # Pick first empty slot
+        empty_index = next(
+            i for i, slot in enumerate(app.router.current._slots) if not slot.exists
+        )
+        app.click(app.router.current._slot_buttons[empty_index])
+        app.pump_events()
+
+        assert app.router.current._name_window is not None
+        assert app.router.current._name_input is not None
+        app.router.current._name_input.set_text("")
+        app.click(app.router.current._name_confirm_button)
+        app.pump_events()
+
+        assert app.router.has_active_modal
+        assert isinstance(app.router.current, SaveSlotSelectionScreen)
+
+        # Dismiss error and ensure user is still on save slot screen
+        app.router.dismiss_modal()
+        assert isinstance(app.router.current, SaveSlotSelectionScreen)
+
+        # App remains interactive after validation error
+        app.click(app.router.current._back_button)
+        app.pump_events()
+        assert isinstance(app.router.current, MainMenuScreen)
+
+    def test_new_game_empty_slot_does_not_trigger_overwrite_warning(
+        self, app_with_interaction
+    ):
+        """Clicking an empty slot should open name entry directly (no overwrite modal)."""
+        app = app_with_interaction
+
+        # Make slot 1 occupied and leave slot 2 empty.
+        seeded_state = app.session.new_game(1, "Existing Save")
+        app.session.save_current_slot(seeded_state)
+        app.session.clear_save_slot(2)
+
+        app.click(app.router.current._new_game_button)
+        app.pump_events()
+        assert isinstance(app.router.current, SaveSlotSelectionScreen)
+
+        # Real click on slot 2 button via UI event pipeline.
+        app.click(app.router.current._slot_buttons[1])
+        app.pump_events()
+
+        # Guard-rail must NOT appear for empty slot.
+        assert not app.router.has_active_modal
+        assert app.router.current._name_window is not None
+        assert app.router.current._pending_slot_index == 2
+
+    def test_new_game_occupied_slot_prompts_name_then_overwrite_confirm(
+        self, app_with_interaction
+    ):
+        """Occupied slot path: overwrite confirm first, then name prompt."""
+        app = app_with_interaction
+
+        seeded_state = app.session.new_game(1, "Existing Save")
+        app.session.save_current_slot(seeded_state)
+
+        app.click(app.router.current._new_game_button)
+        app.pump_events()
+        assert isinstance(app.router.current, SaveSlotSelectionScreen)
+
+        app.click(app.router.current._slot_buttons[0])
+        app.pump_events()
+
+        assert app.router.has_active_modal
+        assert app.router._active_modal.window_display_title.startswith(
+            "Overwrite Named Save?"
+        )
+        assert (
+            "permanently overwrite"
+            in app.router._active_modal.confirmation_text.html_text
+        )
+        assert "Existing Save" in app.router._active_modal.confirmation_text.html_text
+        assert (
+            "cannot be undone" in app.router._active_modal.confirmation_text.html_text
+        )
+        assert app.router._active_modal.confirm_button.text == "OVERWRITE"
+
+        confirm_event = pygame.event.Event(
+            pygame_gui.UI_BUTTON_PRESSED,
+            {"ui_element": app.router._active_modal.confirm_button},
+        )
+        app.router.handle_modal_event(confirm_event)
+        app.pump_events()
+
+        assert app.router.current._name_window is not None
+        assert app.router.current._name_input is not None
+        app.router.current._name_input.set_text("Replacement Save")
+        app.click(app.router.current._name_confirm_button)
+        app.pump_events()
+
+        assert isinstance(app.router.current, GameHubScreen)
+
+    def test_error_recovery_flow(self, app_with_interaction, corrupt_save_slot):
+        """Flow 9/10: corrupt load error, then back to interactive menu."""
+        app = app_with_interaction
+
+        # Ensure a deterministic corrupt occupied slot target (slot 1 => index 0)
+        seeded_state = app.session.new_game(1, "Corrupt Slot")
+        app.session.save_current_slot(seeded_state)
+
         save_path = slot_path(1, app.session._save_dir)
         save_path.parent.mkdir(parents=True, exist_ok=True)
         save_path.write_text("{ invalid json")
@@ -748,9 +852,6 @@ class TestSaveLoadFlows:
 
     def test_cancel_navigation_flow(self, app_with_interaction):
         """Flow 8: back from save slots and immediately re-enter."""
-        from wrestlegm.ui_pygame.screens.main_menu import MainMenuScreen
-        from wrestlegm.ui_pygame.screens.save_slots import SaveSlotSelectionScreen
-
         app = app_with_interaction
 
         app.click(app.router.current._new_game_button)
@@ -768,10 +869,6 @@ class TestSaveLoadFlows:
 
     def test_save_and_quit_flow(self, app_with_interaction):
         """Flow 6: save game, quit, then load saved game."""
-        from wrestlegm.ui_pygame.screens.game_hub import GameHubScreen
-        from wrestlegm.ui_pygame.screens.main_menu import MainMenuScreen
-        from wrestlegm.ui_pygame.screens.save_slots import SaveSlotSelectionScreen
-
         app = app_with_interaction
 
         app.click(app.router.current._new_game_button)
@@ -788,24 +885,15 @@ class TestSaveLoadFlows:
 
         if empty_button is None:
             empty_button = app.router.current._slot_buttons[0]
-        save_slots_screen = app.router.current
+
         app.click(empty_button)
         app.pump_events()
 
-        if app.router.current is save_slots_screen and not app.router.has_active_modal:
-            import pygame
-            import pygame_gui
-
-            synthetic_click = pygame.event.Event(
-                pygame_gui.UI_BUTTON_PRESSED, {"ui_element": empty_button}
-            )
-            app.router.current.handle_event(synthetic_click)
-
-        if app.router.has_active_modal and app.router._on_modal_confirm:
-            confirm_callback = app.router._on_modal_confirm
-            app.router.dismiss_modal()
-            confirm_callback()
-            app.pump_events()
+        assert app.router.current._name_window is not None
+        assert app.router.current._name_input is not None
+        app.router.current._name_input.set_text("Save Quit Flow")
+        app.click(app.router.current._name_confirm_button)
+        app.pump_events()
 
         assert isinstance(app.router.current, GameHubScreen)
         initial_show = app._state.show_index
@@ -830,13 +918,6 @@ class TestBookingFlows:
 
     def test_book_match_flow(self, app_with_interaction):
         """Flow 3: booking_hub probe path and clear-slot confirm path."""
-        from wrestlegm.models import MATCH_CATEGORIES, Match
-        from wrestlegm.ui_pygame.screens.booking_hub import BookingHubScreen
-        from wrestlegm.ui_pygame.screens.match_booking import MatchBookingScreen
-        from wrestlegm.ui_pygame.screens.wrestler_selection import (
-            WrestlerSelectionScreen,
-        )
-
         app = app_with_interaction
 
         wrestlers = list(app._state.roster.values())[:2]
@@ -852,11 +933,15 @@ class TestBookingFlows:
         app.pump_events()
         assert isinstance(app.router.current, BookingHubScreen)
 
-        # Probe matrix target: _slot_buttons[0]
-        with patch.object(app.router.current, "_on_slot_clicked") as slot_probe:
-            app.click(app.router.current._slot_buttons[0])
-            app.pump_events()
-        slot_probe.assert_called_once_with(0)
+        # Probe matrix target: _slot_buttons[0] should navigate without crashing.
+        app.click(app.router.current._slot_buttons[0])
+        app.pump_events()
+        assert isinstance(app.router.current, MatchBookingScreen)
+
+        # Return to booking hub for the rest of the flow.
+        app.router.back()
+        app.pump_events()
+        assert isinstance(app.router.current, BookingHubScreen)
 
         app.router.navigate(
             "match_booking", slot_index=0, existing_match=app._state.show_card[0]
@@ -898,11 +983,6 @@ class TestBookingFlows:
 
     def test_complete_show_flow(self, app_with_interaction):
         """Flow 4: booking slot entry probe and debt warning on run show."""
-        from wrestlegm import constants
-        from wrestlegm.models import MATCH_CATEGORIES, Match, Promo
-        from wrestlegm.ui_pygame.screens.booking_hub import BookingHubScreen
-        from wrestlegm.ui_pygame.screens.match_booking import MatchBookingScreen
-
         app = app_with_interaction
 
         app.router.navigate("booking_hub")
@@ -966,9 +1046,6 @@ class TestRosterSimulationFlows:
 
     def test_roster_inspection_flow(self, app_with_interaction):
         """Flow 5: inspect wrestler from roster list."""
-        from wrestlegm.ui_pygame.screens.game_hub import GameHubScreen
-        from wrestlegm.ui_pygame.screens.roster import RosterScreen
-
         app = app_with_interaction
 
         app.router.navigate("game_hub")
@@ -992,10 +1069,6 @@ class TestRosterSimulationFlows:
 
     def test_bankruptcy_flow(self, app_with_interaction):
         """Flow 7: bankruptcy screen restart path."""
-        from wrestlegm.ui_pygame.screens.bankruptcy import BankruptcyScreen
-        from wrestlegm.ui_pygame.screens.booking_hub import BookingHubScreen
-        from wrestlegm.ui_pygame.screens.game_hub import GameHubScreen
-
         app = app_with_interaction
 
         app.router.navigate("game_hub")

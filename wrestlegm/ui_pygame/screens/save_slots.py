@@ -6,7 +6,7 @@ import pygame
 import pygame_gui
 from pygame.rect import Rect
 from pygame_gui.core import ObjectID
-from pygame_gui.elements import UIButton, UILabel, UIPanel
+from pygame_gui.elements import UIButton, UILabel, UIPanel, UITextEntryLine, UIWindow
 
 from wrestlegm import persistence
 
@@ -29,6 +29,11 @@ class SaveSlotSelectionScreen(BaseScreen):
         self._slot_panels: list[pygame_gui.elements.UIPanel] = []
         self._back_button: pygame_gui.elements.UIButton | None = None
         self._title_label: pygame_gui.elements.UILabel | None = None
+        self._name_window: UIWindow | None = None
+        self._name_input: UITextEntryLine | None = None
+        self._name_confirm_button: UIButton | None = None
+        self._name_cancel_button: UIButton | None = None
+        self._pending_slot_index: int | None = None
 
     def _build_header(self, manager, rect) -> None:
         """Build header with title and back button."""
@@ -59,6 +64,9 @@ class SaveSlotSelectionScreen(BaseScreen):
 
     def _build_body(self, manager, rect) -> None:
         """Build body with save slot grid."""
+        self._slot_buttons.clear()
+        self._slot_panels.clear()
+
         # Load slot data
         self._slots = self._load_slots()
 
@@ -104,8 +112,8 @@ class SaveSlotSelectionScreen(BaseScreen):
     def _build_slot_content(self, manager, panel, slot, slot_rect) -> None:
         """Build content for a single save slot."""
         padding = 8
-        content_x = slot_rect.x + padding
-        content_y = slot_rect.y + padding
+        content_x = padding
+        content_y = padding
         content_width = slot_rect.width - (padding * 2)
 
         # Slot number header
@@ -118,12 +126,31 @@ class SaveSlotSelectionScreen(BaseScreen):
             object_id=ObjectID(class_id="@save_slot_header"),
         )
 
+        # Create clickable button first so informational labels render above it.
+        button_rect = Rect(0, 0, slot_rect.width, slot_rect.height)
+        button_tooltip = (
+            f"Load {slot.name or 'save'}" if slot.exists else "Start new game here"
+        )
+        button = UIButton(
+            relative_rect=button_rect,
+            text="",
+            manager=manager,
+            container=panel,
+            tool_tip_text=button_tooltip,
+            object_id=ObjectID(
+                class_id="@save_slot_button",
+                object_id=f"#save_slot_button_{slot.slot_index}",
+            ),
+        )
+        if self._mode == "load" and not slot.exists:
+            button.disable()
+        self._slot_buttons.append(button)
+
         if slot.exists:
             # Occupied slot - show details
             show_index = (slot.last_saved_show_index or 0) + 1
             name = slot.name or "Unnamed"
 
-            # Name
             name_rect = Rect(content_x, content_y + 24, content_width, 20)
             UILabel(
                 relative_rect=name_rect,
@@ -133,7 +160,6 @@ class SaveSlotSelectionScreen(BaseScreen):
                 object_id=ObjectID(class_id="@save_slot_name"),
             )
 
-            # Show number
             show_rect = Rect(content_x, content_y + 44, content_width, 20)
             UILabel(
                 relative_rect=show_rect,
@@ -142,22 +168,6 @@ class SaveSlotSelectionScreen(BaseScreen):
                 container=panel,
                 object_id=ObjectID(class_id="@save_slot_meta"),
             )
-
-            # Create clickable button overlay
-            button_rect = Rect(
-                slot_rect.x, slot_rect.y, slot_rect.width, slot_rect.height
-            )
-            button = UIButton(
-                relative_rect=button_rect,
-                text="",
-                manager=manager,
-                tool_tip_text=f"Load {name}",
-                object_id=ObjectID(
-                    class_id="@save_slot_button",
-                    object_id=f"#save_slot_button_{slot.slot_index}",
-                ),
-            )
-            self._slot_buttons.append(button)
         else:
             # Empty slot
             empty_rect = Rect(content_x, content_y + 24, content_width, 40)
@@ -168,25 +178,6 @@ class SaveSlotSelectionScreen(BaseScreen):
                 container=panel,
                 object_id=ObjectID(class_id="@save_slot_empty"),
             )
-
-            # Create clickable button overlay (only enabled for new game mode)
-            button_rect = Rect(
-                slot_rect.x, slot_rect.y, slot_rect.width, slot_rect.height
-            )
-            button = UIButton(
-                relative_rect=button_rect,
-                text="",
-                manager=manager,
-                tool_tip_text="Start new game here",
-                object_id=ObjectID(
-                    class_id="@save_slot_button",
-                    object_id=f"#save_slot_button_{slot.slot_index}",
-                ),
-            )
-            # Disable button for empty slots in load mode
-            if self._mode == "load":
-                button.disable()
-            self._slot_buttons.append(button)
 
     def _build_actions(self, manager, rect) -> None:
         """No action buttons needed for save slot screen."""
@@ -211,13 +202,43 @@ class SaveSlotSelectionScreen(BaseScreen):
         """Load save slot information from SessionManager."""
         # Access SessionManager through app
         if hasattr(self._app, "session"):
-            return self._app.session.list_slots()
+            raw_slots = self._app.session.list_slots()
+            save_dir = self._app.session._save_dir
+            normalized: list[persistence.SaveSlotInfo] = []
+
+            for slot in raw_slots:
+                has_file = persistence.slot_path(slot.slot_index, save_dir).exists()
+                name = slot.name.strip() if isinstance(slot.name, str) else None
+                if name == "":
+                    name = None
+                exists = bool(slot.exists and has_file)
+
+                normalized.append(
+                    persistence.SaveSlotInfo(
+                        slot_index=slot.slot_index,
+                        name=name if exists else None,
+                        exists=exists,
+                        last_saved_show_index=(
+                            slot.last_saved_show_index if exists else None
+                        ),
+                    )
+                )
+
+            return normalized
         # Fallback: return default empty slots
         return persistence.default_slots()
 
     def handle_event(self, event) -> bool:
         """Handle button press events."""
         if event.type == pygame_gui.UI_BUTTON_PRESSED:
+            if self._name_window is not None:
+                if event.ui_element == self._name_confirm_button:
+                    self._confirm_new_game_name()
+                    return True
+                if event.ui_element == self._name_cancel_button:
+                    self._close_name_modal()
+                    return True
+
             if event.ui_element == self._back_button:
                 self._on_back()
                 return True
@@ -236,6 +257,9 @@ class SaveSlotSelectionScreen(BaseScreen):
 
     def _on_slot_clicked(self, slot_number: int) -> None:
         """Handle slot selection."""
+        if self._name_window is not None:
+            return
+
         # Find the slot info
         slot = None
         for s in self._slots:
@@ -247,12 +271,14 @@ class SaveSlotSelectionScreen(BaseScreen):
             return
 
         if self._mode == "new":
-            if slot.exists:
-                # Show overwrite confirmation modal
-                self._show_overwrite_modal(slot)
+            if slot.exists and slot.name:
+                # Guard rail first for occupied slot
+                self._show_overwrite_modal(
+                    slot_index=slot.slot_index,
+                    existing_name=slot.name,
+                )
             else:
-                # Start new game in empty slot
-                self._start_new_game(slot_number)
+                self._show_name_modal(slot_number)
         else:  # load mode
             if slot.exists:
                 try:
@@ -269,35 +295,102 @@ class SaveSlotSelectionScreen(BaseScreen):
         """Show an error modal via Router."""
         self._router.show_error(title, message)
 
-    def _show_overwrite_modal(self, slot: persistence.SaveSlotInfo) -> None:
-        """Show overwrite confirmation modal via Router."""
-        slot_index = slot.slot_index  # Capture slot_index for closure
-
-        def on_confirm():
-            self._start_new_game(slot_index)
-
-        def on_cancel():
-            pass
-
-        self._router.show_confirm(
-            title=f"Overwrite Slot {slot.slot_index}?",
-            message=f'This will replace "{slot.name or "Unnamed"}".',
-            on_confirm=on_confirm,
-            on_cancel=on_cancel,
-            confirm_text="Yes",
-            cancel_text="No",
-        )
-
     def _start_new_game(self, slot_index: int) -> None:
+        self._start_new_game_with_name(slot_index, f"Slot {slot_index}")
+
+    def _start_new_game_with_name(self, slot_index: int, slot_name: str) -> None:
         """Start a new game in the specified slot."""
         # Use SessionManager to create new game
         if hasattr(self._app, "session"):
             # Access internal _state directly since state is a read-only property
-            self._app._state = self._app.session.new_game(
-                slot_index, f"Slot {slot_index}"
-            )
+            self._app._state = self._app.session.new_game(slot_index, slot_name)
             # Navigate to game hub
             self._router.navigate("game_hub")
+
+    def _show_name_modal(self, slot_index: int) -> None:
+        """Show modal to capture new save name."""
+        if self._name_window is not None:
+            return
+
+        self._pending_slot_index = slot_index
+        self._name_window = UIWindow(
+            rect=Rect(80, 260, 320, 180),
+            manager=self._app.ui_manager,
+            window_display_title=f"New Game - Slot {slot_index}",
+            object_id=ObjectID(class_id="@modal_window", object_id="#save_name_window"),
+        )
+
+        self._name_input = UITextEntryLine(
+            relative_rect=Rect(20, 40, 280, 32),
+            manager=self._app.ui_manager,
+            container=self._name_window,
+            initial_text="",
+            placeholder_text="Enter save name",
+            object_id=ObjectID(class_id="@text_input", object_id="#save_name_input"),
+        )
+
+        self._name_confirm_button = UIButton(
+            relative_rect=Rect(60, 100, 90, 32),
+            text="START",
+            manager=self._app.ui_manager,
+            container=self._name_window,
+            object_id=ObjectID(
+                class_id="@primary_button", object_id="#save_name_confirm"
+            ),
+        )
+        self._name_cancel_button = UIButton(
+            relative_rect=Rect(170, 100, 90, 32),
+            text="CANCEL",
+            manager=self._app.ui_manager,
+            container=self._name_window,
+            object_id=ObjectID(
+                class_id="@secondary_button", object_id="#save_name_cancel"
+            ),
+        )
+        self._name_input.focus()
+
+    def _confirm_new_game_name(self) -> None:
+        if self._pending_slot_index is None or self._name_input is None:
+            return
+
+        slot_name = self._name_input.get_text().strip()
+        if not slot_name:
+            self._show_error_modal("Save Name Required", "Please enter a save name.")
+            return
+
+        slot_index = self._pending_slot_index
+        self._close_name_modal()
+        self._start_new_game_with_name(slot_index, slot_name)
+
+    def _close_name_modal(self) -> None:
+        if self._name_window is not None:
+            self._name_window.kill()
+        self._name_window = None
+        self._name_input = None
+        self._name_confirm_button = None
+        self._name_cancel_button = None
+        self._pending_slot_index = None
+
+    def _show_overwrite_modal(self, slot_index: int, existing_name: str) -> None:
+        """Show overwrite confirmation for occupied slots in new-game flow."""
+
+        def on_confirm() -> None:
+            self._show_name_modal(slot_index)
+
+        warning_message = (
+            f'WARNING: This will permanently overwrite "{existing_name}" in Slot {slot_index}.\n\n'
+            "This action cannot be undone.\n\n"
+            "If you continue, you will be prompted to enter the new save name."
+        )
+
+        self._router.show_confirm(
+            title=f"Overwrite Named Save? (Slot {slot_index})",
+            message=warning_message,
+            on_confirm=on_confirm,
+            on_cancel=None,
+            confirm_text="OVERWRITE",
+            cancel_text="No",
+        )
 
     def _load_game(self, slot_index: int) -> None:
         """Load a game from the specified slot."""

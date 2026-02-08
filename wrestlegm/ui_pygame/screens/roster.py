@@ -5,7 +5,9 @@ from __future__ import annotations
 import pygame_gui
 from pygame.rect import Rect
 from pygame_gui.core import ObjectID
-from pygame_gui.elements import UIButton, UILabel, UIPanel, UIScrollingContainer
+from pygame_gui.elements import UIButton, UILabel, UIScrollingContainer
+
+from wrestlegm.ui_pygame.wrestler_card import WrestlerCard
 
 from .base import BaseScreen
 
@@ -21,6 +23,7 @@ class RosterScreen(BaseScreen):
         self._scroll_container = None
         self._back_button = None
         self._wrestler_panels: list[tuple] = []  # (panel, wrestler)
+        self._wrestler_cards: list[WrestlerCard] = []
 
     def _build_header(self, manager, rect) -> None:
         """Build header with title and back button."""
@@ -65,98 +68,31 @@ class RosterScreen(BaseScreen):
 
         # Build wrestler list
         self._wrestler_panels = []
+        self._wrestler_cards = []
 
         roster = list(self._app.state.roster.values())
-        row_height = 60
-        row_spacing = 4
+        row_height = 98
+        row_spacing = 8
 
         for i, wrestler in enumerate(roster):
-            # Row panel with clickable button overlay
             row_y = i * (row_height + row_spacing)
             row_rect = Rect(0, row_y, scroll_rect.width - 24, row_height)
-
-            # Panel for layout
-            row_panel = UIPanel(
-                relative_rect=row_rect,
+            cost = self._app.state.wrestler_booking_price(wrestler.id)
+            definition = self._app.state.wrestler_defs.get(wrestler.id)
+            avatar_path = definition.avatar_path if definition else ""
+            card = WrestlerCard(
+                row_rect,
                 manager=manager,
                 container=self._scroll_container,
-                object_id=ObjectID(
-                    class_id="@roster_row_panel", object_id=f"#roster_row_panel_{i + 1}"
-                ),
+                wrestler=wrestler,
+                cost_text=f"${cost:,}",
+                action_text="INSPECT",
+                action_object_id="@secondary_button",
+                avatar_path=avatar_path,
             )
-
-            # Invisible button overlay for click detection
-            # Position at 0,0 within the panel
-            button_rect = Rect(0, 0, row_rect.width, row_rect.height)
-            row_button = UIButton(
-                relative_rect=button_rect,
-                text="",
-                manager=manager,
-                container=row_panel,
-                object_id=ObjectID(
-                    class_id="@roster_row_button",
-                    object_id=f"#roster_row_button_{wrestler.id}",
-                ),
-            )
-
-            # Avatar placeholder (32x32)
-            avatar_rect = Rect(8, 14, 32, 32)
-            avatar_text = wrestler.name[:2].upper() if wrestler.name else "??"
-            UILabel(
-                relative_rect=avatar_rect,
-                text=avatar_text,
-                manager=manager,
-                container=row_panel,
-                object_id=ObjectID(class_id="@roster_avatar"),
-            )
-
-            # Name
-            name_rect = Rect(48, 8, row_rect.width - 160, 20)
-            UILabel(
-                relative_rect=name_rect,
-                text=wrestler.name[:20],
-                manager=manager,
-                container=row_panel,
-                object_id=ObjectID(class_id="@roster_name"),
-            )
-
-            # Stats line (Pop, Sta, Mic)
-            stats_rect = Rect(48, 30, 120, 18)
-            stats_text = (
-                f"P:{wrestler.popularity} S:{wrestler.stamina} M:{wrestler.mic_skill}"
-            )
-            UILabel(
-                relative_rect=stats_rect,
-                text=stats_text,
-                manager=manager,
-                container=row_panel,
-                object_id=ObjectID(class_id="@roster_stats"),
-            )
-
-            # Booking price
-            cost = self._app.state.wrestler_booking_price(wrestler.id)
-            cost_rect = Rect(row_rect.width - 110, 8, 100, 20)
-            UILabel(
-                relative_rect=cost_rect,
-                text=f"${cost:,}",
-                manager=manager,
-                container=row_panel,
-                object_id=ObjectID(class_id="@roster_cost"),
-            )
-
-            # Alignment
-            align_rect = Rect(row_rect.width - 110, 30, 80, 18)
-            align_text = "Face" if wrestler.alignment == "Face" else "Heel"
-            UILabel(
-                relative_rect=align_rect,
-                text=align_text,
-                manager=manager,
-                container=row_panel,
-                object_id=ObjectID(class_id="@roster_alignment"),
-            )
-
-            # Store button for click detection (panel is just for layout)
-            self._wrestler_panels.append((row_button, wrestler))
+            card.set_visible_fields({"name", "stats", "alignment", "cost", "action"})
+            self._wrestler_cards.append(card)
+            self._wrestler_panels.append((card.action_button, wrestler))
 
         # Set scrollable area height
         total_height = len(roster) * (row_height + row_spacing)

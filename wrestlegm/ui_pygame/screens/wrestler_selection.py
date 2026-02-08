@@ -6,7 +6,10 @@ from typing import TYPE_CHECKING, Callable
 
 import pygame_gui
 from pygame.rect import Rect
-from pygame_gui.elements import UIButton, UILabel, UIPanel, UIScrollingContainer
+from pygame_gui.elements import UIButton, UILabel, UIScrollingContainer
+
+from wrestlegm import constants
+from wrestlegm.ui_pygame.wrestler_card import WrestlerCard
 
 from .base import BaseScreen
 
@@ -32,6 +35,7 @@ class WrestlerSelectionScreen(BaseScreen):
         self._scroll_container = None
         self._wrestler_buttons: list[UIButton] = []
         self._wrestler_data: list[tuple] = []
+        self._wrestler_cards: list[WrestlerCard] = []
         self._back_button: UIButton | None = None
 
     def build(self, manager, rect) -> None:
@@ -72,96 +76,44 @@ class WrestlerSelectionScreen(BaseScreen):
         # Build wrestler list
         self._wrestler_buttons = []
         self._wrestler_data = []
+        self._wrestler_cards = []
 
         roster = list(self._app.state.roster.values())
-        row_height = 60
-        row_spacing = 4
+        row_height = 98
+        row_spacing = 8
 
         for i, wrestler in enumerate(roster):
             is_available = self._is_wrestler_available(wrestler)
             unavailable_reason = self._get_unavailable_reason(wrestler)
 
-            # Row panel
             row_y = i * (row_height + row_spacing)
             row_rect = Rect(0, row_y, scroll_rect.width - 24, row_height)
-            row_panel = UIPanel(
-                relative_rect=row_rect,
+            cost = self._app.state.wrestler_booking_price(wrestler.id)
+            status_text = unavailable_reason if not is_available else ""
+            definition = self._app.state.wrestler_defs.get(wrestler.id)
+            avatar_path = definition.avatar_path if definition else ""
+            card = WrestlerCard(
+                row_rect,
                 manager=manager,
                 container=self._scroll_container,
+                wrestler=wrestler,
+                cost_text=f"${cost:,}",
+                action_text="+",
+                action_object_id="@primary_button",
+                status_text=status_text,
+                avatar_path=avatar_path,
             )
 
-            # Avatar placeholder (32x32)
-            avatar_rect = Rect(8, 14, 32, 32)
-            UILabel(
-                relative_rect=avatar_rect,
-                text="👤",
-                manager=manager,
-                container=row_panel,
-            )
-
-            # Name
-            name_rect = Rect(48, 8, row_rect.width - 160, 20)
-            UILabel(
-                relative_rect=name_rect,
-                text=wrestler.name[:20],
-                manager=manager,
-                container=row_panel,
-            )
-
-            # Stats line (Pop, Sta, Mic)
-            stats_rect = Rect(48, 30, 120, 18)
-            stats_text = (
-                f"P:{wrestler.popularity} S:{wrestler.stamina} M:{wrestler.mic_skill}"
-            )
-            UILabel(
-                relative_rect=stats_rect,
-                text=stats_text,
-                manager=manager,
-                container=row_panel,
-            )
-
-            # Cost
-            cost = self._app.state.wrestler_booking_price(wrestler.id)
-            cost_rect = Rect(row_rect.width - 110, 8, 100, 20)
-            UILabel(
-                relative_rect=cost_rect,
-                text=f"${cost:,}",
-                manager=manager,
-                container=row_panel,
-            )
-
-            # Alignment
-            align_rect = Rect(row_rect.width - 110, 30, 80, 18)
-            align_text = "Face" if wrestler.alignment == "Face" else "Heel"
-            UILabel(
-                relative_rect=align_rect,
-                text=align_text,
-                manager=manager,
-                container=row_panel,
-            )
-
-            # Unavailable reason label (if unavailable)
+            visible_fields = {"name", "stats", "alignment", "cost", "action"}
             if not is_available:
-                reason_rect = Rect(170, 30, 100, 18)
-                UILabel(
-                    relative_rect=reason_rect,
-                    text=unavailable_reason,
-                    manager=manager,
-                    container=row_panel,
-                )
-                # Gray out the row visually by disabling interactions
-                row_panel.disable()
+                visible_fields.add("status")
+                card.action_button.disable()
             else:
-                # Select button
-                select_rect = Rect(row_rect.width - 50, 14, 44, 32)
-                select_button = UIButton(
-                    relative_rect=select_rect,
-                    text="+",
-                    manager=manager,
-                    container=row_panel,
-                )
-                self._wrestler_buttons.append(select_button)
+                self._wrestler_buttons.append(card.action_button)
                 self._wrestler_data.append(wrestler)
+
+            card.set_visible_fields(visible_fields)
+            self._wrestler_cards.append(card)
 
         # Set scrollable area height
         total_height = len(roster) * (row_height + row_spacing)
@@ -210,8 +162,6 @@ class WrestlerSelectionScreen(BaseScreen):
             return False
 
         # Check stamina
-        from wrestlegm import constants
-
         if wrestler.stamina <= constants.STAMINA_MIN_BOOKABLE:
             return False
 
@@ -219,8 +169,6 @@ class WrestlerSelectionScreen(BaseScreen):
 
     def _get_unavailable_reason(self, wrestler) -> str:
         """Get the reason why a wrestler is unavailable."""
-        from wrestlegm import constants
-
         if wrestler.id in self._exclude:
             return "Selected"
 

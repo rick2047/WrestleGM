@@ -137,6 +137,8 @@ The system SHALL test the complete new game creation journey.
 - **THEN** navigates to SaveSlotSelectionScreen with mode=new
 - **AND** screen is built (_slot_buttons is not None)
 - **WHEN** test clicks _slot_buttons[0] (first empty slot)
+- **THEN** save-name modal opens with text entry
+- **WHEN** test enters a non-empty name and clicks START
 - **THEN** navigates to GameHubScreen
 - **AND** state.show_number is 1 (fresh game)
 - **AND** screen is built (_booking_hub_button is not None)
@@ -210,6 +212,37 @@ The system SHALL test viewing wrestler details from roster.
 - **WHEN** test clicks _close_button
 - **THEN** modal closes
 - **AND** back at RosterScreen
+
+### Requirement: Shared Wrestler Card Layout
+The system SHALL render wrestlers with the same card layout in Roster and Wrestler Selection screens.
+
+#### Scenario: Card layout consistency
+- **GIVEN** RosterScreen and WrestlerSelectionScreen
+- **WHEN** wrestler rows are rendered
+- **THEN** both screens use the same card structure and spacing
+- **AND** card layout is mobile-friendly:
+  - left third reserved for wrestler portrait/avatar area
+  - right two-thirds show name, stats, alignment, and cost
+
+#### Scenario: Configurable card fields
+- **GIVEN** the shared wrestler card component
+- **WHEN** a screen configures visible card fields
+- **THEN** the card shows only configured fields
+- **AND** supported fields include `name`, `stats`, `alignment`, `cost`, `status`, and `action`
+
+#### Scenario: Selection and inspect actions
+- **GIVEN** the shared wrestler card layout
+- **WHEN** rendered in WrestlerSelectionScreen
+- **THEN** cards show `+` select action for available wrestlers
+- **AND** clicking `+` selects wrestler and returns to Match Booking
+- **WHEN** rendered in RosterScreen
+- **THEN** cards show inspect action
+- **AND** clicking inspect opens wrestler details modal
+
+#### Scenario: Alignment visibility
+- **GIVEN** wrestler cards in both screens
+- **WHEN** cards are rendered
+- **THEN** alignment emoji is visible next to wrestler alignment text
 
 ### Requirement: Flow 6 - Save and Quit
 The system SHALL test saving game and reloading.
@@ -323,8 +356,31 @@ The system SHALL allow users to select a save slot for new or loaded games.
 #### Scenario: Select slot for new game
 - **GIVEN** the screen is in new mode
 - **WHEN** user clicks an empty slot
-- **THEN** the application creates a new game in that slot
+- **THEN** the application prompts for a save name
+- **WHEN** user enters a non-empty save name and confirms
+- **THEN** the application creates a new game in that slot with that name
 - **AND** navigates to the Game Hub
+
+#### Scenario: Overwrite occupied slot for new game
+- **GIVEN** the screen is in new mode
+- **AND** the selected slot is occupied
+- **WHEN** user clicks the occupied slot
+- **THEN** overwrite confirmation is shown immediately with a guard-rail warning
+- **AND** warning explicitly states this action permanently overwrites the existing named save
+- **AND** warning includes existing save name
+- **AND** confirm button text is `OVERWRITE`
+- **WHEN** user confirms overwrite
+- **THEN** the application prompts for the new save name
+- **WHEN** user enters a non-empty save name and confirms
+- **THEN** the application creates a new game in that slot with the entered name
+- **AND** navigates to the Game Hub
+
+#### Scenario: Reject blank new-game name
+- **GIVEN** the screen is in new mode
+- **AND** name entry modal is open
+- **WHEN** user confirms with an empty name
+- **THEN** an error modal is displayed
+- **AND** the user remains on Save Slot Selection screen
 
 #### Scenario: Select slot for loading
 - **GIVEN** the screen is in load mode

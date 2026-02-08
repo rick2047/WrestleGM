@@ -14,7 +14,7 @@ def snapshot_image(snapshot):
 
 
 @pytest.fixture
-def pygame_app():
+def pygame_app(tmp_path):
     """Headless pygame app with fixed clock for deterministic testing."""
     os.environ["SDL_VIDEODRIVER"] = "dummy"
     pygame.init()
@@ -22,13 +22,14 @@ def pygame_app():
     from wrestlegm.ui_pygame import WrestleGMApp
 
     app = WrestleGMApp()
+    app._session._save_dir = tmp_path / "save"
 
     yield app
     pygame.quit()
 
 
 @pytest.fixture
-def app_with_built_screen():
+def app_with_built_screen(tmp_path):
     """App with main_menu screen built and ready for interaction testing."""
     os.environ["SDL_VIDEODRIVER"] = "dummy"
     pygame.init()
@@ -36,6 +37,7 @@ def app_with_built_screen():
     from pygame import Rect
 
     app = WrestleGMApp()
+    app._session._save_dir = tmp_path / "save"
     app.router.navigate("main_menu")
     screen = app.router.current
     screen.build(app.ui_manager, Rect(0, 0, 480, 800))
@@ -75,7 +77,7 @@ def create_button_click_event():
 
 
 @pytest.fixture
-def app_with_interaction():
+def app_with_interaction(tmp_path):
     """App with interaction helpers for testing real user events.
 
     Provides:
@@ -89,6 +91,7 @@ def app_with_interaction():
     from pygame import Rect
 
     app = WrestleGMApp()
+    app._session._save_dir = tmp_path / "save"
     app.router.navigate("main_menu")
     screen = app.router.current
     screen.build(app.ui_manager, Rect(0, 0, 480, 800))

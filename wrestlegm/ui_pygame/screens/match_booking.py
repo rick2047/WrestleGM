@@ -37,13 +37,16 @@ class MatchBookingScreen(BaseScreen):
         self._rivalry_labels: list[UILabel] = []
         self._slot_panels: list[UIPanel] = []
         self._cost_label: UILabel | None = None
+        self._draft_initialized = False
 
     def build(self, manager, rect) -> None:
         """Build UI elements in the 4 zones."""
         zones = self._compute_zones(rect)
 
-        # Initialize draft from existing match or defaults
-        self._initialize_draft()
+        # Initialize draft once per screen instance.
+        if not self._draft_initialized:
+            self._initialize_draft()
+            self._draft_initialized = True
 
         self._build_header(manager, zones["header"])
         self._build_body(manager, zones["body"])

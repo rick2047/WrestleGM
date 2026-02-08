@@ -318,16 +318,18 @@ class Router:
                 from pygame_gui.windows import UIConfirmationDialog
 
                 if isinstance(self._active_modal, UIConfirmationDialog):
+                    confirm_cb = self._on_modal_confirm
+                    cancel_cb = self._on_modal_cancel
                     if event.ui_element == self._active_modal.confirm_button:
-                        if self._on_modal_confirm:
-                            self._on_modal_confirm()
+                        self.dismiss_modal()
+                        if confirm_cb:
+                            confirm_cb()
+                        return True
                     elif event.ui_element == self._active_modal.cancel_button:
-                        if self._on_modal_cancel:
-                            self._on_modal_cancel()
-
-                    # Always dismiss after button press
-                    self.dismiss_modal()
-                    return True
+                        self.dismiss_modal()
+                        if cancel_cb:
+                            cancel_cb()
+                        return True
                 else:
                     # For message windows, any button dismisses
                     self.dismiss_modal()

@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+import pygame_gui
 from pygame.rect import Rect
 from pygame_gui.core import ObjectID
 from pygame_gui.elements import UIButton, UILabel, UIPanel
 
 from wrestlegm import constants
-from wrestlegm.models import Match, MATCH_CATEGORIES
+from wrestlegm.models import Match
 from wrestlegm.ui_pygame.screens.base import BaseScreen
 from wrestlegm.ui_pygame.constants import (
     MARGIN,
@@ -216,8 +217,6 @@ class BookingHubScreen(BaseScreen):
 
     def handle_event(self, event) -> bool:
         """Handle button presses."""
-        import pygame_gui
-
         if event.type == pygame_gui.UI_BUTTON_PRESSED:
             # Check slot buttons
             for button in self._slot_buttons:
@@ -284,17 +283,11 @@ class BookingHubScreen(BaseScreen):
         slot_type = self._app.state.slot_type(slot_index)
 
         if slot_type == "match":
-            # Get existing match category or default to first
             existing = self._app.state.show_card[slot_index]
-            if isinstance(existing, Match):
-                match_category = existing.match_category
-            else:
-                match_category = sorted(MATCH_CATEGORIES, key=lambda item: item.id)[0]
-
             self._router.navigate(
                 "match_booking",
                 slot_index=slot_index,
-                match_category=match_category,
+                existing_match=existing if isinstance(existing, Match) else None,
             )
         else:
             # Promo slot

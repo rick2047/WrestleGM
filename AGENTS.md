@@ -22,6 +22,11 @@
 ## OpenSpec Workflow
 - OpenSpec is the primary driver for workflow: create one PR per OpenSpec change, and keep only one change active at a time.
 
+## Coding Style
+- All imports must be at the top of files.
+- No local/function-scoped imports unless there is a documented, exceptional reason.
+- This rule applies to production code AND tests.
+
 ## Review Comment Handling
 - When asked to address review comments, reply on each review comment with what you did to resolve it.
 - Never resolve review threads unless explicitly asked.

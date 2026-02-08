@@ -21,6 +21,8 @@
 - [x] 2.2 Implement MainMenuScreen navigation to Save Slots
 - [x] 2.3 Create SaveSlotSelectionScreen with slot grid display
 - [x] 2.4 Implement new game flow (empty slot → create → Game Hub)
+- [x] 2.4.1 Add save-name prompt for new game creation (empty slot opens name entry modal before create)
+- [x] 2.4.2 Add overwrite guard rail warning for occupied named saves (explicit irreversible warning + OVERWRITE confirmation)
 - [x] 2.5 Implement load game flow (occupied slot → load → Game Hub)
 - [x] 2.6 Handle corrupt save error with modal
 - [x] 2.7 Create GameHubScreen with Continue, Booking, Roster, Quit options
@@ -57,6 +59,8 @@
 - [x] 4.8 Create RosterScreen with full roster inspection
 - [x] 4.9 Implement wrestler click → Inspect modal
 - [x] 4.10 Create BankruptcyScreen with restart options
+- [x] 4.11 Unify wrestler row UI into shared mobile-friendly card (Roster + Wrestler Selection)
+- [x] 4.12 Add roster screen snapshot test and baseline
 
 ## 5. Phase 5 - Polish and Assets
 

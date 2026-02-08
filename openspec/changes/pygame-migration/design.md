@@ -575,12 +575,21 @@ def test_new_game_flow(app_with_interaction):
     
     # Click first empty slot
     app.click(app.router.current._slot_buttons[0])
-    
+
+    # Enter new save name and confirm
+    app.router.current._name_input.set_text("My Save")
+    app.click(app.router.current._name_confirm_button)
+
     # Verify: navigated to Game Hub with fresh game
     assert app.router.current.__class__.__name__ == "GameHubScreen"
     assert app._state.show_number == 1  # Fresh game
     assert app.router.current._booking_hub_button is not None
 ```
+
+**Overwrite Guard Rail:**
+- For occupied slots in New Game mode, flow is: click slot -> warning confirm -> enter new save name.
+- Warning modal must include existing save name and explicit irreversible language.
+- Confirm action label is `OVERWRITE` to reduce accidental replacement.
 
 ### Flow 2: Load Existing Game
 ```python
@@ -934,6 +943,35 @@ for i, wrestler in enumerate(roster):
 - `UIScrollingContainer` automatically shows vertical scrollbar when content exceeds container height
 - Horizontal scrolling: Avoid if possible; design for vertical scroll only
 - Scroll bar theming configured in theme.py
+
+### Shared Wrestler Card (Roster + Selection)
+
+Roster and Wrestler Selection use one visual card pattern for wrestler rows.
+
+**Mobile-friendly card layout:**
+- Left 1/3: avatar/portrait area (32x32 art centered in panel)
+- Right 2/3: wrestler info stack (name, stats, alignment, cost)
+- Action area on right/bottom: `INSPECT` (Roster) or `+` (Selection)
+
+**ASCII Mockup:**
+
+```text
++----------------------------------------------+
+| [IMG] | Brutus Hale                    😈Heel |
+| [IMG] | POP 82  STA 45  MIC 60         $2,138|
+| [IMG] | Rivalry: 🔥                       [+] |
++----------------------------------------------+
+```
+
+**Implementation rule:**
+- Implement card as a reusable `WrestlerCard` UIElement (UIPanel subclass).
+- Keep roster and selection visually aligned by using the same `WrestlerCard` class.
+- Differences are action behavior only (`INSPECT` vs `+`) and configurable info visibility.
+
+**Configurable info visibility:**
+- `WrestlerCard.set_visible_fields({...})` controls which fields are shown.
+- Supported fields: `name`, `stats`, `alignment`, `cost`, `status`, `action`.
+- This supports future context/timing-based information rules without duplicating layouts.
 
 #### Actions Zone (70px height)
 
