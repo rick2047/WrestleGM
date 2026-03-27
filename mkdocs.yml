@@ -3,7 +3,7 @@ site_description: Project documentation for WrestleGM
 site_url: http://localhost/
 
 theme:
-  name: mkdocs
+  name: material
 
 plugins:
   - search
@@ -12,11 +12,11 @@ plugins:
         python:
           paths:
             - .
+  - mermaid2
 
 nav:
   - Home: index.md
-  - Architecture: architecture.md
-  - Simulation: simulation.md
-  - UI: ui.md
-  - Implementation Reference: implementation.md
-  - API Reference: api.md
+  - User Journey: user_journey.md
+  - Simulation Rules: simulation_rules.md
+  - Data Model: data_model.md
+  - Architecture & Design: architecture_and_design_patterns.md
